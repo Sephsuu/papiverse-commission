@@ -1,5 +1,5 @@
 export type Branch = {
-    branchName: string;
+    name: string;
     streetAddress: string;
     barangay: string;
     city: string;
@@ -12,7 +12,7 @@ export type Branch = {
 };
 
 export const branchInit: Branch = {
-	branchName: "",
+	name: "",
 	streetAddress: "",
 	barangay: "",
 	city: "",
@@ -23,7 +23,7 @@ export const branchInit: Branch = {
 };
 
 export const branchFields: (keyof Branch)[] = [
-    "branchName",
+    "name",
     "streetAddress",
     "barangay",
     "city",

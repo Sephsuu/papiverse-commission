@@ -9,6 +9,7 @@ import { CalendarDays } from "lucide-react";
 import { useState } from "react";
 import { DatePickerModal } from "./components/DatePickerModal";
 import { InventorySummary } from "./components/InventorySummary";
+import { BranchPurchaseItemSummary } from "./components/BranchPurchaseItemSummary";
 
 export function InventoryPage() {
     const [date, setDate] = useState<string>(
@@ -80,6 +81,11 @@ export function InventoryPage() {
             </div>
 
             <InventorySummary 
+                className="mt-8"
+                date={date}
+            />
+
+            <BranchPurchaseItemSummary 
                 className="mt-8"
                 date={date}
             />

@@ -73,7 +73,6 @@ export function SupplyOrdersPage() {
 
     const { page, setPage, size, setSize, paginated } = usePagination(orders, 10, pageKey);
 
-
     return (
         <section className="stack-md py-2 animate-fade-in-up"> 
             <AppHeader label="Purchase Orders List" />
