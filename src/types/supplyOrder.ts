@@ -73,3 +73,19 @@ export interface CategoryOrder {
     branchId: number;
     categoryitems: OrderItem[];
 }
+
+export interface BranchPurchaseItem {
+    dateRange: {
+        startDate: string;
+        endDate: string;
+    }
+    items: {
+        name: string
+        sku: string
+        unitMeasurement: string
+        branches: {
+            branchName: string;
+            toralOrder: number;
+        }[]
+    }
+}

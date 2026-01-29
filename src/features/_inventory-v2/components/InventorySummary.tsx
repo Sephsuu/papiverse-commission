@@ -31,6 +31,8 @@ export function InventorySummary({ date, className, byWeek }: {
     className?: string
     byWeek: boolean
 }) {
+    const { open } = useSidebar();
+    
     const { data: inventory, loading: loadingInventory } = useFetchData<DetailedCommissary>(
         SupplyOrderService.getDetailedCommissary,
         [date, byWeek],

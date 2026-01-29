@@ -32,6 +32,20 @@ export class SupplyOrderService {
         );
     }
 
+    static async getBranchPurchaseItem(filter: string, date: string) {
+        return await requestData(
+            `${url}/view-detailed-out?filter=${filter}&date=${date}`,
+            "GET"
+        );
+    }
+
+    static async getAllBranchPurchaseItem(filter: string, date: string) {
+        return await requestData(
+            `${url}/view-detailed?filter=${filter}&date=${date}`,
+            "GET"
+        );
+    }
+
     static async createMeatOrder(meat: object) {
         return await requestData(
             `${meatUrl}/create`,

@@ -3,19 +3,22 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useToday } from "@/hooks/use-today";
-import { formatDate } from "date-fns";
+import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { RefreshCcw, Repeat, ChevronDown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useFetchData } from "@/hooks/use-fetch-data";
-import { BranchService } from "@/services/branch.service";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SupplyService } from "@/services/supply.service";
-import { Supply } from "@/types/supply";
-import { Branch } from "@/types/branch";
 import { SectionLoading } from "@/components/ui/loader";
 import { Input } from "@/components/ui/input";
+import { useFetchData } from "@/hooks/use-fetch-data";
+import { useFetchOne } from "@/hooks/use-fetch-one";
+import { BranchService } from "@/services/branch.service";
+import { SupplyService } from "@/services/supply.service";
+import { SupplyOrderService } from "@/services/supplyOrder.service";
+import { Branch } from "@/types/branch";
+import { Supply } from "@/types/supply";
+import { useSidebar } from "@/components/ui/sidebar";
 
 type NameItem = { id: any; name?: string | null };
 
@@ -47,7 +50,6 @@ function useOnClickOutside(
         };
     }, [refs, handler, enabled]);
 }
-
 
 function MultiSelectPopover({
     label,
@@ -173,30 +175,128 @@ function MultiSelectPopover({
 export function BranchPurchaseItemSummary({
     date,
     className,
+    byWeek,
 }: {
     date: string;
     className?: string;
+    byWeek: boolean;
 }) {
     useToday();
     useSearchParams();
 
+    const { open } = useSidebar();
+
     const [isSwapped, setIsSwapped] = useState(false);
+    const [reload, setReload] = useState(false);
 
     const [rowBranchSelected, setRowBranchSelected] = useState<string[]>([]);
     const [rowSupplySelected, setRowSupplySelected] = useState<string[]>([]);
     const [colBranchSelected, setColBranchSelected] = useState<string[]>([]);
     const [colSupplySelected, setColSupplySelected] = useState<string[]>([]);
 
-    const { data: branches = [], loading: loadingBranches } = useFetchData<Branch>(
-        BranchService.getAllBranches
+    const { data: branches, loading: loadingBranches } = useFetchData<Branch[]>(
+        BranchService.getAllBranches,
+        [reload],
     );
 
-    const { data: supplies = [], loading: loadingSupplies } = useFetchData<Supply>(
-        SupplyService.getAllSupplies
+    const { data: supplies, loading: loadingSupplies } = useFetchData<Supply[]>(
+        SupplyService.getAllSupplies,
+        [reload],
     );
 
-    const rowData = (isSwapped ? supplies : branches) as any[];
-    const columnData = (isSwapped ? branches : supplies) as any[];
+    const { data: purchaseItems, loading: loadingPurchaseItems } = useFetchOne<any>(
+        SupplyOrderService.getAllBranchPurchaseItem,
+        [byWeek, date, reload],
+        [byWeek ? "WEEK" : "CUSTOM_DATE", date, reload ? "1" : "0"]
+    );
+
+    /**
+     * Normalize API data into:
+     *  - rows: supplies list (name)
+     *  - cols: branches list (branchName)
+     *  - lookup: supplyName -> branchName -> totalOrder
+     *
+     * Your API might return:
+     *  - { dateRange, items: [{ name, branches: [{ branchName, totalOrder/toralOrder }] }] }
+     *  - { dateRange, items: { name, branches: [...] } }  (single item)
+     * So we safely handle both.
+     */
+    const apiSupplies = useMemo(() => {
+        const raw = purchaseItems?.items;
+
+        if (!raw) return [] as any[];
+
+        if (Array.isArray(raw)) return raw;
+
+        // single item object -> wrap
+        return [raw];
+    }, [purchaseItems]);
+
+    const apiBranchNames = useMemo(() => {
+        const set = new Set<string>();
+
+        for (const s of apiSupplies) {
+            const bs = Array.isArray(s?.branches) ? s.branches : [];
+            for (const b of bs) {
+                const bn = String(b?.branchName ?? "").trim();
+                if (bn) set.add(bn);
+            }
+        }
+
+        return Array.from(set);
+    }, [apiSupplies]);
+
+    const totalLookup = useMemo(() => {
+        const map = new Map<string, number>();
+
+        for (const s of apiSupplies) {
+            const supplyName = String(s?.name ?? "").trim();
+            if (!supplyName) continue;
+
+            const bs = Array.isArray(s?.branches) ? s.branches : [];
+            for (const b of bs) {
+                const branchName = String(b?.branchName ?? "").trim();
+                if (!branchName) continue;
+
+                const n =
+                    Number(b?.totalOrder ?? b?.toralOrder ?? b?.total_order ?? b?.toral_order ?? 0) || 0;
+
+                map.set(`${supplyName}||${branchName}`, n);
+            }
+        }
+
+        return map;
+    }, [apiSupplies]);
+
+    const branchItems: NameItem[] = useMemo(() => {
+        if (apiBranchNames.length > 0) {
+            return apiBranchNames.map((name) => ({ id: name, name }));
+        }
+
+        return (Array.isArray(branches) ? branches : []).map((b: any) => ({
+            id: b?.id ?? b?.branchId ?? b?.name,
+            name: b?.name ?? b?.branchName ?? "",
+        }));
+    }, [apiBranchNames, branches]);
+
+    const supplyItems: NameItem[] = useMemo(() => {
+        if (apiSupplies.length > 0) {
+            return apiSupplies
+                .map((s: any) => ({
+                    id: s?.sku ?? s?.id ?? s?.name,
+                    name: s?.name ?? "",
+                }))
+                .filter((x) => String(x?.name ?? "").trim().length > 0);
+        }
+
+        return (Array.isArray(supplies) ? supplies : []).map((s: any) => ({
+            id: s?.id ?? s?.sku ?? s?.name,
+            name: s?.name ?? "",
+        }));
+    }, [apiSupplies, supplies]);
+
+    const rowData = (isSwapped ? supplyItems : branchItems) as NameItem[];
+    const columnData = (isSwapped ? branchItems : supplyItems) as NameItem[];
 
     const activeRowSelected = isSwapped ? rowSupplySelected : rowBranchSelected;
     const activeColSelected = isSwapped ? colBranchSelected : colSupplySelected;
@@ -236,10 +336,29 @@ export function BranchPurchaseItemSummary({
     );
     const minWidthPx = useMemo(() => 220 + colCount * 150, [colCount]);
 
+    const getCellValue = (rowName: string, colName: string) => {
+        // Default (NOT swapped): row = Branch, col = Supply
+        // We want total order of BRANCH for that SUPPLY.
+        // Lookup is supplyName||branchName
+        const branchName = isSwapped ? colName : rowName;
+        const supplyName = isSwapped ? rowName : colName;
+
+        const key = `${String(supplyName).trim()}||${String(branchName).trim()}`;
+        return totalLookup.get(key) ?? 0;
+    };
+
+    const dateTitle = useMemo(() => {
+        try {
+            return format(new Date(date), "MMMM dd, yyyy");
+        } catch {
+            return date;
+        }
+    }, [date]);
+
     return (
         <section className={`stack-md ${className}`}>
             <div className="text-xl font-bold">
-                Inventory Summary for {formatDate(new Date(date), "MMMM dd, yyyy")}
+                Branch Purchase Items Summary for {dateTitle}
             </div>
 
             <Separator className="bg-gray-300 my-2" />
@@ -255,7 +374,7 @@ export function BranchPurchaseItemSummary({
 
                         <MultiSelectPopover
                             label={`${columnLabel}s`}
-                            items={columnData as any}
+                            items={columnData}
                             selected={activeColSelected}
                             onToggle={(v) => toggleSelection(v, setActiveColSelected)}
                             onClear={() => clearSelections(setActiveColSelected)}
@@ -289,7 +408,7 @@ export function BranchPurchaseItemSummary({
 
                         <MultiSelectPopover
                             label={`${rowLabel}s`}
-                            items={rowData as any}
+                            items={rowData}
                             selected={activeRowSelected}
                             onToggle={(v) => toggleSelection(v, setActiveRowSelected)}
                             onClear={() => clearSelections(setActiveRowSelected)}
@@ -297,20 +416,12 @@ export function BranchPurchaseItemSummary({
                         />
                     </div>
                 )}
-
-                <Button
-                    className="bg-darkgreen! mt-auto shadow-sm hover:opacity-90"
-                    onClick={() => {}}
-                >
-                    <RefreshCcw />
-                    Refresh
-                </Button>
             </div>
 
-            {loadingBranches || loadingSupplies ? (
+            {loadingBranches || loadingSupplies || loadingPurchaseItems ? (
                 <SectionLoading />
             ) : (
-                <div className="table-wrapper-scrollable mt-2 w-[80vw]">
+                <div className={`table-wrapper-scrollable animate-fade-in-up mt-2 ${open ? "w-[82vw]" : "w-[94vw]"}`}>
                     <div
                         className="thead grid"
                         style={{
@@ -327,25 +438,30 @@ export function BranchPurchaseItemSummary({
                         ))}
                     </div>
 
-                    {filteredRowData.map((item: any) => (
+                    {filteredRowData.map((row: any) => (
                         <div
                             className="tdata grid relative"
-                            key={item.id ?? item.name}
+                            key={row.id ?? row.name}
                             style={{
                                 gridTemplateColumns,
                                 minWidth: `${minWidthPx}px`,
                             }}
                         >
                             <div className="td sticky left-0 z-40 bg-light border-r shadow-[2px_0_6px_rgba(0,0,0,0.12)]">
-                                {item.name}
+                                {row.name}
                             </div>
 
-                            {filteredColumnData.map((col: any) => (
-                                <div
-                                    className="td bg-light! border border-[rgb(201, 201, 201)]"
-                                    key={col.id ?? col.name}
-                                />
-                            ))}
+                            {filteredColumnData.map((col: any) => {
+                                const v = getCellValue(String(row?.name ?? ""), String(col?.name ?? ""));
+                                return (
+                                    <div
+                                        className="td bg-light! border border-[rgb(201, 201, 201)] text-right"
+                                        key={col.id ?? col.name}
+                                    >
+                                        {v}
+                                    </div>
+                                );
+                            })}
                         </div>
                     ))}
                 </div>

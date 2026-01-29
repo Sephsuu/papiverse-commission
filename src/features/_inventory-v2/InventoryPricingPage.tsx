@@ -276,7 +276,7 @@ export function InventoryPricingPage({ className }: { className?: string }) {
             {loadingInventory ? (
                 <SectionLoading />
             ) : (
-                <div className={`table-wrapper-scrollable animate-fade-in-up mt-2 ${open ? "w-[82vw]" : "w-[94vw]"}`} key={display}>
+                <div className={`table-wrapper-scrollable animate-fade-in-up mt-2 ${open ? "w-[82vw]" : "w-[94vw]"}`} key={`${display}-${selectedCategory}-${selectedSort}-${selectedStatus}`}>
                     <div
                         className="thead grid"
                         style={{

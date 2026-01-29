@@ -93,6 +93,7 @@ export function InventoryPage() {
             <BranchPurchaseItemSummary 
                 className="mt-8"
                 date={date}
+                byWeek={byWeek}
             />
         </section>
     )
