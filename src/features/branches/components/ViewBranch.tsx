@@ -23,11 +23,11 @@ export function ViewBranch({
                         <div className="font-semibold mb-2">Basic Details</div>
 
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                            <div className="font-medium text-gray-600">Branch ID</div>
-                            <div>{toView.id}</div>
+                            <div className="font-medium text-gray-600">Branch Code</div>
+                            <div>{toView.code}</div>
 
                             <div className="font-medium text-gray-600">Status</div>
-                            <div>{toView.branchStatus}</div>
+                            <div>{toView.status}</div>
 
                             <div className="font-medium text-gray-600">Internal</div>
                             <div>{toView.isInternal ? "Yes" : "No"}</div>

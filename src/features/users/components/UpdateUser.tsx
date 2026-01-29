@@ -31,16 +31,16 @@ export function UpdateUser({ toUpdate, setUpdate, setReload }: Props) {
     const [user, setUser] = useState<User>(toUpdate);
 
     const selectedBranch = branches!.find(
-        (i) => i.branchId === Number(user.branch!.branchId)
+        (i) => i.id === Number(user.branch!.id)
     );
 
     useEffect(() => {
         if (branches!.length > 0 && user.branch) {
-            const foundBranch = branches!.find(b => b.branchId === user.branch!.branchId);
+            const foundBranch = branches!.find(b => b.id === user.branch!.id);
             if (foundBranch) {
                 setUser(prev => ({
                     ...prev,
-                    branchId: String(foundBranch.branchId),
+                    branchId: String(foundBranch.id),
                     role: user.role
                 }));
             }
@@ -86,10 +86,10 @@ export function UpdateUser({ toUpdate, setUpdate, setReload }: Props) {
                                     branchId: value
                                 }))} 
                             >
-                                <SelectTrigger className="w-full border-1 border-dark">
+                                <SelectTrigger className="w-full border border-dark">
                                     <SelectValue 
                                         className="block w-[100px] truncate"
-                                        placeholder={selectedBranch ? `${selectedBranch.branchName} Branch` : "Select Branch"}
+                                        placeholder={selectedBranch ? `${selectedBranch.name} Branch` : "Select Branch"}
                                     />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -100,8 +100,8 @@ export function UpdateUser({ toUpdate, setUpdate, setReload }: Props) {
                                             placeholder="Search for branch"
                                         />
                                         {filteredItems.map((branch) => (
-                                            <SelectItem value={ String(branch.branchId) } key={ branch.branchId! }>
-                                                <span>{ branch.branchName } Branch</span>
+                                            <SelectItem value={ String(branch.id) } key={ branch.id! }>
+                                                <span>{ branch.name } Branch</span>
                                             </SelectItem>
                                         ))}
                                     </SelectGroup>
@@ -119,11 +119,11 @@ export function UpdateUser({ toUpdate, setUpdate, setReload }: Props) {
                                 }))
                             }}>
                                 <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="FRANCHISOR" className="border-1 border-gray" id="r1" />
+                                    <RadioGroupItem value="FRANCHISOR" className="border border-gray" id="r1" />
                                     <Label htmlFor="r1">Franchisor</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="FRANCHISEE" className="border-1 border-gray" id="r2" />
+                                    <RadioGroupItem value="FRANCHISEE" className="border border-gray" id="r2" />
                                     <Label htmlFor="r2">Franchisee</Label>
                                 </div>
                             </RadioGroup>

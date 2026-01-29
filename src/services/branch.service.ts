@@ -22,12 +22,12 @@ export class BranchService {
     static async addBranch(branch: Branch) {
         const payload = {
             ...branch,
-            branchName: `Krispy Papi ${branch.branchName}`,
+            name: `Krispy Papi ${branch.name}`,
             zipCode: Number(branch.zipCode),
         };
 
         return await requestData(
-            `${url}/add`,
+            `${url}/create`,
             "POST",
             undefined,
             payload
@@ -41,7 +41,7 @@ export class BranchService {
         };
 
         return await requestData(
-            `${url}/update-branch`,
+            `${url}/update`,
             "POST",
             undefined,
             payload

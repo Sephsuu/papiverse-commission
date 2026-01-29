@@ -49,7 +49,7 @@ export function CreateBranch({ setOpen, setReload }: Props) {
             }
             const data = await BranchService.addBranch(branch);
             if (data) {
-                toast.success(`Branch ${branch.branchName} registered successfully!`);
+                toast.success(`Branch ${branch.name} registered successfully!`);
                 setReload(prev => !prev);
                 setProcess(false);
                 setOpen(!open);
@@ -86,12 +86,12 @@ export function CreateBranch({ setOpen, setReload }: Props) {
                         <div className="col-span-2 font-semibold">Branch Details</div>
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>Branch Name</div>
-                            <div className="flex border-1 border-gray rounded-md max-md:w-full">
+                            <div className="flex border border-gray rounded-md max-md:w-full">
                                 <input value="Krispy Papi" className="w-24 text-center border-0" readOnly />
                                 <Input    
                                     className="w-full" 
-                                    name ="branchName"  
-                                    value={branch.branchName}
+                                    name ="name"  
+                                    value={branch.name}
                                     onChange={ e => handleChange(e, setBranch)}
                                 />
                             </div>
@@ -99,13 +99,13 @@ export function CreateBranch({ setOpen, setReload }: Props) {
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>Branch Status</div>
                             <Select 
-                                value={ branch.branchStatus ?? "" }
+                                value={ branch.status ?? "" }
                                 onValueChange={ (value) => setBranch(prev => ({
                                     ...prev,
-                                    branchStatus: value
+                                    status: value
                                 }))}
                             >
-                                <SelectTrigger className="w-full border-1 border-gray" name="branchStatus">
+                                <SelectTrigger className="w-full border border-gray" name="branchStatus">
                                     <SelectValue placeholder="Select Status" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -131,11 +131,11 @@ export function CreateBranch({ setOpen, setReload }: Props) {
                                 }}
                             >
                                 <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="true" className="border-1 border-dark" id="r1" />
+                                    <RadioGroupItem value="true" className="border border-dark" id="r1" />
                                     <Label htmlFor="r1">Internal Branch</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="false" className="border-1 border-dark" id="r2" />
+                                    <RadioGroupItem value="false" className="border border-dark" id="r2" />
                                     <Label htmlFor="r2">External Branch</Label>
                                 </div>
                             </RadioGroup>
@@ -144,7 +144,7 @@ export function CreateBranch({ setOpen, setReload }: Props) {
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>Street Address</div>
                             <Input    
-                                className="w-full border-1 border-gray max-md:w-full" 
+                                className="w-full border border-gray max-md:w-full" 
                                 name ="streetAddress"  
                                 value={branch.streetAddress}
                                 onChange={ e => handleChange(e, setBranch)}
@@ -153,7 +153,7 @@ export function CreateBranch({ setOpen, setReload }: Props) {
                         <div className="flex flex-col gap-1">
                             <div>Barangay</div>
                             <Input    
-                                className="w-full border-1 border-gray max-md:w-full" 
+                                className="w-full border border-gray max-md:w-full" 
                                 name ="barangay"  
                                 value={branch.barangay}
                                 onChange={ e => handleChange(e, setBranch)}
@@ -162,7 +162,7 @@ export function CreateBranch({ setOpen, setReload }: Props) {
                         <div className="flex flex-col gap-1">
                             <div>Municipality/City</div>
                             <Input    
-                                className="w-full border-1 border-gray max-md:w-full" 
+                                className="w-full border border-gray max-md:w-full" 
                                 name ="city"  
                                 value={branch.city}
                                 onChange={ e => handleChange(e, setBranch)}
@@ -171,16 +171,25 @@ export function CreateBranch({ setOpen, setReload }: Props) {
                         <div className="flex flex-col gap-1">
                             <div>Province</div>
                             <Input    
-                                className="w-full border-1 border-gray max-md:w-full" 
+                                className="w-full border border-gray max-md:w-full" 
                                 name ="province"  
                                 value={branch.province}
                                 onChange={ e => handleChange(e, setBranch)}
                             />
                         </div>
                         <div className="flex flex-col gap-1">
+                            <div>Code</div>
+                            <Input    
+                                className="w-full border border-gray max-md:w-full" 
+                                name ="code"  
+                                value={branch.code}
+                                onChange={ e => handleChange(e, setBranch)}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1 col-span-2">
                             <div>Zip Code</div>
                             <Input    
-                                className="w-full border-1 border-gray max-md:w-full" 
+                                className="w-full border border-gray max-md:w-full" 
                                 name ="zipCode"  
                                 value={branch.zipCode}
                                 onChange={ e => handleChange(e, setBranch)}

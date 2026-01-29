@@ -32,7 +32,7 @@ export function BranchesPage() {
     const [filter, setFilter] = useState(filters[0]);
 
     const { data, loading } = useFetchData<Branch>(BranchService.getAllBranches, [reload]);
-    const { search, setSearch, filteredItems } = useSearchFilter(data, ['branchName']);
+    const { search, setSearch, filteredItems } = useSearchFilter(data, ['name']);
 
     const filteredData = filteredItems.filter(i => {
         if (filter === 'Internal Branch') return i.isInternal;
@@ -71,13 +71,13 @@ export function BranchesPage() {
                     {paginated.length > 0 ? (
                         paginated.map((item, index) => (
                             <div className="tdata grid grid-cols-5" key={index}>
-                                <div className="td">{ item.branchName }</div>
-                                <div className="td col-span-2 break-words">
+                                <div className="td">{ item.name }</div>
+                                <div className="td col-span-2 wrap-break-words">
                                     {`${item.streetAddress}, ${item.barangay}, ${item.city}, ${item.province}`}
                                 </div>
                                 <div className="td">
                                     <OrderStatusBadge 
-                                        className={`!text-dark !text-xs ${item.isInternal ? "bg-[#e9e0c1]" : "bg-slate-200"}`} 
+                                        className={`text-dark! text-xs! ${item.isInternal ? "bg-[#e9e0c1]" : "bg-slate-200"}`} 
                                         status={item.isInternal ? "Internal Branch" : "External Branch"} 
                                     />
                                 </div>

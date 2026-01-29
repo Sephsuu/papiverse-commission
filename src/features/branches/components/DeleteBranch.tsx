@@ -20,8 +20,8 @@ export function DeleteBranch({ toDelete, setDelete, setReload }: Props) {
     async function handleDelete() {
         try {
             setProcess(true);
-            await BranchService.deleteBranch(toDelete.branchId!);
-            toast.success(`Branch ${toDelete.branchName} deleted successfully.`)
+            await BranchService.deleteBranch(toDelete.id!);
+            toast.success(`Branch ${toDelete.name} deleted successfully.`)
         } catch (error) { toast.error(`${error}`) }
         finally { 
             setProcess(false); 
@@ -35,7 +35,7 @@ export function DeleteBranch({ toDelete, setDelete, setReload }: Props) {
             <DialogContent>
                 <ModalTitle 
                     label="Delete" 
-                    spanLabel={ `${toDelete.branchName}?` } 
+                    spanLabel={ `${toDelete.name}?` } 
                     spanLabelClassName="!text-darkred"
                 />
                     <form 
