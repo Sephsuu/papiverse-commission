@@ -28,14 +28,14 @@ interface Props {
     selectedItems: SupplyItem[];
     setActiveForm: (i: string) => void;
     onSelect: (i: string) => void;
-    onQuantityChange: (code: string, quantity: number) => void;
+    onQuantityChange: (sku: string, quantity: number) => void;
     onRemove: (i: string) => void;
     toEdit?: false | boolean,
     className?: string;
 }
 
 export function MeatOrder({ supplies, selectedItems, setActiveForm, onSelect, onQuantityChange, onRemove, toEdit, className }: Props) {
-    const { search, setSearch, filteredItems: filteredSupplies } = useSearchFilter(supplies, ['name', 'code'])
+    const { search, setSearch, filteredItems: filteredSupplies } = useSearchFilter(supplies, ['name', 'sku'])
 
     const handleSubmit = async () => {
         if (selectedItems.length > 0) {
@@ -53,7 +53,7 @@ export function MeatOrder({ supplies, selectedItems, setActiveForm, onSelect, on
             )}
 
             <div>
-                <div className="thead grid grid-cols-8 !bg-[#ead09f]">
+                <div className="thead grid grid-cols-8 bg-[#ead09f]!">
                     {columns.map((item, _) => (
                         <div key={_} className={`th ${item.style}`}>{ item.title }</div>
                     ))}
@@ -61,8 +61,8 @@ export function MeatOrder({ supplies, selectedItems, setActiveForm, onSelect, on
                 
                 {selectedItems.filter(i => i.category === 'MEAT').map((item, index) => (
                     <div className="tdata grid grid-cols-8" key={index}>
-                        <div className="td">{ item.code }</div>
-                        <div className="td !p-0">
+                        <div className="td">{ item.sku }</div>
+                        <div className="td p-0!">
                             <Input
                                 type="number"
                                 min="1"
@@ -70,7 +70,7 @@ export function MeatOrder({ supplies, selectedItems, setActiveForm, onSelect, on
                                 onChange={(e) => {
                                     const value = e.target.value;
                                     if (value === "") {
-                                        onQuantityChange(item.code!, 0);
+                                        onQuantityChange(item.sku!, 0);
                                         return;
                                     }
                                     let num = Number(value);
@@ -78,7 +78,7 @@ export function MeatOrder({ supplies, selectedItems, setActiveForm, onSelect, on
                                         num = 1;
                                     }
                                     num = Number(String(num));
-                                    onQuantityChange(item.code!, num);
+                                    onQuantityChange(item.sku!, num);
                                 }}
                                 className="text-[16px] font-semibold w-18 border-0 pl-2"
                             />
@@ -92,8 +92,8 @@ export function MeatOrder({ supplies, selectedItems, setActiveForm, onSelect, on
                                 type="button"
                                 variant="secondary" 
                                 size="sm"
-                                onClick={() => onRemove(item.code!)}
-                                className="!h-fit py-1 my-auto"
+                                onClick={() => onRemove(item.sku!)}
+                                className="h-fit! py-1 my-auto"
                             >
                                 <Trash2 className="text-darkred" />
                             </Button>
@@ -113,7 +113,7 @@ export function MeatOrder({ supplies, selectedItems, setActiveForm, onSelect, on
                                 />
                                 <SelectLabel>Meat Supplies</SelectLabel>
                                 {filteredSupplies.map((item) => (
-                                    <SelectItem key={item.code} value={item.code!}>{item.code} - {item.name}</SelectItem>
+                                    <SelectItem key={item.sku} value={item.sku!}>{item.sku} - {item.name}</SelectItem>
                                 ))}
                             </SelectGroup>
                         </SelectContent>
@@ -128,7 +128,7 @@ export function MeatOrder({ supplies, selectedItems, setActiveForm, onSelect, on
                     </Link>
                     <Button 
                         onClick={ () => handleSubmit() } 
-                        className="!bg-darkbrown text-light hover:opacity-90"
+                        className="bg-darkbrown text-light hover:opacity-90"
                     >
                         Proceed
                     </Button>

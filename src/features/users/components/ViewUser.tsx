@@ -59,7 +59,7 @@ export function ViewUser({
 
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                         <div className="font-medium text-gray-600">Branch</div>
-                        <div>{toView.branch?.branchName}</div>
+                        <div>{toView.branch?.name}</div>
 
                         <div className="font-medium text-gray-600">City</div>
                         <div>{toView.branch?.city}</div>
@@ -68,12 +68,8 @@ export function ViewUser({
                         <div>{toView.branch?.province}</div>
 
                         <div className="font-medium text-gray-600">Status</div>
-                        <div>{toView.branch?.branchStatus}</div>
+                        <div>{toView.branch?.status}</div>
                     </div>
-                </div>
-
-                <div className="flex justify-end mt-5">
-                    <DialogClose className="text-sm">Close</DialogClose>
                 </div>
             </DialogContent>
         </Dialog>

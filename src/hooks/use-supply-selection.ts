@@ -19,14 +19,14 @@ export function useSupplySelection(claims: Claim, supplyItems: Supply[]) {
         }
     }, [supplyItems, claims.branch.isInternal]);
 
-    const handleSelect = async (code: string) => {
-        if (!selectedItems.find((item: SupplyItem) => item.code === code)) {
-            const selectedItem = supplies.find((item) => item.code === code);
+    const handleSelect = async (sku: string) => {
+        if (!selectedItems.find((item: SupplyItem) => item.sku === sku)) {
+            const selectedItem = supplies.find((item) => item.sku === sku);
             if (selectedItem) {
                 setSelectedItems([
                 ...selectedItems,
                 {
-                    code,
+                    sku,
                     name: selectedItem.name,
                     quantity: 1,
                     unitMeasurement: selectedItem.unitMeasurement,
@@ -35,22 +35,22 @@ export function useSupplySelection(claims: Claim, supplyItems: Supply[]) {
                 },
                 ]);
             } else {
-                console.warn(`Item with code ${code} not found.`);
+                console.warn(`Item with sku ${sku} not found.`);
             }
         }
     };
 
-    const handleQuantityChange = async (code: string, quantity: number) => {
+    const handleQuantityChange = async (sku: string, quantity: number) => {
         setSelectedItems(
         selectedItems.map((item: SupplyItem) =>
-            item.code === code ? { ...item, quantity: Number(quantity) || 0 } : item
+            item.sku === sku ? { ...item, quantity: Number(quantity) || 0 } : item
         )
         );
     };
 
-    const handleRemove = async (code: string) => {
+    const handleRemove = async (sku: string) => {
         setSelectedItems(
-        selectedItems.filter((item: SupplyItem) => item.code !== code)
+        selectedItems.filter((item: SupplyItem) => item.sku !== sku)
         );
     };
 

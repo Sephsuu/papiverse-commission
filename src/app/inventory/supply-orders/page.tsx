@@ -1,4 +1,4 @@
-import { SupplyOrdersPage } from "@/features/_supply-orders-v2/SupplyOrdersPage";
+import { SupplyOrdersPage } from "@/features/supply-orders/SupplyOrdersPage"
 
 export default function SupplyOrders() {
     return (

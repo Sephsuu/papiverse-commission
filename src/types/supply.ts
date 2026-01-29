@@ -1,6 +1,6 @@
 export type Supply = {
     id?: number;
-    code?: string;
+    sku?: string;
     name?: string;
     isDeliverables?: boolean;
     unitQuantity?: number;
@@ -15,7 +15,7 @@ export type Supply = {
 }
 
 export const supplyInit: Supply = {
-    code: "",
+    sku: "",
     name: "",
     isDeliverables: true,
     unitQuantity: 0,
@@ -29,7 +29,7 @@ export const supplyInit: Supply = {
 };
 
 export const supplyFields: (keyof Supply)[] = [
-    "code",
+    "sku",
     "name",
     "unitQuantity",
     "unitMeasurement",

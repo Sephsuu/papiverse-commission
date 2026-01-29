@@ -1,7 +1,9 @@
+import { Supply } from "./supply";
+
 export interface Inventory {
     id?: number;
     orderId?: number;
-    code?: string;
+    sku?: string;
     name?: string;
     unitPrice?: number;
     unitMeasurement?: string;
@@ -18,6 +20,16 @@ export interface Inventory {
     type?: string;
     source?: string;
     unitType?: string;
+}
+
+export interface DetailedCommissary {
+    totalOut: number;
+    totalIn: number;
+    currentInventory: number;
+    stockLevel: string;
+    previousInventory: number;
+     
+    rawMaterial: Partial<Supply>
 }
 
 export const inventoryInit: Inventory = {

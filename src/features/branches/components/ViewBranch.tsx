@@ -15,7 +15,7 @@ export function ViewBranch({
             <DialogContent className="max-h-10/11 overflow-y-auto">
                 <ModalTitle
                     label="Branch Information"
-                    spanLabel={toView.branchName}
+                    spanLabel={toView.name}
                 />
 
                 <div className="space-y-4 text-sm">
@@ -24,7 +24,7 @@ export function ViewBranch({
 
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                             <div className="font-medium text-gray-600">Branch ID</div>
-                            <div>{toView.branchId}</div>
+                            <div>{toView.id}</div>
 
                             <div className="font-medium text-gray-600">Status</div>
                             <div>{toView.branchStatus}</div>

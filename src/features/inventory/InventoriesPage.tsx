@@ -76,7 +76,7 @@ export function InventoriesPage() {
             />
 
             <div className="table-wrapper">
-                <div className="thead grid grid-cols-6 max-md:!w-250">
+                <div className="thead grid grid-cols-6 max-md:w-250!">
                     {columns.map((item, _) => (
                         <div key={_} className={`th ${item.style}`}>{ item.title }</div>
                     ))}
@@ -86,12 +86,12 @@ export function InventoriesPage() {
                     {paginated.length > 0 ?
                         paginated.map((item, index) => (
                             <div 
-                                className={`tdata grid grid-cols-6 max-md:!w-250 ${item.stockLevel === 'GOOD' ? "" : item.stockLevel === 'WARNING' ? "!bg-orange-100" : item.stockLevel === 'DANGER' ? "!bg-red-100" : "!bg-red-200"}
+                                className={`tdata grid grid-cols-6 max-md:w-250! ${item.stockLevel === 'GOOD' ? "" : item.stockLevel === 'WARNING' ? "bg-orange-100!" : item.stockLevel === 'DANGER' ? "bg-red-100!" : "bg-red-200!"}
 
                                 `}
                                 key={ index }
                             >
-                                <div className="td">{ item.code }</div>
+                                <div className="td">{ item.sku }</div>
                                 <div className="td flex gap-2">
                                     <Tooltip>
                                         <TooltipTrigger>
@@ -106,7 +106,7 @@ export function InventoriesPage() {
                                 </div>
                                 <Tooltip>
                                     <TooltipTrigger 
-                                        className={`td text-start ${item.stockLevel === 'GOOD' ? "!text-darkgreen" : item.stockLevel === 'WARNING' ? "text-darkorange" : item.stockLevel === 'DANGER' ? "text-darkred" : "text-red-950"}`}
+                                        className={`td text-start ${item.stockLevel === 'GOOD' ? "text-darkgreen!" : item.stockLevel === 'WARNING' ? "text-darkorange" : item.stockLevel === 'DANGER' ? "text-darkred" : "text-red-950"}`}
                                     >
                                         <span className="font-semibold">{ item.quantity?.toFixed(2) }</span> { item.unitMeasurement }
                                     </TooltipTrigger>
@@ -128,10 +128,13 @@ export function InventoriesPage() {
                                     <span className="font-semibold">
                                         { item.convertedQuantity?.toFixed(2) ?? 'N/A' }</span> { item.convertedMeasurement }
                                 </div>
-                                <div className="td text-right">
-                                    { item.category === 'NONDELIVERABLES' ? <OrderStatusBadge className="ms-auto scale-110 bg-slate-200 !text-dark" status="NON DELIVERABLE" /> : formatToPeso(item.unitPrice!) }
+                                <div className="td justify-between">
+                                    { item.category === 'NONDELIVERABLES' 
+                                        ? <OrderStatusBadge className="ms-auto scale-110 bg-slate-200 text-dark!" status="NON DELIVERABLE" /> 
+                                        : <><div>₱</div><div>{formatToPeso(item.unitPrice!).slice(1,)}</div></>
+                                    }
                                 </div>
-                                <div className="td flex-center-y gap-2 mx-auto">
+                                <div className="flex-center-y gap-2 mx-auto">
                                     <button onClick={ () => setUpdate(item) }><SquarePen className="w-4 h-4 text-darkgreen" /></button>
                                     <button onClick={() => setView(item) }><Info className="w-4 h-4" /></button>
                                     <button onClick={() => setViewItem(item) }><LayoutList className="w-4 h-4" /></button>

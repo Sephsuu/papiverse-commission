@@ -57,7 +57,7 @@ export class InventoryService {
         "POST",
         undefined,
         {
-          rawMaterialCode: inventory.code,
+          rawMaterialCode: inventory.sku,
           branchId: inventory.branchId,
           changedQuantity: inventory.changedQuantity,
           type: inventory.type,

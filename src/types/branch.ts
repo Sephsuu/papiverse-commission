@@ -8,7 +8,7 @@ export type Branch = {
     branchStatus: string;
     isInternal: boolean;
 
-	branchId?: number;
+	id?: number;
 };
 
 export const branchInit: Branch = {

@@ -85,7 +85,7 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
                     <Button
                         key={i}
                         onClick={ () => setTab(item) }
-                        className={`w-30 rounded-full !bg-slate-50 text-dark hover:opacity-50 ${tab === item && "!bg-darkbrown text-light hover:opacity-100"}`}
+                        className={`w-30 rounded-full bg-slate-50! text-dark hover:opacity-50 ${tab === item && "bg-darkbrown! text-light hover:opacity-100"}`}
                     >
                         { item }
                     </Button>
@@ -110,7 +110,7 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
                 </Button>
                 <Button 
                     onClick={ () => setOpen(true) }
-                    className="px-4 !bg-darkgreen hover:opacity-90"
+                    className="px-4 bg-darkgreen! hover:opacity-90"
                 >
                     Order Supplies
                 </Button>
@@ -162,7 +162,7 @@ function Orders({ tab, orders, delivery, meatTotal, snowTotal }: {
                 </div>
                 <div className="text-sm flex-center-y gap-2">
                     <span className="font-bold">Status: </span>
-                    <OrderStatusBadge className="scale-110 bg-slate-200 !text-dark" status="NO STATUS" />
+                    <OrderStatusBadge className="scale-110 bg-slate-200 text-dark!" status="NO STATUS" />
                 </div>
                 <div className="text-sm ms-auto inline-block"><span className="font-bold">Date</span> { formatDateToWords(new Date().toLocaleDateString() ) }</div>
                 <div className="text-sm"><span className="font-bold">Tel No: </span>{ "09475453783" }</div>

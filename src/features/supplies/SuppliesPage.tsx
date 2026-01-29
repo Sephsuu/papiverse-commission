@@ -40,6 +40,7 @@ const franchiseeColumns = [
     { title: "Base Measurement", style: "" },
     { title: "Converted Measurement", style: "" },
     { title: "Price", style: "text-right" },
+    { title: "Minimum Stock Required", style: "text-right" },
 ]
 
 
@@ -85,7 +86,7 @@ export function SuppliesPage() {
             />
 
             <div className="table-wrapper">
-                <div className={`thead grid max-md:!w-250 ${isFranchisor ? "grid-cols-8" : "grid-cols-6"}`}>
+                <div className={`thead grid max-md:w-250! ${isFranchisor ? "grid-cols-8" : "grid-cols-6"}`}>
                     {(isFranchisor ? columns : franchiseeColumns).map((item, index) => (
                         <div key={index} className={`th ${item.style}`}>{item.title}</div>
                     ))}                     
@@ -94,8 +95,8 @@ export function SuppliesPage() {
                 <div className="animate-fade-in-up" key={`${page}-${filter}`}>
                     {paginated.length > 0 ?
                         paginated.map((item, index) => (
-                            <div className={`tdata grid max-md:!w-250 ${isFranchisor ? "grid-cols-8" : "grid-cols-6"}`} key={ index }>
-                                <div onClick={ () => setView(item) } className="td">{ item.code }</div>
+                            <div className={`tdata grid max-md:w-250! ${isFranchisor ? "grid-cols-8" : "grid-cols-6"}`} key={ index }>
+                                <div onClick={ () => setView(item) } className="td">{ item.sku }</div>
                                 <div className="td flex gap-2">
                                     <Tooltip>
                                         <TooltipTrigger>
@@ -115,21 +116,36 @@ export function SuppliesPage() {
                                         : <div className="text-darkred font-semibold">N/A</div>}
                                 </div>
                                 {!isFranchisor && (
-                                    <div className="td text-right">
-                                        { !item.isDeliverables ? <OrderStatusBadge className="scale-110 bg-slate-200 !text-dark" status="NON DELIVERABLE" /> : formatToPeso(claims.branch.isInternal ? item.unitPriceInternal! : item.unitPriceExternal!) }
+                                    <div className="td justify-between">
+                                        { !item.isDeliverables 
+                                            ? <OrderStatusBadge className="scale-110 bg-slate-200 text-dark!" status="NON DELIVERABLE" /> 
+                                            : <>
+                                                <div>₱</div>
+                                                <div>{formatToPeso(claims.branch.isInternal ? item.unitPriceInternal! : item.unitPriceExternal!).slice(1,)}</div>
+                                            </> }
                                     </div>
                                 )}
                                 <div className={`td`}>
                                     { item.minStock } { item.unitMeasurement ?? '' }
                                 </div>
                                 {isFranchisor && (
-                                    <><div className="td text-right">
-                                        { !item.isDeliverables ? <OrderStatusBadge className="scale-110 bg-slate-200 !text-dark" status="NON DELIVERABLE" /> : formatToPeso(item.unitPriceInternal!) }
+                                    <><div className="td justify-between">
+                                        { !item.isDeliverables 
+                                            ? <OrderStatusBadge className="scale-110 bg-slate-200 text-dark!" status="NON DELIVERABLE" /> 
+                                            : <>
+                                                <div>₱</div>
+                                                <div>{formatToPeso(item.unitPriceInternal!).slice(1,)}</div>
+                                            </> }
                                     </div>
-                                    <div className="td text-right">
-                                        { !item.isDeliverables ? <OrderStatusBadge className="scale-110 bg-slate-200 !text-dark" status="NON DELIVERABLE" /> : formatToPeso(item.unitPriceExternal!) }
+                                    <div className="td justify-between">
+                                        { !item.isDeliverables 
+                                            ? <OrderStatusBadge className="scale-110 bg-slate-200 text-dark!" status="NON DELIVERABLE" /> 
+                                            : <>
+                                                <div>₱</div>
+                                                <div>{formatToPeso(item.unitPriceExternal!).slice(1,)}</div>
+                                            </> }
                                     </div>
-                                    <div className="td flex-center-y gap-2 mx-auto">
+                                    <div className="flex-center-y gap-2 mx-auto">
                                         <button onClick={ () => setUpdate(item) }><SquarePen className="w-4 h-4 text-darkgreen" /></button>
                                         <button onClick={ () => setView(item) }><Info className="w-4 h-4" /></button>
                                         <button

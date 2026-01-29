@@ -44,7 +44,7 @@ export interface SupplyOrder {
 export interface SupplyItem {
     id?: number;
     category?: string;        
-    code?: string;          
+    sku?: string;          
     name?: string;           
     quantity?: any;        
     unitMeasurement?: string; 
@@ -64,7 +64,7 @@ export interface CompleteOrder {
 }
 
 interface OrderItem {
-    code?: string;
+    sku?: string;
     quantity?: number;
 }   
 

@@ -17,14 +17,14 @@ export interface User {
     imageUrl?: string;
     confirmPassword?: string;
     branch?: {
-        branchId: number;
-        branchName: string;
+        id: number;
+        name: string;
         streetAddress: string;
         barangay : string;
         city : string;
         province : string;
         isInternal : boolean;
-        branchStatus : string;
+        status : string;
     }
 }
 
@@ -43,14 +43,14 @@ export const userInit: User = {
     branchId: "",
     role: "",
     branch: {
-        branchId: 0,
-        branchName: "",
+        id: 0,
+        name: "",
         streetAddress: "",
         barangay : "",
         city : "",
         province : "",
         isInternal : false,
-        branchStatus : ""
+        status : ""
     }
 };
 

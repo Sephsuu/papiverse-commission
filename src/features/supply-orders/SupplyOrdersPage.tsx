@@ -41,7 +41,7 @@ export function SupplyOrdersPage() {
     const { search, setSearch, filteredItems } = useSearchFilter(data, ['branchName', 'snowfrostCategory.snowFrostOrderId', 'meatCategory.meatOrderId']);
     const { data: branches, loading: branhesLoading } = useFetchData(BranchService.getAllBranches);
     
-    const filters = ['All Branches', ...(branches?.map(b => b.branchName) ?? [])];
+    const filters = ['All Branches', ...(branches?.map(b => b.name) ?? [])];
     const [filter, setFilter] = useState<string>('All Branches');
 
     const filteredData = filteredItems.filter(i => {
@@ -59,7 +59,7 @@ export function SupplyOrdersPage() {
 
     if (loading || authLoading || branhesLoading) return <PapiverseLoading />
     return(
-        <section className="stack-md py-8 animate-fade-in-up overflow-hidden max-md:mt-12">
+        <section className="stack-md animate-fade-in-up overflow-hidden max-md:mt-12">
             <AppHeader label='Supply Orders' />
             <AppTabSwitcher
                 tabs={ tabs }

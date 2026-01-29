@@ -94,7 +94,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                         <Button
                             key={i}
                             onClick={ () => setTab(item) }
-                            className={`w-30 rounded-full !bg-slate-50 text-dark hover:opacity-50 ${tab === item && "!bg-darkbrown text-light hover:opacity-100"}`}
+                            className={`w-30 rounded-full bg-slate-50! text-dark hover:opacity-50 ${tab === item && "bg-darkbrown! text-light hover:opacity-100"}`}
                         >
                             { item }
                         </Button>
@@ -104,13 +104,13 @@ export function ViewOrderPage({ id }: { id: number }) {
                     {claims.roles[0] === 'FRANCHISOR' && (
                         <>
                             <Button 
-                                className="!bg-darkred hover:opacity-90" 
+                                className="bg-darkred! hover:opacity-90" 
                                 onClick={ () => setReject(true) }
                                 disabled={ ["APPROVED", "DELIVERED", "REJECTED"].includes(data!.status!) }
                             >
                                 <FormLoader onProcess={ onProcess } label="Reject Order" loadingLabel="Rejecting Order" />
                             </Button>
-                            <Button className="!bg-darkgreen hover:opacity-90" 
+                            <Button className="bg-darkgreen! hover:opacity-90" 
                                 disabled={ enableSave(meatApproved!, snowApproved!) }
                                 onClick={ () => setOpen(true) }
                             >
@@ -125,7 +125,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                         {!isFranchisor && data?.status === "TO FOLLOW" && ( 
                             <Button
                                 onClick={ () => setEdit(true) }
-                                className="!bg-darkgreen hover:opacity-90"
+                                className="bg-darkgreen! hover:opacity-90"
                             >
                                 Edit Order
                             </Button>
@@ -137,7 +137,7 @@ export function ViewOrderPage({ id }: { id: number }) {
             <div className="relative p-4 bg-white rounded-md shadow-sm animate-fade-in-up" key={tab}>
                 <div className="top-2 left-2 flex-center-y gap-2">
                     <Checkbox id="meat" 
-                        className="border-1 border-gray shadow-sm w-5 h-5 data-[state=checked]:bg-darkgreen" 
+                        className="border border-gray shadow-sm w-5 h-5 data-[state=checked]:bg-darkgreen" 
                         checked={ tab === 'Snow Order' ? snowApproved : meatApproved }
                         onCheckedChange={(checked: boolean) => { tab === 'Snow Order' ? setSnowApproved(checked) : setMeatApproved(checked)}}
                         disabled={ ["APPROVED", "DELIVERED", "REJECTED"].includes(data!.status!) || !isFranchisor }
@@ -202,7 +202,7 @@ export function ViewOrderPage({ id }: { id: number }) {
             </div>
 
             {data?.remarks && (
-                <div className="border-1 border-dashed border-gray w-full bg-light p-4">
+                <div className="border border-dashed border-gray w-full bg-light p-4">
                     <span className="font-semibold">Commisary Remarks: </span> { data?.remarks }
                 </div>
             )}
@@ -238,7 +238,7 @@ function Orders({ orders, inventories }: {
     return (
         <>
             {orders.map((item, i) => {
-                const currentStock = inventories.find(i => i.code === item.rawMaterialCode)?.quantity;
+                const currentStock = inventories.find(i => i.sku === item.rawMaterialCode)?.quantity;
                 return (
                     <div className="tdata grid grid-cols-[60px_1fr_1fr_100px_1fr_1fr]" key={i}>
                         <div className="td text-center">{ i + 1 }</div>

@@ -28,7 +28,7 @@ export function CreateUser({ setOpen, setReload }: {
     setReload: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
     const { data, loading, error } = useFetchData(BranchService.getAllBranches);
-    const { search, setSearch, filteredItems } = useSearchFilter(data, ['branchName']);
+    const { search, setSearch, filteredItems } = useSearchFilter(data, ['name']);
     
     const [onProcess, setProcess] = useState(false);
 
@@ -221,8 +221,8 @@ export function CreateUser({ setOpen, setReload }: {
                                             placeholder="Search for branch"
                                         />
                                         {filteredItems.map((branch) => (
-                                            <SelectItem value={ String(branch.branchId) } key={ branch.branchId! }>
-                                                <span>{ branch.branchName } Branch</span>
+                                            <SelectItem value={ String(branch.id) } key={ branch.id! }>
+                                                <span>{ branch.name } Branch</span>
                                             </SelectItem>
                                         ))}
                                     </SelectGroup>

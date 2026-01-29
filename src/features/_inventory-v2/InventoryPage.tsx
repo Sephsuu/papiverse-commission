@@ -17,6 +17,7 @@ export function InventoryPage() {
     );
 
     const [toggleDate, setToggleDate] = useState(false);
+    const [byWeek, setByWeek] = useState(false);
 
     const parsedDate = date ? new Date(date) : null;
 
@@ -40,7 +41,7 @@ export function InventoryPage() {
     return (
         <section className="stack-md py-2 animate-fade-in-up">
             <AppHeader label="Inventory Overview" />
- 
+
             <div
                 onClick={() => setToggleDate(true)}
                 className="flex-center-y gap-3 text-xl font-bold mt-4 bg-white shadow-sm shadow-lightbrown px-4 py-2 rounded-md w-fit cursor-pointer"
@@ -48,15 +49,17 @@ export function InventoryPage() {
                 <CalendarDays />
 
                 <div className="scale-x-110 origin-left">
-                    {displayDate}
+                    {byWeek && parsedDate
+                        ? `${format(parsedDate, "MMM d, yyy")} - ${format(new Date(parsedDate.getTime() + 6 * 24 * 60 * 60 * 1000), "MMM d, yyy")}`
+                        : displayDate
+                    }
                 </div>
 
-                {displayDay && (
-                    <Badge className="bg-darkbrown font-bold ml-4">
-                    {displayDay}
-                    </Badge>
-                )}
+                <Badge className="bg-darkbrown font-bold ml-4">
+                    {byWeek ? "Sun-Sat" : displayDay}
+                </Badge>
             </div>
+        
 
             <Separator className="bg-gray-300 my-4" />
 
@@ -65,6 +68,7 @@ export function InventoryPage() {
                 setDate={setDate}
                 open={toggleDate}
                 setOpen={setToggleDate}
+                setByWeek={setByWeek}
             />
 
             <div className="grid grid-cols-3 gap-4">
@@ -83,6 +87,7 @@ export function InventoryPage() {
             <InventorySummary 
                 className="mt-8"
                 date={date}
+                byWeek={byWeek}
             />
 
             <BranchPurchaseItemSummary 

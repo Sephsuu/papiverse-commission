@@ -6,6 +6,7 @@ import { FranchiseeDashboard } from "./FranchiseeDashboard";
 import { PapiverseLoading } from "@/components/ui/loader";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { InventoriesPage } from "../inventory/InventoriesPage";
 
 export function DashboardPage() {
     const router = useRouter();
@@ -19,5 +20,6 @@ export function DashboardPage() {
     
     if (loading) return <PapiverseLoading />
     if (claims.roles[0] === 'FRANCHISOR') return <AdminDashboard />
-    if (claims.roles[0] === 'FRANCHISEE') return <FranchiseeDashboard />
+    // if (claims.roles[0] === 'FRANCHISEE') return <FranchiseeDashboard />
+    if (claims.roles[0] === 'FRANCHISEE') return <InventoriesPage />
 }

@@ -91,11 +91,11 @@ export function UsersPage() {
                             return (
                                 <Fragment key={ index }>
                                     {loggedUser !== item.id && (
-                                        <div className="tdata grid grid-cols-5 max-md:!w-250">
-                                            <div className="td break-words">{ `${item.lastName}, ${item.firstName} ${item.middleName}` }</div>
+                                        <div className="tdata grid grid-cols-5 max-md:w-250!">
+                                            <div className="td wrap-break-word">{ `${item.lastName}, ${item.firstName} ${item.middleName}` }</div>
                                             <TableDataTooltip content={ item.email! } className="truncate" />
                                             <div className="td-wrap">{ item.username }</div>
-                                            <div className="td break-words">{ item.branch?.branchName }</div>
+                                            <div className="td wrap-break-word">{ item.branch?.name }</div>
                                             <div className="td flex-center-y gap-2 max-md:w-50">
                                                 <button onClick={ () => setUpdate(item) }><SquarePen className="w-4 h-4 text-darkgreen" /></button>
                                                 <button onClick={ () => setView(item) }><Info className="w-4 h-4" /></button>

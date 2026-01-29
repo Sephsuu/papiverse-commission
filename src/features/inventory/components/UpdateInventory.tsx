@@ -73,7 +73,7 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                             <div>SKU ID</div>
                             <Input    
                                 className="w-full border-1 border-gray rounded-md max-md:w-full" 
-                                value={ inventory.code }
+                                value={ inventory.sku }
                                 disabled
                             />  
                         </div>

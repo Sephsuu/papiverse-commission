@@ -28,7 +28,7 @@ export function ViewItemInventoryLog({ toView, setView }: {
     const { data: logs, loading } = useFetchData<InventoryItemLog>(
         InventoryService.getItemAudits,
         [claims.branch.branchId, toView],
-        [claims.branch.branchId, toView.code]
+        [claims.branch.branchId, toView.sku]
     )
     const { page, setPage, size, setSize, paginated, totalPages } = usePagination(logs, 10);
     

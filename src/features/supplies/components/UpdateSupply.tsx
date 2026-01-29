@@ -76,10 +76,10 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                         <div className="flex flex-col gap-1">
                             <div>SKU ID</div>
                             <Input    
-                                className="w-full border-1 border-gray rounded-md max-md:w-full" 
+                                className="w-full border border-gray rounded-md max-md:w-full" 
                                 // placeholder="e.g. RAW001"
                                 // name ="code"  
-                                value={supply.code}
+                                value={supply.sku}
                                 // onChange={ e => handleChange(e, setSupply)}
                                 disabled
                             />  
@@ -93,7 +93,7 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                                     category: value
                                 })) }
                             >
-                                <SelectTrigger className="w-full border-1 border-gray">
+                                <SelectTrigger className="w-full border border-gray">
                                     <SelectValue placeholder="Select Category" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -106,7 +106,7 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>Supply Name</div>
                             <Input    
-                                className="w-full border-1 border-gray rounded-md max-md:w-full" 
+                                className="w-full border border-gray rounded-md max-md:w-full" 
                                 name ="name"  
                                 value={supply.name}
                                 onChange={ e => handleChange(e, setSupply)}
@@ -114,7 +114,7 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                         </div>
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>Unit Measurement</div>
-                            <div className="flex border-1 border-gray rounded-md max-md:w-full">
+                            <div className="flex border border-gray rounded-md max-md:w-full">
                                 <Input    
                                     className="w-full border-0" 
                                     type="number"
@@ -142,7 +142,7 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                         </div>
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>Converted Measurement</div>
-                            <div className="flex border-1 border-gray rounded-md max-md:w-full">
+                            <div className="flex border border-gray rounded-md max-md:w-full">
                                 <Input    
                                     className="w-full border-0" 
                                     type="number"
@@ -170,7 +170,7 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                         </div>
                         <div className="flex flex-col gap-1">
                             <div>Internal Price</div>
-                            <div className="flex border-1 border-gray rounded-md">
+                            <div className="flex border border-gray rounded-md">
                                 <input disabled value="₱" className={`${!supply.isDeliverables && "text-gray"} w-10 text-center`} />
                                 <Input 
                                     type="number"
@@ -184,7 +184,7 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                         </div>
                         <div className="flex flex-col gap-1">
                             <div>External Price</div>
-                            <div className="flex border-1 border-gray rounded-md">
+                            <div className="flex border border-gray rounded-md">
                                 <input disabled value="₱" className={`${!supply.isDeliverables && "text-gray"} w-10 text-center`} />
                                 <Input 
                                     type="number"
@@ -216,7 +216,7 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                     </div>
                     <div className="flex flex-col gap-1">
                         <div>Minimum Required Stock</div>
-                        <div className="flex border-1 border-gray rounded-md">
+                        <div className="flex border border-gray rounded-md">
                             <Input 
                                 type="number"
                                 className="w-full border-0 max-md:w-full" 

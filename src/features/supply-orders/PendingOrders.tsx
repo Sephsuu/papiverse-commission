@@ -29,7 +29,7 @@ export function PendingOrders({ claims, paginated, setReload }: {
     if (!paginated) return <SectionLoading />
     return (
         <section className="table-wrapper animate-fade-in-up">
-            <div className="flex-center-y thead max-md:!w-250">
+            <div className="flex-center-y thead max-md:w-250!">
                 <div className="th"><SquareMinus className="w-4 h-4 mx-auto" strokeWidth={ 3 }/></div>
                 <div className="th"><MessageSquareMore className="w-4 h-4 mx-auto" strokeWidth={ 3 }/></div>
                 <div className="grid grid-cols-5 w-full">
@@ -42,7 +42,7 @@ export function PendingOrders({ claims, paginated, setReload }: {
                 <div className="w-full text-center my-2 text-sm">There are no pending supply orders as of now.</div>
             )}
             {paginated.map((item, i) => (
-                <div className="flex-center-y tdata max-md:!w-250" key={i}>
+                <div className="flex-center-y tdata max-md:w-250!" key={i}>
                     <Link href={`/inventory/supply-orders/${item.orderId}`}>
                         <TableDataTooltip
                             element={<TableOfContents className="w-4 h-4 text-gray mx-auto" strokeWidth={3} />}
@@ -59,8 +59,10 @@ export function PendingOrders({ claims, paginated, setReload }: {
                     <div className="grid grid-cols-5 w-full">
                         <div className="td">{ item.branchName }</div>
                         <div className="td-wrap">{ formatDateTime(item.orderDate) }</div>
-                        <div className="td"><OrderStatusBadge className="mx-auto" status={ item.status } /></div>
                         <div className="td">
+                            <OrderStatusBadge className="mx-auto" status={ item.status } />
+                        </div>
+                        <div className="td flex-col items-start! gap-2">
                             <div>{ item.meatCategory?.meatOrderId }</div>
                             <div>{ item.snowfrostCategory?.snowFrostOrderId }</div>
                         </div>

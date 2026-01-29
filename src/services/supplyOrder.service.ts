@@ -25,6 +25,13 @@ export class SupplyOrderService {
         );
     }
 
+    static async getDetailedCommissary(filter: string, date: string) {
+        return await requestData(
+            `${url}/view-out?filter=${filter}&date=${date}`,
+            "GET"
+        );
+    }
+
     static async createMeatOrder(meat: object) {
         return await requestData(
             `${meatUrl}/create`,

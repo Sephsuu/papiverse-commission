@@ -2,10 +2,15 @@ import { EmptyState } from "@/components/custom/EmptyState";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { SectionLoading } from "@/components/ui/loader";
 import { Separator } from "@/components/ui/separator";
+import { useSidebar } from "@/components/ui/sidebar";
+import { useFetchData } from "@/hooks/use-fetch-data";
 import { useFetchOne } from "@/hooks/use-fetch-one";
 import { usePagination } from "@/hooks/use-pagination";
+import { useToday } from "@/hooks/use-today";
 import { formatDateToWords, formatToPeso } from "@/lib/formatter";
 import { MocksService } from "@/services/mocks.service";
+import { SupplyOrderService } from "@/services/supplyOrder.service";
+import { DetailedCommissary } from "@/types/inventory";
 import { formatDate } from "date-fns";
 import { Ellipsis, Plus } from "lucide-react";
 import Link from "next/link";
@@ -14,24 +19,25 @@ const pageKey = "inventorySummaryPage";
 
 const columns = [
     { title: 'Product Name' , style: '' },
-    { title: 'Final Stocks' , style: '' },
-    { title: 'Total Sold' , style: 'text-center' },
-    { title: 'Gross Sales' , style: '' },
-    { title: 'Net Profit' , style: 'flex justify-end mr-4' },
+    { title: 'Previous Inventory' , style: '' },
+    { title: 'Total In' , style: 'text-center' },
+    { title: 'Total Out' , style: '' },
+    { title: 'Current Inventory' , style: 'flex justify-end mr-4' },
 ]
 
 
-export function InventorySummary({ date, className }: {
+export function InventorySummary({ date, className, byWeek }: {
     date: string
     className?: string
+    byWeek: boolean
 }) {
-    const { data: inventory, loading: loadingInventory } = useFetchOne(
-        MocksService.getInventory1
+    const { data: inventory, loading: loadingInventory } = useFetchData<DetailedCommissary>(
+        SupplyOrderService.getDetailedCommissary,
+        [date, byWeek],
+        [byWeek ? "WEEK" : "CUSTOM_DATE", date]
     );
 
-    const data = inventory?.data ?? [];
-
-    const { page, setPage, size, paginated } = usePagination(data, 10, pageKey);
+    const { page, setPage, size, paginated } = usePagination(inventory, 10, pageKey);
 
     if (loadingInventory) return <SectionLoading />
     return (
@@ -62,25 +68,17 @@ export function InventorySummary({ date, className }: {
                             </div>
                         ))}
                     </div>  
-                    <div className="w-10 flex-center"><Plus className="w-4 h-4" /></div>
                 </div>
                 
-                {paginated.map((item: any) => (
+                {paginated.map((item) => (
                     <div className="flex-center-y tdata">
                         <div className={`w-full grid grid-cols-${columns.length}`}>
-                            <div className="td">{item.product_name}</div>
-                            <div className="td">{Number(item.sales_volume) + Number(item.reorder_level)}</div>
-                            <div className="td">{item.sales_volume}</div>
-                            <div className="td justify-between">
-                                <div>₱</div>
-                                {formatToPeso(Number(item.sales_volume) * Number(item.reorder_level)).slice(1,)}
-                            </div>
-                            <div className="td justify-between">
-                                <div>₱</div>
-                                {formatToPeso(Number(item.sales_volume) * Number(item.reorder_level) / 2).slice(1,)}
-                            </div>
+                            <div className="td">{item.rawMaterial.name}</div>
+                            <div className="td">{item.previousInventory}</div>
+                            <div className="td">{item.totalIn}</div>
+                            <div className="td">{item.totalOut}</div>
+                            <div className="td">{item.currentInventory}</div>
                         </div>
-                        <div className="w-10 flex-center hover:opacity-20! cursor-pointer"><Ellipsis className="w-4 h-4"/></div>
                     </div>
                     
                 ))}
@@ -91,7 +89,7 @@ export function InventorySummary({ date, className }: {
             )}
 
             <TablePagination 
-                data={data}
+                data={inventory}
                 paginated={paginated}
                 page={page}
                 setPage={setPage}
