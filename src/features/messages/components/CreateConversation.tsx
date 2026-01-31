@@ -119,7 +119,7 @@ export function CreateConversation({
                                         {item.firstName} {item.lastName}
                                     </div>
                                     <div className="text-xs text-gray truncate overflow-hidden">
-                                        {item.branch?.branchName}
+                                        {item.branch?.name}
                                     </div>
                                 </div>
 
@@ -147,7 +147,7 @@ export function CreateConversation({
                                 </Avatar>
                                 <div>
                                     <div className="text-sm truncate">{item.firstName} {item.lastName}</div>
-                                    <div className="text-xs text-gray truncate">{item.branch?.branchName}</div>
+                                    <div className="text-xs text-gray truncate">{item.branch?.name}</div>
                                 </div>
 
                                 <button
