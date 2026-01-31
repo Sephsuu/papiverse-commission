@@ -12,3 +12,46 @@
 .animate-fade-in-up {
     animation: fade-in-up 0.3s ease-out forwards;
 }
+
+.reveal{
+    position: relative;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: opacity 2s ease-out, transform 0.6s ease-out;
+}
+.reveal.active{
+    transform: translateY(0px);
+    opacity: 1;
+}
+
+.reveal-down{
+    position: relative;
+    transform: translateY(-100px);
+    opacity: 0;
+    transition: opacity 2s ease-out, transform 0.6s ease-out;
+}
+.reveal-down.active{
+    transform: translateY(0px);
+    opacity: 1;
+}
+
+.reveal-left{
+    position: relative;
+    transform: translateX(150px);
+    opacity: 0;
+    transition: opacity 2s ease-out, transform 0.6s ease-out;
+}
+.reveal-left.active{
+    transform: translateY(0px);
+    opacity: 1;
+}
+.reveal-right{
+    position: relative;
+    transform: translateX(-150px);
+    opacity: 0;
+    transition: opacity 2s ease-out, transform 0.6s ease-out;
+}
+.reveal-right.active{
+    transform: translateY(0px);
+    opacity: 1;
+}

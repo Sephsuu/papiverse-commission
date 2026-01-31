@@ -34,7 +34,7 @@ interface Props {
 }
 
 export function SnowOrder({ supplies, selectedItems, setActiveForm, onSelect, onQuantityChange, onRemove, toEdit, className }: Props) {
-    const { search, setSearch, filteredItems: filteredSupplies } = useSearchFilter(supplies, ['name', 'sku'])
+    const { setSearch, filteredItems: filteredSupplies } = useSearchFilter(supplies, ['name', 'sku'])
 
     const handleSubmit = async () => {
         if (selectedItems.filter(i => i.category === 'SNOWFROST').length > 0) {

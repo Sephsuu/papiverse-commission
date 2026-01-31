@@ -1,0 +1,13 @@
+TASK FOR TODAY
+
+- Add status for availability of the order items
+- Upon having the orders na dapat franchisor cannot approved when the order is not yet paid by the franchisee
+- The franchisee can upload image for evidence a bayad na sya
+- There will be a seperate confirmation for logistic/franchisor and franchisee
+
+-  Confirmation per order item so upon receiving ni franchisee ng approved orderhe can mark it as delivered then check items if it is complete (seperate confirmation din for logistics/franchisor)
+
+Will be needing
+- A page upon receiving siguro checkbox per each order item seperate data yung meat and snow order
+
+- When orders are not complete it will be converted into credits for franchisee

@@ -2,12 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "@/styles/styles.css";
 import "@/styles/table.css";
-import "@/styles/animation.css";
-import { AuthProvider } from "@/hooks/use-auth";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/shared/AppSidebar";
-import { Toaster } from "@/components/ui/toaster";
-import { AppCanvas } from "@/components/shared/AppCanvas";
+import "@/styles/animation.css"
 
 
 export const metadata: Metadata = {
@@ -28,13 +23,7 @@ export default function RootLayout({
       <body
         className={`antialiased`}
       >
-        <AuthProvider>
-          <SidebarProvider className="bg-slate-100 max-w-[2560px] mx-auto">
-            <AppSidebar />
-            <Toaster position="top-center" />
-            <AppCanvas>{ children }</AppCanvas>
-          </SidebarProvider>
-        </AuthProvider>
+        {children}
       </body>
     </html>
   );

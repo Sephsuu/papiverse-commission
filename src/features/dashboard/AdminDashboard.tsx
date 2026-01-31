@@ -13,7 +13,7 @@ import { PapiverseLoading } from "@/components/ui/loader";
 const tabs = ['Sales', 'Employees', 'Expenses'];
 
 export function AdminDashboard() {
-    const { claims, loading: authLoading } = useAuth();
+    const { claims, loading: authLoading} = useAuth();
     const [tab, setTab] = useState('Sales');
     
     const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];

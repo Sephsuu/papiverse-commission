@@ -32,7 +32,7 @@ export function LogsPage() {
         logs: InventoryLog[]
     }>(
         InventoryService.getInventoryAudits,
-        [claims.branch.branchId],
+        [claims.branch.branchId, tab],
         [claims.branch.branchId, tab],
     );
     const { setSearch, filteredItems } = useSearchFilter(data, ['date', 'logs[].dateTime']);

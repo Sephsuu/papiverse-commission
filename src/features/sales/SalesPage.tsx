@@ -22,6 +22,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { MonthPicker } from "../dashboard/components/MonthPicker";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ErrorPage } from "@/components/custom/ErrorPage";
 
 const chartTabs = ['DAY', 'WEEK', 'MONTH'];
 const dateModes = ['Monthly Sales', 'Annual Sales', 'Sales of Custom Range']
@@ -53,7 +54,7 @@ export function SalesPage({ branchId }: {
         ? [branch, startDate, endDate, chartTab]
         : [startDate, endDate, chartTab];
 
-    const { data: salesGraph, loading: graphLoading } = useFetchData(
+    const { data: salesGraph, loading: graphLoading, error: errorSalesGraph } = useFetchData(
         salesGraphService,
         graphParams,
         graphParams
@@ -73,7 +74,7 @@ export function SalesPage({ branchId }: {
         params
     );    
 
-    const { data: paidOrders, loading: paidOrdersLoading } = useFetchData<{
+    const { data: paidOrders, loading: paidOrdersLoading, error: errorPaidOrder } = useFetchData<{
         orderId: string;
         cash: number;
         orderType: string;
@@ -92,6 +93,9 @@ export function SalesPage({ branchId }: {
  
 
     if (loading || authLoading || graphLoading || paidOrdersLoading) return <SectionLoading />
+
+    if (errorSalesGraph) return <ErrorPage error={errorSalesGraph} className="-mt-12" /> 
+    if (errorPaidOrder) return <ErrorPage error={errorPaidOrder} className="-mt-12" /> 
     
     const summary = [
         { title: 'Total Orders', date: formatCustomDate('2025-08-21 22:45:19'), count: data.totalOrders ?? 0  },
