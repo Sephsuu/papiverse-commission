@@ -69,7 +69,7 @@ export function CreateDirectConversation({ setOpen, users, claims, conversations
                                 <AppAvatar fallback="KP" />
                                 <div className="text-start">
                                     <div className="font-semibold text-sm">{ item.firstName } { item.lastName }</div>
-                                    <div className="text-xs text-gray">{ item.branch?.branchName }</div>
+                                    <div className="text-xs text-gray">{ item.branch?.name }</div>
                                 </div>
                             </button>
                         ))}
