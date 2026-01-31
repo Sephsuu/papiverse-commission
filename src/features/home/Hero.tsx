@@ -76,18 +76,9 @@ export function HeroSection() {
 						/>
 					</div>
 				</div>
-				<div className="h-40"></div>
-				<CurvedLoop 
-					marqueeText="Pagkaing Pang-masa 🍚 Masarap ang Lasa 🍖 at Binabalik-balikan 🍗"
-					speed={2}
-					curveAmount={100}
-					direction="right"
-					interactive
-					className=""
-				/>
-
 			</div>
 
+			
 			
         </section>
     );

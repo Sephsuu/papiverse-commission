@@ -6,7 +6,7 @@ const vision = {
 
 export function VisionSection() {
     return(
-        <section className="bg-slate-50 -mt-20 reveal-down">
+        <section className="bg-slate-50 reveal-down">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="grayscale reveal-down" >
                 <defs>
                     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">

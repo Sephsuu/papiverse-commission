@@ -120,7 +120,7 @@ const CurvedLoop = ({
     //   onPointerUp={endDrag}
     //   onPointerLeave={endDrag}
     // >
-      <svg className="curved-loop-svg mt-10 z-50" viewBox="0 0 1440 20">
+      <svg className="curved-loop-svg  z-50 bg-black" viewBox="0 0 1440 20">
         <text ref={measureRef} xmlSpace="preserve" style={{ visibility: 'hidden', opacity: 0, pointerEvents: 'none' }}>
           {text}
         </text>
@@ -128,8 +128,8 @@ const CurvedLoop = ({
           <path ref={pathRef} id={pathId} d={pathD} fill="none" stroke="transparent" />
         </defs>
         {ready && (
-          <text fontWeight="bold" xmlSpace="preserve">
-            <textPath ref={textPathRef} href={`#${pathId}`} startOffset={offset + 'px'} xmlSpace="preserve">
+          <text className='' fontWeight="bold" xmlSpace="preserve">
+            <textPath ref={textPathRef} href={`#${pathId}`} startOffset={offset + 'px'} xmlSpace="preserve" className='text-black'>
               {totalText}
             </textPath>
           </text>
