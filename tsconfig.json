@@ -35,7 +35,7 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "next.config.js"
-, "src/features/home/Hero.tsx"  ],
+, "src/features/home/Hero.tsx", "src/components/blocks/TextAnimations/BlurText/BlurText.jsx"  ],
   "exclude": [
     "node_modules"
   ]

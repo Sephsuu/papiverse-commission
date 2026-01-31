@@ -113,4 +113,16 @@ const BlurText = ({
   );
 };
 
+BlurText.defaultProps = {
+  text: "",
+  delay: 0,
+  animateBy: "words",
+  direction: "bottom",
+  animationFrom: null,
+  animationTo: null,
+  easing: "ease-out",
+  onAnimationComplete: undefined,
+  stepDuration: 40,
+};
+
 export default BlurText;

@@ -184,7 +184,7 @@ export function MessagesCanvas({ claims, selected }: Props) {
     if (loading) return <MessagesSkeleton />;
 
     return (
-        <section className="relative flex flex-col col-span-3 border-1 h-[95vh]">
+        <section className="relative flex flex-col col-span-3 border h-[95vh]">
             {/* Header */}
             <div className="flex px-4 py-2 gap-2 sticky top-0 shadow-sm bg-light z-10">
                 <AppAvatar
@@ -312,7 +312,7 @@ export function MessagesCanvas({ claims, selected }: Props) {
 
             {/* Message input */}
             <form
-                className="absolute w-full bottom-0 px-4 border-t-1 bg-white"
+                className="absolute w-full bottom-0 px-4 border-t bg-white"
                 onSubmit={handleSendMessage}
             >
                 <div className="flex items-center w-full bg-white py-2 gap-2">
@@ -322,7 +322,7 @@ export function MessagesCanvas({ claims, selected }: Props) {
                     <Input
                         value={messageInput}
                         onChange={handleInputChange}
-                        className="w-full border-0 focus:!outline-none focus:!ring-0"
+                        className="w-full border-0 focus:outline-none! focus:ring-0!"
                         placeholder="Enter your message here"
                     />
                     <div className="flex gap-2">
@@ -338,7 +338,7 @@ export function MessagesCanvas({ claims, selected }: Props) {
                             size="sm"
                             className="bg-blue rounded-full text-xs h-fit py-1.5"
                         >
-                            <Send className="!w-3 !h-3" />
+                            <Send className="w-3 h-3" />
                             Send
                         </Button>
                     </div>
