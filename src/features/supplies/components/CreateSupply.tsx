@@ -83,8 +83,8 @@ export function CreateSupply({ setOpen, setReload }: Props) {
                             <Input    
                                 className="w-full border-1 border-gray rounded-md max-md:w-full" 
                                 placeholder="e.g. RAW001"
-                                name ="code"  
-                                value={supply.code}
+                                name ="sku"  
+                                value={supply.sku}
                                 onChange={ e => handleChange(e, setSupply)}
                             />  
                         </div>

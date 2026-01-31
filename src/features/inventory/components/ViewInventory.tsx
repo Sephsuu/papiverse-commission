@@ -26,7 +26,7 @@ export function ViewInventory({
 
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                             <div className="font-medium text-gray-600">Code</div>
-                            <div>{toView.code}</div>
+                            <div>{toView.sku}</div>
 
                             <div className="font-medium text-gray-600">Category</div>
                             <div>{toView.category}</div>

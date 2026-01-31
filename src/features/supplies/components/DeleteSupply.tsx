@@ -19,7 +19,7 @@ export function DeleteSupply({ toDelete, setDelete, setReload }: Props) {
     async function handleDelete() {
         try {
             setProcess(true);
-            await SupplyService.deleteSupply(toDelete.code!);
+            await SupplyService.deleteSupply(toDelete.sku!);
             toast.success(`Supply ${toDelete.name} deleted successfully.`)
         } catch (error) { toast.error(`${error}`) }
         finally { 

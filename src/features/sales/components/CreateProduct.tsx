@@ -32,16 +32,16 @@ export function CreateProduct({ setOpen, setReload }: Props) {
 
     const { data: supplies, loading, error } = useFetchData(SupplyService.getAllSupplies, [], [], 0, 1000);
     const { data: products, loading: productLoading, error: productsError } = useFetchData(ProductService.getAllProducts, [], [], 0, 1000);
-    const { search, setSearch, filteredItems } = useSearchFilter(supplies, ['name', 'code']);
+    const { search, setSearch, filteredItems } = useSearchFilter(supplies, ['name', 'sku']);
     const { search: searchProduct, setSearch: setSearchProduct, filteredItems: filteredProducts } = useSearchFilter(products, ['name']);
     
     const handleSelect = async (code: string) => {
-        if (!selectedItems.find((item: SupplyItem) => item.code === code)) {
+        if (!selectedItems.find((item: SupplyItem) => item.sku === code)) {
             const selectedItem = supplies.find(item => item.code === code);
             if (selectedItem) {
             setSelectedItems([
                 ...selectedItems,
-                { id: selectedItem.id, code: selectedItem.code, name: selectedItem.name, quantity: 1, unitMeasurement: selectedItem.convertedMeasurement, unitPrice: selectedItem.unitPrice, category: selectedItem.category, type: "RAW", forTakeOut: false }
+                { id: selectedItem.id, sku: selectedItem.code, name: selectedItem.name, quantity: 1, unitMeasurement: selectedItem.convertedMeasurement, unitPrice: selectedItem.unitPrice, category: selectedItem.category, type: "RAW", forTakeOut: false }
             ]);
             } else {
                 console.warn(`Item with code ${code} not found.`);
@@ -55,7 +55,7 @@ export function CreateProduct({ setOpen, setReload }: Props) {
             if (selectedItem) {
             setSelectedItems([
                 ...selectedItems,
-                { id: selectedItem.id, code: "", name: selectedItem.name, quantity: 1, type: "PRODUCT", forTakeOut: false }
+                { id: selectedItem.id, sku: "", name: selectedItem.name, quantity: 1, type: "PRODUCT", forTakeOut: false }
             ]);
             } else {
                 console.warn(`Item with code ${id} not found.`);
