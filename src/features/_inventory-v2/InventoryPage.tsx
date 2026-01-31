@@ -6,10 +6,11 @@ import { Separator } from "@/components/ui/separator";
 import { formatToPeso } from "@/lib/formatter";
 import { format } from "date-fns";
 import { CalendarDays } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DatePickerModal } from "./components/DatePickerModal";
 import { InventorySummary } from "./components/InventorySummary";
 import { BranchPurchaseItemSummary } from "./components/BranchPurchaseItemSummary";
+import { toast } from "sonner";
 
 export function InventoryPage() {
     const [date, setDate] = useState<string>(
@@ -37,6 +38,10 @@ export function InventoryPage() {
         { title: "Capital", value: formatToPeso(20000) },
         { title: "Net Sales", value: formatToPeso(12000) },
     ]
+
+    useEffect(() => {
+        toast.success(displayDate)
+    }, [date])
 
     return (
         <section className="stack-md py-2 animate-fade-in-up">

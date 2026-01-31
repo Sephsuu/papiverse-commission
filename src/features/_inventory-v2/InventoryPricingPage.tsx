@@ -160,14 +160,14 @@ export function InventoryPricingPage({ className }: { className?: string }) {
 
                     <div className="scale-x-110 origin-left">
                         {byWeek && parsedDate
-                            ? `${format(parsedDate, "MMM d, yyy")} - ${format(
-                                new Date(parsedDate.getTime() + 6 * 24 * 60 * 60 * 1000),
-                                "MMM d, yyy"
-                            )}`
-                            : displayDate}
+                            ? `${format(parsedDate, "MMM d, yyy")} - ${format(new Date(parsedDate.getTime() + 6 * 24 * 60 * 60 * 1000), "MMM d, yyy")}`
+                            : displayDate
+                        }
                     </div>
 
-                    <Badge className="bg-darkbrown font-bold ml-4">{byWeek ? "Sun-Sat" : displayDay}</Badge>
+                    <Badge className="bg-darkbrown font-bold ml-4">
+                        {byWeek ? "Sun-Sat" : displayDay}
+                    </Badge>
                 </div>
 
                 <div className="bg-white shadow-sm shadow-lightbrown rounded-md">

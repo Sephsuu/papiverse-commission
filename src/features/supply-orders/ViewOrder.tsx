@@ -16,13 +16,14 @@ import { formatCompactNumber, formatDateToWords, formatToPeso } from "@/lib/form
 import { InventoryService } from "@/services/inventory.service";
 import { SupplyOrderService } from "@/services/supplyOrder.service"
 import { Inventory } from "@/types/inventory";
-import { SupplyOrder } from "@/types/supplyOrder"
+import { SupplyItem, SupplyOrder } from "@/types/supplyOrder"
 import { Ham, MoveRight, Snowflake } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { EditOrderForm } from "./order-form/EditOrderForm";
+import { EmptyState } from "@/components/ui/fallback";
 
 const tabs = ['Meat Order', 'Snow Order']
 
@@ -87,7 +88,7 @@ export function ViewOrderPage({ id }: { id: number }) {
     />
     return (
         <section className="stack-md animate-fade-in-up overflow-hidden max-md:mt-12">
-            <AppHeader label={ `${data!.meatCategory?.meatOrderId} | ${data!.snowfrostCategory?.snowFrostOrderId}`  } />
+            <AppHeader label={ `${data!.meatCategory?.meatOrderId ?? "No Meat Order"} | ${data!.snowfrostCategory?.snowFrostOrderId ?? "No Snow Order"}`  } />
             <div className="flex justify-between items-center">
                 <div className="flex-center bg-slate-50 shadow-sm rounded-full">
                     {tabs.map((item, i) => (
@@ -181,16 +182,32 @@ export function ViewOrderPage({ id }: { id: number }) {
                             <div key={_} className={`th ${item.style}`}>{ item.title }</div>
                         ))}
                     </div>
-                    { tab === 'Meat Order' ? 
-                        <Orders orders={ data!.meatCategory!.meatItems } inventories={ inventories } /> 
-                        : <Orders orders={ data!.snowfrostCategory!.snowFrostItems } inventories={ inventories } /> 
-                    }
+                    {tab === "Meat Order" ? (
+                        data?.meatCategory ? (
+                            <Orders
+                            orders={data.meatCategory.meatItems}
+                            inventories={inventories}
+                            />
+                        ) : (
+                            <EmptyState message="No meat items in this order" />
+                        )
+                        ) : (
+                        data?.snowfrostCategory ? (
+                            <Orders
+                            orders={data.snowfrostCategory.snowFrostItems}
+                            inventories={inventories}
+                            />
+                        ) : (
+                            <EmptyState message="No snowfrost items in this order" />
+                        )
+                    )}
+
                 </div>
                 <div className="text-gray text-sm text-end mx-4 mt-2">
-                    Meat Order <span className="font-semibold text-dark">+ { formatToPeso(data!.meatCategory!.categoryTotal) }</span>
+                    Meat Order <span className="font-semibold text-dark">+ { data?.meatCategory ?  formatToPeso(data!.meatCategory!.categoryTotal) : formatToPeso(0) }</span>
                 </div>
                 <div className="text-gray text-sm text-end mx-4 mt-2">
-                    Snow Order <span className="font-semibold text-dark">+ { formatToPeso(data!.snowfrostCategory!.categoryTotal) }</span>
+                    Snow Order <span className="font-semibold text-dark">+ { data?.snowfrostCategory ?formatToPeso(data!.snowfrostCategory!.categoryTotal) : formatToPeso(0) }</span>
                 </div>
                 <div className="text-gray text-sm text-end mx-4 mt-2">
                     Delivery Fee <span className="font-semibold text-dark">+ { formatToPeso(data!.deliveryFee) }</span>
@@ -385,4 +402,25 @@ function ConfirmReject({ orderId, open, setOpen, setReload }: {
             </DialogContent>
         </Dialog>
     )
+}
+
+function SafeOrders({
+    items,
+    inventories,
+    emptyLabel,
+}: {
+    items?: {
+        rawMaterialCode: string;
+        rawMaterialName: string;
+        quantity: number;
+        price: number;
+    } [];
+    inventories: Inventory[];
+    emptyLabel: string;
+}) {
+    if (!items || items.length === 0) {
+        return <p className="text-muted-foreground">{emptyLabel}</p>;
+    }
+
+    return <Orders orders={items} inventories={inventories} />;
 }

@@ -74,7 +74,7 @@ export function UpdateBranch({setReload, toUpdate, setUpdate }: Props) {
                                 <input value="Krispy Papi" className="w-24 text-center border-0" readOnly />
                                 <Input    
                                     className="w-full" 
-                                    name ="branchName"  
+                                    name ="name"  
                                     value={branch.name}
                                     onChange={ e => handleChange(e, setBranch)}
                                 />

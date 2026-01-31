@@ -34,14 +34,24 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
     const [tab, setTab] = useState('Meat Order');
     const [open, setOpen] = useState(false);
     const [onProcess, setProcess] = useState(false);
-    const meatReceipt = selectedItems.filter((s) => s.category === "MEAT");
-    const snowFrostReceipt = selectedItems.filter((s) => s.category === "SNOWFROST");
+    
+    const meatReceipt =
+        selectedItems.filter((s) => s.category === "MEAT").length > 0
+            ? selectedItems.filter((s) => s.category === "MEAT")
+            : null;
 
-    const totalMeatAmount = meatReceipt.reduce(
+    const snowFrostReceipt =
+        selectedItems.filter((s) => s.category === "SNOWFROST").length > 0
+            ? selectedItems.filter((s) => s.category === "SNOWFROST")
+            : null;
+
+
+    const totalMeatAmount = (meatReceipt ?? []).reduce(
         (acc, supply) => acc + supply.unitPrice! * supply.quantity!,
         0
     );
-    const totalSnowFrostAmount = snowFrostReceipt.reduce(
+
+    const totalSnowFrostAmount = (snowFrostReceipt ?? []).reduce(
         (acc, supply) => acc + supply.unitPrice! * supply.quantity!,
         0
     );
@@ -50,31 +60,48 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
         try {
             setProcess(true);
 
-            const meatOrder = {id: "", branchId: claims.branch.branchId, categoryItems: meatReceipt};
-            const snowOrder = {id: "", branchId: claims.branch.branchId, categoryItems: snowFrostReceipt};
-            
-            const meatFinal = await SupplyOrderService.createMeatOrder(meatOrder);
-            const snowFinal = await SupplyOrderService.createSnowOrder(snowOrder);
+            let meatFinal: { id: string } | null = null;
+            let snowFinal: { id: string } | null = null;
+
+            if (meatReceipt && meatReceipt.length > 0) {
+            const meatOrder = {
+                id: "",
+                branchId: claims.branch.branchId,
+                categoryItems: meatReceipt,
+            };
+            meatFinal = await SupplyOrderService.createMeatOrder(meatOrder);
+            }
+
+            if (snowFrostReceipt && snowFrostReceipt.length > 0) {
+            const snowOrder = {
+                id: "",
+                branchId: claims.branch.branchId,
+                categoryItems: snowFrostReceipt,
+            };
+            snowFinal = await SupplyOrderService.createSnowOrder(snowOrder);
+            }
 
             const orderSupply = {
-                branchId: claims.branch.branchId,
-                remarks: "",
-                meatCategoryItemId: meatFinal.id,
-                snowfrostCategoryItemId: snowFinal.id,
-                deliveryFee: delivery ? delivery.deliveryFee : 0,
-            }
+            branchId: claims.branch.branchId,
+            remarks: "",
+            meatCategoryItemId: meatFinal?.id ?? null,
+            snowfrostCategoryItemId: snowFinal?.id ?? null,
+            deliveryFee: delivery ? delivery.deliveryFee : 0,
+            };
 
             const data = await SupplyOrderService.createSupplyOrder(orderSupply);
+
             if (data) {
-                toast.success("Supply Order Created")
+            toast.success("Supply Order Created");
             }
-        
-        } catch (error) { toast.error(`${error}`) }
-        finally { 
+        } catch (error) {
+            toast.error(`${error}`);
+        } finally {
             setProcess(false);
-            router.push('supply-orders')
+            router.push("supply-orders");
         }
     }
+
 
     if (loading) return <PapiverseLoading />
     return(
@@ -94,7 +121,11 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
 
             <Orders
                 tab={ tab }
-                orders={ tab === 'Meat Order' ? meatReceipt : snowFrostReceipt }
+                orders={
+                    tab === 'Meat Order'
+                        ? (meatReceipt ?? [])
+                        : (snowFrostReceipt ?? [])
+                }
                 delivery={ delivery! }
                 meatTotal={ totalMeatAmount }
                 snowTotal={ totalSnowFrostAmount }
@@ -187,7 +218,7 @@ function Orders({ tab, orders, delivery, meatTotal, snowTotal }: {
                         </div>  
                     ))
                 : (
-                    <div className="text-sm text-gray font-semibold text-center py-2">You have no items for { tab }.</div>
+                    <div className="text-sm text-gray font-semibold text-center py-6">You have no items for { tab }.</div>
                 )}
                 <div className="text-gray text-sm text-end mx-4 mt-2">
                     Meat Order <span className="font-semibold text-dark">+ { formatToPeso(meatTotal) }</span>

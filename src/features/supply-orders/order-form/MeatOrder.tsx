@@ -38,10 +38,7 @@ export function MeatOrder({ supplies, selectedItems, setActiveForm, onSelect, on
     const { search, setSearch, filteredItems: filteredSupplies } = useSearchFilter(supplies, ['name', 'sku'])
 
     const handleSubmit = async () => {
-        if (selectedItems.length > 0) {
-            return setActiveForm("snow");
-        }
-        toast.info('MEAT ORDER CANNOT BE EMPTY')
+        setActiveForm("snow")
     };
 
     return(

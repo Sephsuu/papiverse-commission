@@ -58,8 +58,8 @@ export interface SupplyItem {
 export interface CompleteOrder {
     branchId: number;
     remarks: string;
-    meatCategoryItemId: string;
-    snowfrostCategoryItemId: string;
+    meatCategoryItemId: string | null;
+    snowfrostCategoryItemId: string | null;
     deliveryFee: number;
 }
 
