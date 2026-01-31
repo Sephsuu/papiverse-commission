@@ -19,7 +19,7 @@ export function BranchSalesPage() {
 
     useEffect(() => {
         if (branches?.length) {
-            setSelectedBranch(branches[0].branchId!);
+            setSelectedBranch(branches[0].id!);
         }
     }, [branches]);
 
@@ -39,18 +39,18 @@ export function BranchSalesPage() {
 
                 <div className="flex flex-col overflow-y-auto">
                     {branches.map((item) => (
-                        <div key={item.branchId}>
+                        <div key={item.id}>
                             <button
-                                onClick={() => setSelectedBranch(item.branchId!)}
+                                onClick={() => setSelectedBranch(item.id!)}
                                 className={`
                                     w-full text-left px-3 py-2 rounded-md transition text-sm font-medium
-                                    ${selectedBranch === item.branchId 
+                                    ${selectedBranch === item.id 
                                         ? "rounded-none border-x-5 border-darkorange font-semibold" 
                                         : "hover:bg-gray-100"
                                     }
                                 `}
                             >
-                                {item.branchName}
+                                {item.name}
                             </button>
                             <Separator className="my-1" />
                         </div>
@@ -64,7 +64,7 @@ export function BranchSalesPage() {
             <ScrollArea className="flex-1 h-[95vh]">
                 {selectedBranch ? (
                     <div className="pr-2.5">
-                        <AppHeader label={`${branches.find((b) => b.branchId === selectedBranch)?.branchName} Sales`} />
+                        <AppHeader label={`${branches.find((b) => b.id === selectedBranch)?.name} Sales`} />
                         <SalesPage branchId={ selectedBranch } />
                         
                     </div>
