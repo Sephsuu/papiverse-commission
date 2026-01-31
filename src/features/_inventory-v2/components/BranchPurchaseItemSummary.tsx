@@ -583,12 +583,12 @@ export function BranchPurchaseItemSummary({
                     >
                         <div className="th sticky left-0 z-40 bg-[#e2e8f0] border-r"></div>
 
-                        {filteredColumnData.map((item: any) => {
+                        {filteredColumnData.map((item: any, i: number) => {
                             const name = String(item?.name ?? "");
                             const t = colTotals.get(name.trim()) ?? 0;
 
                             return (
-                                <Tooltip>
+                                <Tooltip key={i}>
                                     <TooltipTrigger className="th bg-[#e2e8f0] relative" key={item.id ?? item.name}>
                                         <div className="truncate">{name}</div>
                                         {showTotalsHintCol && (
