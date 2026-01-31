@@ -4,10 +4,10 @@ export async function requestData(
     headers?: HeadersInit,
     body?: unknown
 ) {
-    console.log('Endpoint:', url);
-    console.log('Method:', method);
-    console.log('Headers:', headers);
-    console.log('Body:', body);
+    // console.log('Endpoint:', url);
+    // console.log('Method:', method);
+    // console.log('Headers:', headers);
+    // console.log('Body:', body);
     let finalHeaders: HeadersInit = headers || {};
 
     // ✅ If body is FormData → don't set Content-Type
@@ -30,7 +30,7 @@ export async function requestData(
     }
     const response = await res.json();
 
-    console.log('Response Body:', response);
+    // console.log('Response Body:', response);
     
 
     return response;

@@ -83,14 +83,29 @@ export class SupplyOrderService {
     static async updateOrderStatus(
         id: number,
         newStatus: string,
-        meatApproved: boolean,
-        snowApproved: boolean
+        meatApproved?: boolean,
+        snowApproved?: boolean
     ) {
+        const params = new URLSearchParams({
+            id: String(id),
+            newStatus,
+        });
+
+        if (["TO_FOLLOW", "REJECTED"].includes(newStatus)) {
+            if (meatApproved !== undefined) {
+            params.append("meatApproved", String(meatApproved));
+            }
+            if (snowApproved !== undefined) {
+            params.append("snowApproved", String(snowApproved));
+            }
+        }
+
         return await requestData(
-            `${url}/update-status?id=${id}&newStatus=${newStatus}&meatApproved=${meatApproved}&snowApproved=${snowApproved}`,
+            `${url}/update-status?${params.toString()}`,
             "POST"
         );
     }
+
 
     static async updateMeatOrder(meatOrder: SupplyItem[], id: string) {
         const payload = {

@@ -105,7 +105,7 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
 
     if (loading) return <PapiverseLoading />
     return(
-        <section className="stack-md animate-fade-in-up">
+        <section className="stack-md animate-fade-in-up pb-12 overflow-hidden max-md:mt-12">
             <AppHeader label="Supply Order Receipt" />
             <div className="w-fit flex-center bg-slate-50 shadow-sm rounded-full">
                 {tabs.map((item, i) => (
@@ -178,26 +178,27 @@ function Orders({ tab, orders, delivery, meatTotal, snowTotal }: {
     return (
         <div className="p-4 bg-white rounded-md shadow-sm relative animate-fade-in-up" key={tab}>
             <Image src="/images/kp_logo.png" alt="KP Logo" width={60} height={60} className="top-2 right-2 absolute" />
-            <div className="flex justify-center items-center gap-2">
+            <div className="flex justify-center items-center gap-2 max-sm:mt-6">
                 { tab === 'Meat Order' ? <Ham /> : <Snowflake /> }
                 <div className="font-semibold">{ tab } Receipt</div>
             </div>
             <div className="text-center text-sm text-gray">Please review carefully your order form.</div>
 
-            <div className="grid grid-cols-2 gap-1 mt-2">
-                <div className="text-sm"><span className="font-bold">Order ID: </span>
-                    <span>Order ID: </span> <span className="text-gray">Order the supplies first</span>
+            <div className="grid grid-cols-2 gap-1 mt-2 max-sm:grid-cols-1 max-sm:gap-1.5">
+                <div className="text-sm">
+                    <span className="font-bold">Order ID: </span>
+                    <span className="text-gray">Order the supplies first</span>
                 </div>
-                <div className="text-sm ms-auto">
+                <div className="text-sm ms-auto max-sm:ms-0">
                     <span className="font-bold">To: </span>KP Comissary
                 </div>
                 <div className="text-sm flex-center-y gap-2">
                     <span className="font-bold">Status: </span>
                     <OrderStatusBadge className="scale-110 bg-slate-200 text-dark!" status="NO STATUS" />
                 </div>
-                <div className="text-sm ms-auto inline-block"><span className="font-bold">Date</span> { formatDateToWords(new Date().toLocaleDateString() ) }</div>
+                <div className="text-sm ms-auto inline-block max-sm:ms-0"><span className="font-bold">Date</span> { formatDateToWords(new Date().toLocaleDateString() ) }</div>
                 <div className="text-sm"><span className="font-bold">Tel No: </span>{ "09475453783" }</div>
-                <div className="text-sm ms-auto"><span className="font-bold">Delivery within: </span> Branch Name</div>
+                <div className="text-sm ms-auto max-sm:ms-0"><span className="font-bold">Delivery within: </span> Branch Name</div>
             </div>
 
             <div className="mt-4">

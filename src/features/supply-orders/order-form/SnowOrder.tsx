@@ -48,22 +48,22 @@ export function SnowOrder({ supplies, selectedItems, setActiveForm, onSelect, on
     };
 
     return(
-        <section className={`stack-md animate-fade-in-up ${className}`}>
+        <section className={`stack-md animate-fade-in-up pb-12 overflow-hidden max-md:mt-12 ${className}`}>
             {toEdit ? (
                 <div className="text-lg font-semibold">Edit Snow Order</div>
             ) : (
                 <AppHeader label="Snow Order Form" />
             )}
 
-            <div>
-                <div className="thead grid grid-cols-8 bg-[#c4d1ef]!">
+            <div className="table-wrapper">
+                <div className="thead grid grid-cols-8 bg-[#c4d1ef]! max-md:w-250!">
                     {columns.map((item, _) => (
                         <div key={_} className={`th ${item.style}`}>{ item.title }</div>
                     ))}
                 </div>
 
                 {selectedItems.filter(i => i.category === 'SNOWFROST').map((item, index) => (
-                    <div className="tdata grid grid-cols-8" key={index}>
+                    <div className="tdata grid grid-cols-8 max-md:w-250!" key={index}>
                         <div className="td">{ item.sku }</div>
                         <div className="td p-0!">
                             <Input

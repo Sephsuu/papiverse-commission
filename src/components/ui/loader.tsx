@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Sidebar, SidebarContent } from "./sidebar";
 import { Skeleton } from "./skeleton";
 import { Dialog, DialogContent, DialogTitle } from "./dialog";
+import { cn } from "@/lib/utils";
 
 interface LoaderProps {
     onProcess: boolean;
@@ -81,5 +82,38 @@ export function SidebarLoading() {
                 
             </Sidebar>
         </section>
+    );
+}
+
+
+type LoaderPageProps = {
+  imageAlt?: string;
+  size?: number;
+  className?: string;
+};
+
+export function MainLoader({
+    text = "Loading, please wait...",
+}: {
+    text?: string;
+}) {
+    return (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
+            {/* Logo */}
+            <div className="animate-pulse">
+                <Image
+                    src="/images/kp_logo.png"   // 🔴 CHANGE THIS TO YOUR BUSINESS LOGO PATH
+                    alt="Loading"
+                    width={120}
+                    height={120}
+                    priority
+                />
+            </div>
+
+            {/* Text */}
+            <p className="mt-4 text-sm font-medium text-gray-600">
+                {text}
+            </p>
+        </div>
     );
 }

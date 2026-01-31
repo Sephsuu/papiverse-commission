@@ -53,7 +53,7 @@ function OrderStatusBadge({ status, padding, className } : {
     <div className={`text-[9px] h-fit w-fit px-2 py-0.5 rounded-sm font-semibold text-light ${className} ${padding} 
         ${status === "PENDING" && "bg-darkyellow"}
         ${status === "APPROVED" && "bg-darkgreen"}
-        ${status === "TO FOLLOW" && "bg-darkorange"}
+        ${["TO FOLLOW", "TO_FOLLOW"].includes(status) && "bg-darkorange"}
         ${status === "CANCELLED" && "bg-darkred"}
         ${status === "REJECTED" && "bg-darkred"}
         ${status === "DELIVERED" && "bg-blue"}

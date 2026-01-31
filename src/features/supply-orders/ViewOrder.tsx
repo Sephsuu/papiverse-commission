@@ -17,7 +17,7 @@ import { InventoryService } from "@/services/inventory.service";
 import { SupplyOrderService } from "@/services/supplyOrder.service"
 import { Inventory } from "@/types/inventory";
 import { SupplyItem, SupplyOrder } from "@/types/supplyOrder"
-import { Ham, MoveRight, Snowflake } from "lucide-react";
+import { ArrowLeft, Ham, MoveRight, Snowflake } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
@@ -41,9 +41,7 @@ export function ViewOrderPage({ id }: { id: number }) {
     const { claims, loading: authLoading, isFranchisor } = useAuth();
     const { data, loading } = useFetchOne<SupplyOrder>(SupplyOrderService.getSupplyOrderById, [id, reload], [id]);
     const { data: inventories, loading: inventoryLoading } = useFetchData(InventoryService.getInventoryByBranch, [claims.branch.branchId, reload], [claims.branch.branchId])
-    const { onProcess, enableSave, handleSubmit } = useSupplyOrderApproval(data!, claims, setReload);
-    console.log(data);
-    
+    const { onProcess, enableSave, handleSubmit } = useSupplyOrderApproval(data!, claims, setReload);    
     
     const [tab, setTab] = useState('Meat Order');
     const [open, setOpen] = useState(false);
@@ -51,6 +49,11 @@ export function ViewOrderPage({ id }: { id: number }) {
     const [toReject, setReject] = useState(false);
     const [meatApproved, setMeatApproved] = useState<boolean | undefined>(undefined);
     const [snowApproved, setSnowApproved] = useState<boolean | undefined>(undefined);
+
+    const hasSnowfrost = Boolean(data?.snowfrostCategory);
+    const hasMeat = Boolean(data?.meatCategory);
+
+    const hasMissingCategory = !hasSnowfrost || !hasMeat;
 
     useEffect(() => {
         if (data) {
@@ -62,8 +65,8 @@ export function ViewOrderPage({ id }: { id: number }) {
     if (loading || authLoading || inventoryLoading) return <PapiverseLoading /> 
     if (toEdit) return <EditOrderForm 
         orderId={ data!.orderId! }
-        meatId={ data!.meatCategory!.meatOrderId }
-        snowId={ data!.snowfrostCategory!.snowFrostOrderId }
+        meatId={data?.meatCategory?.meatOrderId ?? "No meat order"}
+        snowId={data?.snowfrostCategory?.snowFrostOrderId ?? "No snow order"}
         meatApproved={ data!.meatCategory!.isApproved }
         snowApproved={ data!.snowfrostCategory!.isApproved }
         toEditItems={[
@@ -87,10 +90,18 @@ export function ViewOrderPage({ id }: { id: number }) {
 
     />
     return (
-        <section className="stack-md animate-fade-in-up overflow-hidden max-md:mt-12">
-            <AppHeader label={ `${data!.meatCategory?.meatOrderId ?? "No Meat Order"} | ${data!.snowfrostCategory?.snowFrostOrderId ?? "No Snow Order"}`  } />
-            <div className="flex justify-between items-center">
-                <div className="flex-center bg-slate-50 shadow-sm rounded-full">
+        <section className="stack-md animate-fade-in-up overflow-hidden pb-12 max-md:mt-12">
+            <div className="flex-center-y gap-4">
+                <ArrowLeft 
+                    className="cursor-pointer"
+                    onClick={() => {history.back()}}
+                />
+                <AppHeader 
+                    label={ `${data!.meatCategory?.meatOrderId ?? "No Meat Order"} | ${data!.snowfrostCategory?.snowFrostOrderId ?? "No Snow Order"}`  } 
+                />
+            </div>
+            <div className="flex justify-between items-center max-sm:grid! max-sm:gap-2!">
+                <div className="flex-center bg-slate-50 shadow-sm rounded-full max-sm:w-fit max-sm:mx-auto">
                     {tabs.map((item, i) => (
                         <Button
                             key={i}
@@ -107,39 +118,36 @@ export function ViewOrderPage({ id }: { id: number }) {
                             <Button 
                                 className="bg-darkred! hover:opacity-90" 
                                 onClick={ () => setReject(true) }
-                                disabled={ ["APPROVED", "DELIVERED", "REJECTED"].includes(data!.status!) }
+                                disabled={ ["APPROVED", "DELIVERED", "REJECTED"].includes(data!.status!) || onProcess }
                             >
                                 <FormLoader onProcess={ onProcess } label="Reject Order" loadingLabel="Rejecting Order" />
                             </Button>
-                            {!data?.snowfrostCategory || !data?.meatCategory && (
-                                <Button className="bg-darkorange! hover:opacity-90" 
-                                    disabled={ enableSave(meatApproved!, snowApproved!) }
-                                    onClick={ ()     => setOpen(true) }
+                            {hasMissingCategory && (
+                                <Button
+                                    className="bg-darkorange! hover:opacity-90"
+                                    disabled={ ["APPROVED"].includes(data!.status!) || enableSave(hasMeat!, hasSnowfrost!) || onProcess}
+                                    onClick={() => {
+                                        setMeatApproved(hasMeat)
+                                        setSnowApproved(hasSnowfrost)
+                                        setOpen(true)
+                                    }}
                                 >
-                                    <FormLoader onProcess={ onProcess } label="To Follow Order" loadingLabel="Marking as to follow" />
+                                    <FormLoader
+                                        onProcess={onProcess}
+                                        label="To Follow Order"
+                                        loadingLabel="Marking as to follow"
+                                    />
                                 </Button>
                             )}
                             <Button className="bg-darkgreen! hover:opacity-90" 
-                                disabled={ enableSave(meatApproved!, snowApproved!) }
+                                disabled={ enableSave(meatApproved!, snowApproved!) || onProcess }
                                 onClick={ () => setOpen(true) }
                             >
                                 <FormLoader onProcess={ onProcess } label="Save Order" loadingLabel="Saving Order" />
                             </Button>
                         </>
                     )}
-                    <div className="flex-center-y gap-2">
-                        <Link href='/inventory/supply-orders'>
-                            <Button>Back to Orders</Button>
-                        </Link>
-                        {!isFranchisor && data?.status === "TO FOLLOW" && ( 
-                            <Button
-                                onClick={ () => setEdit(true) }
-                                className="bg-darkgreen! hover:opacity-90"
-                            >
-                                Edit Order
-                            </Button>
-                        )}
-                    </div>
+
                 </div>
             </div>
 
@@ -167,21 +175,21 @@ export function ViewOrderPage({ id }: { id: number }) {
                     <div className="text-center text-sm text-gray">Showing only the order form receipt for this { tab.toLowerCase() }.</div> 
                     : <div className="text-center text-sm text-gray">Please review carefully your order form.</div>
                 }
-                <div className="grid grid-cols-2 gap-1 mt-2">
+                <div className="grid grid-cols-2 gap-1 mt-2 max-sm:grid-cols-1 max-sm:gap-1.5">
                     <div className="text-sm"><span className="font-bold">Order ID: </span>
                         { tab === 'Snow Order' ? 
                             data!.snowfrostCategory?.snowFrostOrderId 
                             : data!.meatCategory?.meatOrderId
                         }
                     </div>
-                    <div className="text-sm ms-auto"><span className="font-bold">To: </span>{ "KP Comissary" }</div>
+                    <div className="text-sm ms-auto max-sm:ms-0"><span className="font-bold">To: </span>{ "KP Comissary" }</div>
                     <div className="text-sm flex-center-y gap-2">
                         <span className="font-bold">Status: </span>
                         <OrderStatusBadge className="scale-110" status={ data!.status} />
                     </div>
-                    <div className="text-sm ms-auto inline-block"><span className="font-bold">Date</span> { formatDateToWords(data!.orderDate) }</div>
-                    <div className="text-sm"><span className="font-bold">Tel No: </span>{ "09475453783" }</div>
-                    <div className="text-sm ms-auto"><span className="font-bold">Delivery within: </span>{ data!.branchName }</div>
+                    <div className="text-sm ms-auto inline-block max-sm:ms-0"><span className="font-bold">Date:</span> { formatDateToWords(data!.orderDate) }</div>
+                    <div className="text-sm"><span className="font-bold">Tel No: </span>{ "+63 123 456 7890" }</div>
+                    <div className="text-sm ms-auto max-sm:ms-0"><span className="font-bold">Delivery within: </span>{ data!.branchName }</div>
                 </div>
 
                 <div className="mt-4 table-wrapper">
@@ -353,7 +361,7 @@ function ConfirmSave({ setOpen, order, meatApproved, snowApproved, onProcess, ha
                             </div>
                         }
                     </div>
-                    <div className="flex-center-y justify-end">
+                    <div className="flex-center-y justify-end gap-2">
                         <AlertDialogCancel onClick={ () => setOpen(prev => !prev) }>Cancel</AlertDialogCancel>
                         <UpdateButton
                             type="submit"

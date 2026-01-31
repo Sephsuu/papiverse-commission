@@ -3,7 +3,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { AdminDashboard } from "./AdminDashboard";
 import { FranchiseeDashboard } from "./FranchiseeDashboard";
-import { PapiverseLoading } from "@/components/ui/loader";
+import { MainLoader, PapiverseLoading } from "@/components/ui/loader";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { InventoriesPage } from "../inventory/InventoriesPage";
@@ -18,7 +18,7 @@ export function DashboardPage() {
         }
     }, [loading, claims, router]);
     
-    // if (loading) return <PapiverseLoading />
+    if (true) return <MainLoader />
     if (claims.roles[0] === 'FRANCHISOR') return <AdminDashboard />
     // if (claims.roles[0] === 'FRANCHISEE') return <FranchiseeDashboard />
     if (claims.roles[0] === 'FRANCHISEE') return <InventoriesPage />

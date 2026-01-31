@@ -59,7 +59,7 @@ export function InventoriesPage() {
 
     if (loading || authLoading) return <PapiverseLoading />
     return(
-        <section className="stack-md animate-fade-in-up overflow-hidden max-md:mt-12">
+        <section className="stack-md animate-fade-in-up overflow-hidden pb-12 max-md:mt-12">
             <AppHeader label="All Inventories" />
 
             <TableFilter 

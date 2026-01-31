@@ -3,14 +3,14 @@
 import { usePathname } from "next/navigation"
 import { AppSidebar } from "./AppSidebar"
 import { useAuth } from "@/hooks/use-auth"
-import { PapiverseLoading } from "../ui/loader"
+import { MainLoader, PapiverseLoading } from "../ui/loader"
 
 export function AppCanvas({ children }: { children: React.ReactNode }) {
     const pathName = usePathname()
     const { claims, loading } = useAuth();
     const isAuth = pathName === "/auth" || pathName === "/unauthorized" || claims.roles.length === 0
 
-    if (loading) return <PapiverseLoading />
+    if (loading) return <MainLoader />
 
     
     return (

@@ -42,22 +42,22 @@ export function MeatOrder({ supplies, selectedItems, setActiveForm, onSelect, on
     };
 
     return(
-        <section className={`stack-md animate-fade-in-up ${className}`}>
+        <section className={`stack-md animate-fade-in-up pb-12 overflow-hidden max-md:mt-12 ${className}`}>
             {toEdit ? (
                 <div className="text-lg font-semibold">Edit Meat Order</div>
             ) : (
                 <AppHeader label="Meat Order Form" />
             )}
 
-            <div>
-                <div className="thead grid grid-cols-8 bg-[#ead09f]!">
+            <div className="table-wrapper">
+                <div className="thead grid max-md:w-250! grid-cols-8 bg-[#ead09f]!">
                     {columns.map((item, _) => (
                         <div key={_} className={`th ${item.style}`}>{ item.title }</div>
                     ))}
                 </div>
                 
                 {selectedItems.filter(i => i.category === 'MEAT').map((item, index) => (
-                    <div className="tdata grid grid-cols-8" key={index}>
+                    <div className="tdata grid grid-cols-8 max-md:w-250!" key={index}>
                         <div className="td">{ item.sku }</div>
                         <div className="td p-0!">
                             <Input
@@ -77,7 +77,7 @@ export function MeatOrder({ supplies, selectedItems, setActiveForm, onSelect, on
                                     num = Number(String(num));
                                     onQuantityChange(item.sku!, num);
                                 }}
-                                className="text-[16px] font-semibold w-18 border-0 pl-2"
+                                className="text-[16px] font-semibold w-18 border-0 pl-2 mx-auto"
                             />
                         </div>
                         <div className="td col-span-2">{ item.name }</div>

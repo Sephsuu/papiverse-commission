@@ -12,9 +12,7 @@ export function useSupplyOrderApproval(
     claims: { branch: { branchId: number } }, // adapt type if you have AuthClaims type
     setReload: React.Dispatch<React.SetStateAction<boolean>>,
 ) {
-    const [onProcess, setProcess] = useState(false);
-    console.log('Selected Order', selectedOrder);
-    
+    const [onProcess, setProcess] = useState(false);    
 
     function enableSave(meatApproved: boolean, snowApproved: boolean) {
         if (
@@ -88,15 +86,15 @@ export function useSupplyOrderApproval(
                 await SupplyOrderService.updateOrderStatus(
                 selectedOrder.orderId!,
                 "TO_FOLLOW",
-                meatApproved,
-                snowApproved
+                undefined,
+                undefined
             );
             return toast.success(
                 `Order ${selectedOrder.meatCategory!.meatOrderId} and ${selectedOrder.snowfrostCategory!.snowFrostOrderId} updated status to TO FOLLOW`
             );
         }
     } catch (error: any) {
-        toast.error(error?.message || `${error}`);
+        // toast.error(error?.message || `${error}`);
     } finally {
         setProcess(false);
         setReload((prev) => !prev);

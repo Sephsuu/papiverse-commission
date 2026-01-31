@@ -328,6 +328,7 @@ function DropdownFooter({ open, sidebarOpen, setShow, claims, handleLogout }: {
     claims: Claim
     handleLogout: () => void;
 }) {
+    const isMobile = useIsMobile();
     return (
         <DropdownMenu open={open} onOpenChange={setShow}>
             <DropdownMenuTrigger asChild>
@@ -343,7 +344,7 @@ function DropdownFooter({ open, sidebarOpen, setShow, claims, handleLogout }: {
                 </button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent side="right" align="end" className="w-56">
+            <DropdownMenuContent side={isMobile ? "top" : "right"} align="end" className="w-56">
                 <div className="flex-center gap-2 p-2">
                     <AppAvatar fallback="KP"/>
                     <div>
