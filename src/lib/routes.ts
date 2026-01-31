@@ -61,8 +61,8 @@ export const adminRoute = [
         icon: BookMarked,
         children: [
             { title: 'Supplies', href: '/supplies' },
-            { title: 'Products', href: '/products' },
-            { title: 'Employee Positions', href: '/employees/positions' },
+            // { title: 'Products', href: '/products' },
+            // { title: 'Employee Positions', href: '/employees/positions' },
         ]
     },
     // { 

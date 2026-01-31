@@ -18,8 +18,8 @@ export function DashboardPage() {
         }
     }, [loading, claims, router]);
     
-    if (true) return <MainLoader />
-    if (claims.roles[0] === 'FRANCHISOR') return <AdminDashboard />
+    if (loading) return <MainLoader />
+    if (claims.roles[0] === 'FRANCHISOR') return <InventoriesPage />
     // if (claims.roles[0] === 'FRANCHISEE') return <FranchiseeDashboard />
     if (claims.roles[0] === 'FRANCHISEE') return <InventoriesPage />
 }

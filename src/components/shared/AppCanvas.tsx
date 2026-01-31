@@ -11,7 +11,6 @@ export function AppCanvas({ children }: { children: React.ReactNode }) {
     const isAuth = pathName === "/auth" || pathName === "/unauthorized" || claims.roles.length === 0
 
     if (loading) return <MainLoader />
-
     
     return (
         <>
