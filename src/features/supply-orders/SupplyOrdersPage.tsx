@@ -86,7 +86,7 @@ export function SupplyOrdersPage() {
             {tab === 'Pending' && (
                 <PendingOrders 
                     claims={ claims }
-                    paginated={ paginated.filter(i => i.status === 'PENDING' || i.status === 'TO FOLLOW') } 
+                    paginated={ paginated.filter(i => i.status === 'PENDING' || i.status === 'TO FOLLOW' || i.status === "TO_FOLLOW") } 
                     setReload={ setReload }
                 />
             )}

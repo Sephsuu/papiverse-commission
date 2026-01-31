@@ -94,7 +94,7 @@ export function useSupplyOrderApproval(
             );
         }
     } catch (error: any) {
-        // toast.error(error?.message || `${error}`);
+        toast.error(error?.message || `${error}`);
     } finally {
         setProcess(false);
         setReload((prev) => !prev);

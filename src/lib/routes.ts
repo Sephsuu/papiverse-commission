@@ -121,7 +121,7 @@ export const franchiseeRoute = [
         icon: BookMarked,
         children: [
             { title: 'Supplies', href: '/supplies' },
-            { title: 'Products', href: '/products' },
+            // { title: 'Products', href: '/products' },
         ]
     },
 ]
