@@ -141,7 +141,7 @@ export function ViewOrderModal({ claims, editable = true, toView, setToView, set
                                 </div>
                                 {toView.meatCategory!.meatItems.length > 0 ? 
                                     toView.meatCategory!.meatItems.map((order, index) => {
-                                        const currentStock = inventory.find(i => i.code === order.rawMaterialCode)?.quantity;
+                                        const currentStock = inventory.find(i => i.sku === order.rawMaterialCode)?.quantity;
                                         return(
                                             <div className="grid grid-cols-5" key={ index }>
                                                 <div className="text-sm font-semibold">{ order.rawMaterialCode }</div>
@@ -196,7 +196,7 @@ export function ViewOrderModal({ claims, editable = true, toView, setToView, set
                                 </div>
                                 {toView.snowfrostCategory!.snowFrostItems.length > 0 ?  
                                     toView.snowfrostCategory!.snowFrostItems.map((order, index) => {
-                                        const currentStock = inventory.find(i => i.code === order.rawMaterialCode)?.quantity;
+                                        const currentStock = inventory.find(i => i.sku === order.rawMaterialCode)?.quantity;
                                         return(
                                             <div className="grid grid-cols-5" key={ index }>
                                                 <div className="text-sm font-semibold">{ order.rawMaterialCode }</div>
