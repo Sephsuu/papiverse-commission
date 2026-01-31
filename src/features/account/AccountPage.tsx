@@ -188,7 +188,7 @@ export function AccountPage() {
             </h2>
 
             <h2 className="text-base sm:text-lg text-gray-500">
-              <FieldSkeleton text={!authLoading ? user.branch?.branchName : ""} width="w-40" />
+              <FieldSkeleton text={!authLoading ? user.branch?.name : ""} width="w-40" />
             </h2>
           </div>
         </div>
@@ -284,7 +284,7 @@ function BranchInfo({ user, authLoading }: BranchInfoProps) {
       <Separator className="my-3 sm:my-4" />
 
       <div className="grid grid-cols-1 gap-4">
-        <Info label="Branch" value={user.branch?.branchName} loading={authLoading} />
+        <Info label="Branch" value={user.branch?.name} loading={authLoading} />
         <Info
           label="Address"
           value={[
@@ -298,7 +298,7 @@ function BranchInfo({ user, authLoading }: BranchInfoProps) {
           loading={authLoading}
         />
         <Info label="Internal Branch" value={user.branch?.isInternal ? "Yes" : "No"} loading={authLoading} />
-        <Info label="Status" value={user.branch?.branchStatus} loading={authLoading} />
+        <Info label="Status" value={user.branch?.status} loading={authLoading} />
       </div>
     </div>
   );
@@ -498,7 +498,7 @@ function EditProfileDialog({
 }: EditProfileDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="h-10/11 overflow-y-auto max-w-[90%] sm:max-w-lg !pt-0">
+      <DialogContent className="h-10/11 overflow-y-auto max-w-[90%] sm:max-w-lg pt-0!">
         <DialogHeader className="sticky top-0 bg-white py-5">
           <DialogTitle>Edit Personal Information</DialogTitle>
         </DialogHeader>
