@@ -193,10 +193,12 @@ export function BranchPurchaseItemSummary({
     date,
     className,
     byWeek,
+    displayDate
 }: {
     date: string;
     className?: string;
     byWeek: boolean;
+    displayDate: string
 }) {
     useToday();
     useSearchParams();
@@ -333,7 +335,6 @@ export function BranchPurchaseItemSummary({
         return totalLookup.get(key) ?? 0;
     };
 
-    // NEW: totals per row / per column (used for sorting)
     const rowTotals = useMemo(() => {
         const map = new Map<string, number>();
 
@@ -443,26 +444,27 @@ export function BranchPurchaseItemSummary({
     );
     const minWidthPx = useMemo(() => 220 + colCount * 150, [colCount]);
 
-    const dateTitle = useMemo(() => {
-        try {
-            return format(new Date(date), "MMMM dd, yyyy");
-        } catch {
-            return date;
-        }
-    }, [date]);
-
     const showTotalsHintRow = rowSort === "total_desc" || rowSort === "total_asc";
     const showTotalsHintCol = colSort === "total_desc" || colSort === "total_asc";
 
+    const parsedDate = date ? new Date(date) : null;
+
     return (
-        <section className={`stack-md ${className}`}>
+        <section className={`stack-md pb-12 ${className}`}>
             <div className="text-xl font-bold">
-                Branch Purchase Items Summary for {dateTitle}
+                Branch Purchase Items Summary for
+                <span className="ml-2 text-darkbrown">
+                    {byWeek && parsedDate
+                        ? `${format(parsedDate, "MMM d, yyy")} - ${format(new Date(parsedDate.getTime() + 6 * 24 * 60 * 60 * 1000), "MMM d, yyy")}`
+                        : displayDate
+                    }
+                </span>
+                
             </div>
 
             <Separator className="bg-gray-300 my-2" />
 
-            <div className="row-md items-center">
+            <div className="row-md items-center max-md:grid! max-md:mx-1">
                 {loadingColumn ? (
                     <Skeleton className="h-12 w-full bg-slate-300" />
                 ) : (
@@ -484,10 +486,10 @@ export function BranchPurchaseItemSummary({
                                 placeholderAll={`All ${columnLabel.toLowerCase()}s`}
                             />
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 w-full">
                                 <ArrowUpDown className="w-4 h-4 opacity-70" />
                                 <Select value={colSort} onValueChange={(v) => setColSort(v as SortKey)}>
-                                    <SelectTrigger className="h-9 w-44 bg-white shadow-sm shadow-lightbrown">
+                                    <SelectTrigger className="h-9 bg-white shadow-sm shadow-lightbrown w-full">
                                         <SelectValue placeholder="Sort columns" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -504,7 +506,7 @@ export function BranchPurchaseItemSummary({
                 )}
 
                 <Tooltip>
-                    <TooltipTrigger asChild>
+                    <TooltipTrigger className="mx-auto mt-4">
                         <button
                             type="button"
                             className="mx-2 my-auto"
@@ -538,10 +540,10 @@ export function BranchPurchaseItemSummary({
                                 placeholderAll={`All ${rowLabel.toLowerCase()}s`}
                             />
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 w-full">
                                 <ArrowUpDown className="w-4 h-4 opacity-70" />
                                 <Select value={rowSort} onValueChange={(v) => setRowSort(v as SortKey)}>
-                                    <SelectTrigger className="h-9 w-44 bg-white shadow-sm shadow-lightbrown">
+                                    <SelectTrigger className="h-9 bg-white shadow-sm shadow-lightbrown w-full">
                                         <SelectValue placeholder="Sort rows" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -570,7 +572,7 @@ export function BranchPurchaseItemSummary({
                 <SectionLoading />
             ) : (
                 <div
-                    className={`table-wrapper-scrollable animate-fade-in-up pt-4 ${
+                    className={`table-wrapper-scrollable animate-fade-in-up pt-4 max-md:w-full! ${
                         open ? "w-[82vw]" : "w-[94vw]"
                     }`}
                 >

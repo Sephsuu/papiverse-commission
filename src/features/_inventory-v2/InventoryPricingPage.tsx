@@ -7,12 +7,15 @@ import { useToday } from "@/hooks/use-today";
 import { format } from "date-fns";
 import { DatePickerModal } from "./components/DatePickerModal";
 import {
+    ArrowLeft,
     ArrowUpDown,
     CalendarDays,
     Expand,
     Funnel,
-    RefreshCcw,
+    Ham,
+    Search,
     Shrink,
+    Snowflake,
     TrendingDown,
     TrendingUp,
 } from "lucide-react";
@@ -30,12 +33,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 import { SupplyOrderService } from "@/services/supplyOrder.service";
-import { DetailedCommissary } from "@/types/inventory";
+import { DetailedCommissary, Inventory } from "@/types/inventory";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { EmptyState } from "@/components/custom/EmptyState";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Input } from "@/components/ui/input";
+import { useSearchFilter } from "@/hooks/use-search-filter";
 
 const pageKey = "inventoryPricingPage";
 
@@ -69,9 +74,10 @@ const STATUSES = ["GOOD", "WARNING", "DANGER", "CRITICAL"];
 const SORTS = ["product name", "total in", "total out", "price per unit"];
 
 export function InventoryPricingPage({ className }: { className?: string }) {
-    const { open } = useSidebar();
-    const { dateObj } = useToday();
+    useSidebar();
+    useToday();
     const searchParams = useSearchParams();
+    useIsMobile();
 
     const [reload, setReload] = useState(false);
     const [byWeek, setByWeek] = useState(false);
@@ -96,8 +102,13 @@ export function InventoryPricingPage({ className }: { className?: string }) {
         [byWeek ? "WEEK" : "CUSTOM_DATE", date]
     );
 
+    const { search, setSearch, filteredItems } = useSearchFilter<DetailedCommissary>(
+        inventory, 
+        ["rawMaterial.sku", "rawMaterial.name"]
+    );
+
     const filteredAndSorted = useMemo(() => {
-        const list = (Array.isArray(inventory) ? inventory : []) as any[];
+        const list = (Array.isArray(filteredItems) ? filteredItems : []) as any[];
 
         const getName = (it: any) => it?.rawMaterial?.name ?? it?.product_name ?? "";
         const getCategory = (it: any) => it?.rawMaterial?.category ?? it?.category ?? "";
@@ -129,7 +140,7 @@ export function InventoryPricingPage({ className }: { className?: string }) {
         });
 
         return sorted;
-    }, [inventory, selectedCategory, selectedStatus, selectedSort]);
+    }, [filteredItems, selectedCategory, selectedStatus, selectedSort]);
 
     const { page, setPage, size, paginated } = usePagination(filteredAndSorted, 10, pageKey);
 
@@ -146,31 +157,51 @@ export function InventoryPricingPage({ className }: { className?: string }) {
     }, [searchParams]);
 
     return (
-        <section className={`stack-md ${className}`}>
-            <AppHeader label="Inventory Summary for " hidePapiverseLogo={true} className="mt-auto" />
+        <section className={`w-full stack-md ${className} pb-12 animate-fade-in-up overflow-hidden max-md:mt-12`}>
+            <div className="flex-center-y gap-4">
+                <ArrowLeft  
+                    onClick={() => {history.back()}}
+                    className="w-7 h-7"
+                />
+                <AppHeader 
+                    label="Inventory Summary for " 
+                    hidePapiverseLogo={true} 
+                    className="mt-auto" 
+                />
+            </div>
 
             <Separator className="bg-gray-300 mb-2" />
 
-            <div className="flex-center-y justify-between">
-                <div
-                    onClick={() => setToggleDate(true)}
-                    className="flex-center-y gap-3 text-xl font-bold mt-4 bg-white shadow-sm shadow-lightbrown px-4 py-2 rounded-md w-fit cursor-pointer"
-                >
-                    <CalendarDays />
+            <div
+                onClick={() => setToggleDate(true)}
+                className="flex-center-y gap-3 text-xl font-bold mt-4 bg-white shadow-sm shadow-lightbrown px-4 py-2 w-fit rounded-md cursor-pointer mx-1"
+            >
+                <CalendarDays />
 
-                    <div className="scale-x-110 origin-left">
-                        {byWeek && parsedDate
-                            ? `${format(parsedDate, "MMM d, yyy")} - ${format(new Date(parsedDate.getTime() + 6 * 24 * 60 * 60 * 1000), "MMM d, yyy")}`
-                            : displayDate
-                        }
-                    </div>
-
-                    <Badge className="bg-darkbrown font-bold ml-4">
-                        {byWeek ? "Sun-Sat" : displayDay}
-                    </Badge>
+                <div className="scale-x-110 origin-left">
+                    {byWeek && parsedDate
+                        ? `${format(parsedDate, "MMM d, yyy")} - ${format(new Date(parsedDate.getTime() + 6 * 24 * 60 * 60 * 1000), "MMM d, yyy")}`
+                        : displayDate
+                    }
                 </div>
 
-                <div className="bg-white shadow-sm shadow-lightbrown rounded-md">
+                <Badge className="bg-darkbrown font-bold ml-4">
+                    {byWeek ? "Sun-Sat" : displayDay}
+                </Badge>
+            </div>
+
+            <div className="flex-center-y justify-between mt-2 mx-1">
+                <div className="flex-center-y bg-white shadow-sm shadow-lightbrown rounded-md px-2 w-100 max-sm:w-fit">
+                    <Search className="w-4 h-4" />
+                    <Input
+                        placeholder="Search for a supply"
+                        className="border-0 h-10"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
+                </div>
+
+                <div className="ms-auto w-fit bg-white shadow-sm shadow-lightbrown rounded-md">
                     <Tooltip>
                         <TooltipTrigger
                             onClick={() => setDisplay("PARTIAL")}
@@ -196,8 +227,8 @@ export function InventoryPricingPage({ className }: { className?: string }) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-                <div className="w-full">
+            <div className="grid grid-cols-3 gap-4 mx-1 max-sm:grid-cols-2">
+                <div className="w-full max-sm:col-span-2">
                     <div className="flex-center-y gap-2">
                         <ArrowUpDown className="w-4 h-4" />
                         <div>Sort</div>
@@ -276,7 +307,7 @@ export function InventoryPricingPage({ className }: { className?: string }) {
             {loadingInventory ? (
                 <SectionLoading />
             ) : (
-                <div className={`table-wrapper-scrollable animate-fade-in-up mt-2 ${open ? "w-[82vw]" : "w-[94vw]"}`} key={`${display}-${selectedCategory}-${selectedSort}-${selectedStatus}`}>
+                <div className={`table-wrapper-scrollable animate-fade-in-up mt-2 ${""}`} key={`${display}-${selectedCategory}-${selectedSort}-${selectedStatus}`}>
                     <div
                         className="thead grid"
                         style={{
@@ -299,12 +330,27 @@ export function InventoryPricingPage({ className }: { className?: string }) {
                         paginated.map((item: any) => (
                             <div
                                 className="tdata grid"
+                                key={item.rawMaterial.sku}
                                 style={{
                                     gridTemplateColumns: `220px repeat(${columns.length - 1}, minmax(150px, 1fr))`,
                                     minWidth: `${220 + (columns.length - 1) * 150}px`,
                                 }}
                             >
-                                <div className="td">{item?.rawMaterial?.name ?? item?.product_name}</div>
+                                <Tooltip>
+                                    <TooltipTrigger className="td">
+                                        <Tooltip>
+                                            <TooltipTrigger className="mr-2">
+                                                {item.rawMaterial.category === "MEAT"
+                                                    ? <Ham className="w-4 h-4 text-darkbrown" /> 
+                                                    : <Snowflake className="w-4 h-4 text-blue" />
+                                                }
+                                            </TooltipTrigger>
+                                            <TooltipContent showArrow={false}>{item.rawMaterial.category}</TooltipContent>
+                                        </Tooltip>
+                                        <div className="text-start">{item?.rawMaterial?.name ?? item?.product_name}</div>
+                                    </TooltipTrigger>
+                                    <TooltipContent showArrow={false}>{item.rawMaterial.sku}</TooltipContent>
+                                </Tooltip>
                                 <div className="td">{item?.previousInventory}</div>
                                 <div className="td flex items-center gap-2">
                                     {item?.currentInventory !== item?.previousInventory && Number(item?.previousInventory) !== 0 && (

@@ -14,7 +14,7 @@ export function TableDataTooltip({ content, className, element, action }: {
             >
                 { element || content }
             </TooltipTrigger>
-            <TooltipContent>{ content }</TooltipContent>
+            <TooltipContent showArrow={false} className="mb-2 uppercase">{ content }</TooltipContent>
         </Tooltip>
     )
 }

@@ -31,6 +31,8 @@ export class SupplyService {
     const payload = {
         ...supply,
         name: capitalizeWords(supply.name!),
+        minStock: Number(supply.minStock),
+        convertedQuantity: Number(supply.convertedQuantity),
         unitQuantity: Number(supply.unitQuantity),
         unitPriceInternal: Number(supply.unitPriceInternal),
         unitPriceExternal: Number(supply.unitPriceExternal),

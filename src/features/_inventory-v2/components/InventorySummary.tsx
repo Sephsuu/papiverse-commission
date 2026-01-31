@@ -11,7 +11,7 @@ import { formatDateToWords, formatToPeso } from "@/lib/formatter";
 import { MocksService } from "@/services/mocks.service";
 import { SupplyOrderService } from "@/services/supplyOrder.service";
 import { DetailedCommissary } from "@/types/inventory";
-import { formatDate } from "date-fns";
+import { format, formatDate } from "date-fns";
 import { Ellipsis, Plus } from "lucide-react";
 import Link from "next/link";
 
@@ -26,10 +26,11 @@ const columns = [
 ]
 
 
-export function InventorySummary({ date, className, byWeek }: {
+export function InventorySummary({ date, className, byWeek, displayDate }: {
     date: string
     className?: string
     byWeek: boolean
+    displayDate: string
 }) {
     const { open } = useSidebar();
     
@@ -41,16 +42,25 @@ export function InventorySummary({ date, className, byWeek }: {
 
     const { page, setPage, size, paginated } = usePagination(inventory, 10, pageKey);
 
+    const parsedDate = date ? new Date(date) : null;
+
     if (loadingInventory) return <SectionLoading />
+
     return (
         <section className={`stack-md ${className}`}>
-            <div className="flex-center-y justify-between">
+            <div className="flex-center-y justify-between max-sm:grid!">
                 <div className="text-xl font-bold">
-                    Inventory Summary for {formatDate(new Date(date), 'MMMM dd, yyyy')}
+                    Inventory Summary for
+                    <span className="ml-2 text-darkbrown">
+                        {byWeek && parsedDate
+                            ? `${format(parsedDate, "MMM d, yyy")} - ${format(new Date(parsedDate.getTime() + 6 * 24 * 60 * 60 * 1000), "MMM d, yyy")}`
+                            : displayDate
+                        }
+                    </span>
                 </div>
                 <Link 
                     href={`/inventory/pricing?date=${String(date)}`}
-                    className="hover:underline"
+                    className="hover:underline max-sm:text-right"
                 >
                     View All
                 </Link>

@@ -111,6 +111,14 @@ export function ViewOrderPage({ id }: { id: number }) {
                             >
                                 <FormLoader onProcess={ onProcess } label="Reject Order" loadingLabel="Rejecting Order" />
                             </Button>
+                            {!data?.snowfrostCategory || !data?.meatCategory && (
+                                <Button className="bg-darkorange! hover:opacity-90" 
+                                    disabled={ enableSave(meatApproved!, snowApproved!) }
+                                    onClick={ ()     => setOpen(true) }
+                                >
+                                    <FormLoader onProcess={ onProcess } label="To Follow Order" loadingLabel="Marking as to follow" />
+                                </Button>
+                            )}
                             <Button className="bg-darkgreen! hover:opacity-90" 
                                 disabled={ enableSave(meatApproved!, snowApproved!) }
                                 onClick={ () => setOpen(true) }

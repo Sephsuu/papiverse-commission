@@ -39,17 +39,13 @@ export function InventoryPage() {
         { title: "Net Sales", value: formatToPeso(12000) },
     ]
 
-    useEffect(() => {
-        toast.success(displayDate)
-    }, [date])
-
     return (
-        <section className="stack-md py-2 animate-fade-in-up">
+        <section className="stack-md animate-fade-in-up overflow-hidden max-md:mt-12">
             <AppHeader label="Inventory Overview" />
 
             <div
                 onClick={() => setToggleDate(true)}
-                className="flex-center-y gap-3 text-xl font-bold mt-4 bg-white shadow-sm shadow-lightbrown px-4 py-2 rounded-md w-fit cursor-pointer"
+                className="flex-center-y gap-3 text-xl font-bold mt-4 bg-white shadow-sm shadow-lightbrown px-4 py-2 rounded-md w-fit cursor-pointer max-md:m-1"
             >
                 <CalendarDays />
 
@@ -76,29 +72,33 @@ export function InventoryPage() {
                 setByWeek={setByWeek}
             />
 
-            <div className="grid grid-cols-3 gap-4">
-                {summary.map((item) => (
-                    <div
-                        key={item.title}
-                        className="bg-white shadow-sm shadow-lightbrown p-4 rounded-xl hover:bg-slate-100"
-                    >
-                        <div>{item.title}</div>
-                        <Separator className="my-2" />
-                        <div className="text-2xl font-bold">{item.value}</div>
-                    </div>
-                ))}
+            <div className="overflow-x-auto">
+                <div className="grid grid-cols-3 max-md:p-1 gap-4 max-md:overflow-x-auto max-md:w-250">
+                    {summary.map((item) => (
+                        <div
+                            key={item.title}
+                            className="w-full bg-white shadow-sm shadow-lightbrown p-4 rounded-xl hover:bg-slate-100"
+                        >
+                            <div>{item.title}</div>
+                            <Separator className="my-2" />
+                            <div className="text-2xl font-bold">{item.value}</div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             <InventorySummary 
                 className="mt-8"
                 date={date}
                 byWeek={byWeek}
+                displayDate={displayDate}
             />
 
             <BranchPurchaseItemSummary 
-                className="mt-8"
+                className="mt-8 max-md:mt-14"
                 date={date}
                 byWeek={byWeek}
+                displayDate={displayDate}
             />
         </section>
     )

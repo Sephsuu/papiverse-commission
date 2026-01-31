@@ -13,6 +13,7 @@ import { SquarePen, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { CreatePosition } from "./components/CreatePosition";
 import { UpdatePosition } from "./components/UpdatePosition";
+import { ErrorPage } from "@/components/custom/ErrorPage";
 
 const columns = [
     { title: "Position Name", style: "" },
@@ -32,6 +33,9 @@ export function PositionsPage() {
     const { open, setOpen, toView, setView, toUpdate, setUpdate, toDelete, setDelete } = useCrudState<Positiion>();
 
     if (loading) return <PapiverseLoading />
+
+    if (error) return <ErrorPage error={"Positions page was disabled"} className="-mt-12" />
+
     return (
         <section className="stack-md animate-fade-in-up">
             <AppHeader label="All Employee Positions" />

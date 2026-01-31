@@ -23,6 +23,7 @@ import useNotifications from "@/hooks/use-notification";
 import { useCrudState } from "@/hooks/use-crud-state";
 import { NotificationSheet } from "@/components/shared/NotificationSheet";
 import { ViewProduct } from "./components/ViewProduct";
+import { ErrorPage } from "@/components/custom/ErrorPage";
 
 const pageKey = "productPage";
 const columns = [
@@ -45,7 +46,7 @@ export function ProductsPage() {
     const { claims, loading: authLoading, isFranchisor } = useAuth();
     const [reload, setReload] = useState(false);
     const [filter, setFilter] = useState(filters[0]);
-    const { data, loading } = useFetchData<Product>(ProductService.getAllProducts, [reload]);
+    const { data, loading, error } = useFetchData<Product>(ProductService.getAllProducts, [reload]);
     const { filteredNotifications } = useNotifications({ claims, type: "PRODUCT" })
     const { search, setSearch, filteredItems } = useSearchFilter(data, ['name']);
 
@@ -59,6 +60,9 @@ export function ProductsPage() {
     const { open, setOpen, toView, setView, toUpdate, setUpdate, toDelete, setDelete, showNotif, setShowNotif } = useCrudState<Product>();
 
     if (loading || authLoading) return <SectionLoading />
+
+    if (error) return <ErrorPage error="Products page was disabled" className="-mt-12" />
+
     return (
         <section className="stack-md animate-fade-in-up">
             <TableFilter

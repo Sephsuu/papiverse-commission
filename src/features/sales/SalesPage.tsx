@@ -94,8 +94,8 @@ export function SalesPage({ branchId }: {
 
     if (loading || authLoading || graphLoading || paidOrdersLoading) return <SectionLoading />
 
-    if (errorSalesGraph) return <ErrorPage error={errorSalesGraph} className="-mt-12" /> 
-    if (errorPaidOrder) return <ErrorPage error={errorPaidOrder} className="-mt-12" /> 
+    if (errorSalesGraph) return <ErrorPage error={"Sales page was disabled"} className="-mt-12" /> 
+    if (errorPaidOrder) return <ErrorPage error={"Sales page was disables"} className="-mt-12" /> 
     
     const summary = [
         { title: 'Total Orders', date: formatCustomDate('2025-08-21 22:45:19'), count: data.totalOrders ?? 0  },

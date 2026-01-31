@@ -60,7 +60,7 @@ export function PendingOrders({ claims, paginated, setReload }: {
                         <div className="td">{ item.branchName }</div>
                         <div className="td-wrap">{ formatDateTime(item.orderDate) }</div>
                         <div className="td">
-                            <OrderStatusBadge className="mx-auto" status={ item.status } />
+                            <OrderStatusBadge className="text-xs!" status={ item.status } />
                         </div>
                         <div className="td flex-col items-start! gap-2">
                             <div>{ item.meatCategory?.meatOrderId }</div>
