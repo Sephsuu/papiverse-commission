@@ -1,5 +1,15 @@
-import { BookMarked, ChartNoAxesCombined, CircleQuestionMark, Container, Ham, Megaphone, MessageCircleMore, MessageCircleQuestionMark, Store, UserRound, UsersRound, Wallet } from "lucide-react";
+import { BookMarked, ChartNoAxesCombined, CircleQuestionMark, Container, Ham, LucideIcon, Megaphone, MessageCircleMore, MessageCircleQuestionMark, Store, UserRound, UsersRound, Wallet } from "lucide-react";
 import { hrtime } from "process";
+
+export interface PapiverseRoute {
+    title: string;
+    icon: LucideIcon,
+    href?: string;
+    children: {
+        title: string;
+        href: string
+    } []
+}
 
 export const adminRoute = [
     // { 

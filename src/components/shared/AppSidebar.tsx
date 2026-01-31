@@ -5,7 +5,7 @@ import { redirect, usePathname } from "next/navigation";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarTrigger, useSidebar } from "../ui/sidebar";
 import Link from "next/link";
 import Image from "next/image";
-import { adminRoute, franchiseeRoute } from "@/lib/routes";
+import { adminRoute, franchiseeRoute, PapiverseRoute } from "@/lib/routes";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { ChevronDown, ChevronsUpDown, CircleUserRound, LogOut, Menu } from "lucide-react";
 import { AppAvatar } from "./AppAvatar";
@@ -61,7 +61,7 @@ export function AppSidebar() {
     
         
     const role = claims.roles[0];
-    let route;
+    let route: PapiverseRoute[];
 
     if (role === "FRANCHISOR") route = adminRoute;
     else if (role === "FRANCHISEE") route = franchiseeRoute;
@@ -186,7 +186,7 @@ export function AppSidebar() {
                 collapsible="icon"
             >
                 <SidebarTrigger 
-                    className="rounded-full shadow-6xl bg-white absolute z-50 right-[-20px] top-[47%] -translate-x-1/2 -translate-y-1/2"
+                    className="rounded-full shadow-6xl bg-white absolute z-50 -right-5 top-[47%] -translate-x-1/2 -translate-y-1/2"
                 />
                 <SidebarContent 
                     className={`h-screen rounded-md bg-cover overflow-x-hidden`}
