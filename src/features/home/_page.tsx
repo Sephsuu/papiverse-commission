@@ -15,7 +15,7 @@ export function Homepage() {
 		<section>
 			<HeroSection />
 			<CurvedLoop 
-				marqueeText="Pagkaing Pang-masa 🍚 Masarap ang Lasa 🍖 at Binabalik-balikan 🍗"
+				marqueeText="Pagkaing Pang-masa • Masarap ang Lasa • Binabalik-balikan •"
 				speed={2}
 				curveAmount={100}
 				direction="right"
