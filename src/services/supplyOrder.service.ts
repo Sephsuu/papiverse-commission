@@ -91,20 +91,20 @@ export class SupplyOrderService {
             newStatus,
         });
 
-        if (["TO_FOLLOW", "REJECTED"].includes(newStatus)) {
-            if (meatApproved !== undefined) {
+        if (meatApproved !== undefined) {
             params.append("meatApproved", String(meatApproved));
-            }
-            if (snowApproved !== undefined) {
-            params.append("snowApproved", String(snowApproved));
-            }
         }
 
-        return await requestData(
+        if (snowApproved !== undefined) {
+            params.append("snowApproved", String(snowApproved));
+        }
+
+        return requestData(
             `${url}/update-status?${params.toString()}`,
             "POST"
         );
     }
+
 
 
     static async updateMeatOrder(meatOrder: SupplyItem[], id: string) {

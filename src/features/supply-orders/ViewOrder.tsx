@@ -98,6 +98,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                 />
                 <AppHeader 
                     label={ `${data!.meatCategory?.meatOrderId ?? "No Meat Order"} | ${data!.snowfrostCategory?.snowFrostOrderId ?? "No Snow Order"}`  } 
+                    hidePapiverseLogo={true}
                 />
             </div>
             <div className="flex justify-between items-center max-sm:grid! max-sm:gap-2!">
@@ -125,7 +126,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                             {hasMissingCategory && (
                                 <Button
                                     className="bg-darkorange! hover:opacity-90"
-                                    disabled={ ["APPROVED"].includes(data!.status!) || enableSave(hasMeat!, hasSnowfrost!) || onProcess}
+                                    disabled={ ["APPROVED", "TO_FOLLOW", "TO FOLLOW"].includes(data!.status!) || enableSave(hasMeat!, hasSnowfrost!) || onProcess}
                                     onClick={() => {
                                         setMeatApproved(hasMeat)
                                         setSnowApproved(hasSnowfrost)
@@ -140,7 +141,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                                 </Button>
                             )}
                             <Button className="bg-darkgreen! hover:opacity-90" 
-                                disabled={ enableSave(meatApproved!, snowApproved!) || onProcess }
+                                disabled={ ["APPROVED"].includes(data!.status!) || enableSave(meatApproved!, snowApproved!) || onProcess }
                                 onClick={ () => setOpen(true) }
                             >
                                 <FormLoader onProcess={ onProcess } label="Save Order" loadingLabel="Saving Order" />

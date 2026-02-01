@@ -8,102 +8,92 @@ import { InventoryService } from "@/services/inventory.service";
 import { SupplyOrder } from "@/types/supplyOrder";
 
 export function useSupplyOrderApproval(
-    selectedOrder: SupplyOrder,
-    claims: { branch: { branchId: number } }, // adapt type if you have AuthClaims type
-    setReload: React.Dispatch<React.SetStateAction<boolean>>,
+  selectedOrder: SupplyOrder | null,
+  claims: { branch: { branchId: number } },
+  setReload: React.Dispatch<React.SetStateAction<boolean>>,
 ) {
-    const [onProcess, setProcess] = useState(false);    
+  const [onProcess, setProcess] = useState(false);
 
-    function enableSave(meatApproved: boolean, snowApproved: boolean) {
-        if (
-            meatApproved !== selectedOrder.meatCategory?.isApproved ||
-            snowApproved !== selectedOrder.snowfrostCategory?.isApproved
-        ) {
-            return false;
-        }
-            return true;
-    }
+  const hasBothCategories =
+    !!selectedOrder?.meatCategory && !!selectedOrder?.snowfrostCategory;
 
-  /** ✅ handles submit flow (approve/reject/pending/to-follow) */
+  function enableSave(meatApproved: boolean, snowApproved: boolean) {
+    if (!selectedOrder) return false;
+
+    return (
+      meatApproved === selectedOrder.meatCategory?.isApproved &&
+      snowApproved === selectedOrder.snowfrostCategory?.isApproved
+    );
+  }
+
   async function handleSubmit(
     meatApproved: boolean,
     snowApproved: boolean,
     isRejected = false
   ) {
     try {
-        setProcess(true);
+      setProcess(true);
 
-        if (!selectedOrder) {
-            toast.error("No order selected");
-            return;
-        }
+      if (!selectedOrder) {
+        toast.error("No order selected");
+        return;
+      }
 
-        if (isRejected) {
-            await SupplyOrderService.updateOrderStatus(
-                selectedOrder.orderId!,
-                "REJECTED",
-                meatApproved,
-                snowApproved
-            );
-            return toast.success(
-                `Order ${selectedOrder.meatCategory!.meatOrderId} and ${selectedOrder.snowfrostCategory!.snowFrostOrderId} updated status to REJECTED`
-            );
-        }
+      const orderId = selectedOrder.orderId!;
+      let status: "APPROVED" | "PENDING" | "TO_FOLLOW" | "REJECTED";
+      let sendApprovals = false;
 
-        if (meatApproved && snowApproved) {
-            const orderData = await SupplyOrderService.updateOrderStatus(
-                selectedOrder.orderId!,
-                "APPROVED",
-                meatApproved,
-                snowApproved
-            );
-            const logsData = await InventoryService.createInventoryOrder({
-                branchId: claims.branch.branchId,
-                type: "OUT",
-                source: "ORDER",
-                orderId: selectedOrder.orderId,
-            });
-            if (logsData && orderData) {
-                return toast.success(
-                    `Order ${selectedOrder.meatCategory!.meatOrderId} and ${selectedOrder.snowfrostCategory!.snowFrostOrderId} updated status to APPROVED`
-                );
-            }
-        }
+      /** 🔴 REJECTED */
+      if (isRejected) {
+        status = "REJECTED";
+        sendApprovals = hasBothCategories;
+      }
+      /** 🟢 APPROVED */
+      else if (meatApproved && snowApproved) {
+        status = "APPROVED";
+        sendApprovals = true;
+      }
+      /** 🟡 PENDING */
+      else if (!meatApproved && !snowApproved) {
+        status = "PENDING";
+        sendApprovals = true;
+      }
+      /** 🔵 TO_FOLLOW */
+      else {
+        status = "TO_FOLLOW";
+        sendApprovals = hasBothCategories;
+      }
 
-        if (!meatApproved && !snowApproved) {
-            await SupplyOrderService.updateOrderStatus(
-                selectedOrder.orderId!,
-                "PENDING",
-                meatApproved,
-                snowApproved
-            );
-            return toast.success(
-                `Order ${selectedOrder.meatCategory!.meatOrderId} and ${selectedOrder.snowfrostCategory!.snowFrostOrderId} updated status to PENDING`
-            );
-        }
+      await SupplyOrderService.updateOrderStatus(
+        orderId,
+        status,
+        sendApprovals ? meatApproved : undefined,
+        sendApprovals ? snowApproved : undefined
+      );
 
-        if (meatApproved || snowApproved) {
-                await SupplyOrderService.updateOrderStatus(
-                selectedOrder.orderId!,
-                "TO_FOLLOW",
-                undefined,
-                undefined
-            );
-            return toast.success(
-                `Order ${selectedOrder.meatCategory!.meatOrderId} and ${selectedOrder.snowfrostCategory!.snowFrostOrderId} updated status to TO FOLLOW`
-            );
-        }
+      /** inventory creation ONLY for approved */
+      if (status === "APPROVED") {
+        await InventoryService.createInventoryOrder({
+          branchId: claims.branch.branchId,
+          type: "OUT",
+          source: "ORDER",
+          orderId,
+        });
+      }
+
+      toast.success(`Updated status to ${status}`);
     } catch (error: any) {
-        toast.error(error?.message || `${error}`);
+        if (status === "APPROVED") return
+      toast.error(error?.message || String(error));
     } finally {
-        setProcess(false);
-        setReload((prev) => !prev);
+      setProcess(false);
+      setReload(prev => !prev);
     }
   }
 
-    return {
-        onProcess,
-        enableSave,
-        handleSubmit,
-    };
+  return {
+    onProcess,
+    enableSave,
+    handleSubmit,
+  };
 }

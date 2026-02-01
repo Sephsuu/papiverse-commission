@@ -13,7 +13,7 @@ import { PendingOrders } from "./PendingOrders";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { PapiverseLoading } from "@/components/ui/loader";
 import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AppTabSwitcher } from "@/components/shared/AppTabSwitcher";
 import { CompletedOrders } from "./CompletedOrders";
 import { BranchService } from "@/services/branch.service";
@@ -26,9 +26,12 @@ import { NotificationSheet } from "@/components/shared/NotificationSheet";
 const tabs = ['Pending', 'Completed', 'Rejected']
 
 export function SupplyOrdersPage() {
+    const searchParams = useSearchParams();
     const router = useRouter();
     const [reload, setReload] = useState(false);
-    const [tab, setTab] = useState('Pending');
+
+    const initialTab = searchParams.get("tab") ?? tabs[0];
+    const [tab, setTab] = useState(initialTab);
 
     const { claims, loading: authLoading, isFranchisor } = useAuth();
     const { open, setOpen, showNotif, setShowNotif } = useCrudState();
@@ -56,6 +59,13 @@ export function SupplyOrdersPage() {
             router.push("/inventory/supply-order-form");
         }
     }, [open, router]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        params.set("tab", tab);
+
+        router.replace(`/inventory/supply-orders?${params.toString()}`);
+    }, [tab, router]);
 
     if (loading || authLoading || branhesLoading) return <PapiverseLoading />
     return(

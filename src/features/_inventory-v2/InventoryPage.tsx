@@ -73,7 +73,7 @@ export function InventoryPage() {
             />
 
             <div className="overflow-x-auto">
-                <div className="grid grid-cols-3 max-md:p-1 gap-4 max-md:overflow-x-auto max-md:w-250">
+                <div className="grid grid-cols-3 gap-4">
                     {summary.map((item) => (
                         <div
                             key={item.title}
