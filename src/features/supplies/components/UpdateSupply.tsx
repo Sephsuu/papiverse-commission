@@ -36,11 +36,11 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
             if (value === "" || value === undefined || value === null) {
                 invalid = true;
             }
-            if (typeof value === "number" && value === 0) {
-                if (supply.isDeliverables) {
-                    invalid = true;
-                }
-            }
+            // if (typeof value === "number") {
+            //     if (supply.isDeliverables) {
+            //         invalid = true;
+            //     }
+            // }
             }
             if (invalid) {
                 toast.info("Please fill up all fields!");
@@ -48,13 +48,16 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                 return;
             }
             const data = await SupplyService.updateSupply(supply);
-            if (data) toast.success(`Supply ${supply.name} updated successfully!`);    
+            if (data) {
+                toast.success(`Supply ${supply.name} updated successfully!`);   
+                setReload(prev => !prev); 
+                setUpdate(undefined);
+            } 
         }
         catch(error){ toast.error(`${error}`) }
         finally { 
-            setReload(prev => !prev);
+            
             setProcess(false);
-            setUpdate(undefined);
         }
     }
 

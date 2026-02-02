@@ -34,11 +34,11 @@ export function CreateSupply({ setOpen, setReload }: Props) {
             if (value === "" || value === undefined || value === null) {
                 invalid = true;
             }
-            if (typeof value === "number" && value === 0) {
-                if (supply.isDeliverables) {
-                    invalid = true;
-                }
-            }
+            // if (typeof value === "number" && value === 0) {
+            //     if (supply.isDeliverables) {
+            //         invalid = true;
+            //     }
+            // }
             }
             if (invalid) {
                 toast.info("Please fill up all fields!");
