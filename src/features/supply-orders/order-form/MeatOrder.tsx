@@ -70,10 +70,6 @@ export function MeatOrder({
         useSearchFilter(availableSupplies, ["name", "sku"]);
 
     const handleSubmit = () => {
-        if (!selectedItems.some((i) => i.category === "MEAT")) {
-            toast.error("Please select at least one meat item");
-            return;
-        }
         setActiveForm("snow");
     };
 
@@ -208,9 +204,14 @@ export function MeatOrder({
 
             {!toEdit && (
                 <div className="w-full justify-end flex gap-2">
-                    <Link href="/inventory?tab=summary">
-                        <Button variant="secondary">Return</Button>
-                    </Link>
+                    {/* <Link href="/inventory?tab=summary"> */}
+                    <Button 
+                        onClick={() => {history.back()}}
+                        variant="secondary"
+                    >
+                        Return
+                    </Button>
+                    {/* </Link> */}
                     <Button
                         onClick={handleSubmit}
                         className="bg-darkbrown text-light hover:opacity-90"
