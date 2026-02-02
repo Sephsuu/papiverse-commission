@@ -7,6 +7,7 @@ export type Branch = {
     zipCode: string;
     status: string;
     isInternal: boolean;
+    deliveryFee?: number
     code?: string;
 
 	id?: number;
@@ -21,7 +22,8 @@ export const branchInit: Branch = {
 	zipCode: "",
 	status: "",
 	isInternal: false,
-    code : ""
+    code : "",
+    deliveryFee: 0,
 };
 
 export const branchFields: (keyof Branch)[] = [

@@ -11,4 +11,11 @@ export class DeliveryService {
             "GET"
         );
     }
+
+    static async updateDeliveryFee(id: number, fee: number) {
+        return await requestData(
+            `${url}/update?branchId=${id}&deliveryFee=${fee}`,
+            "POST"
+        );
+    }
 }

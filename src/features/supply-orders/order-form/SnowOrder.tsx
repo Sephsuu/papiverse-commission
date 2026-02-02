@@ -88,7 +88,7 @@ export function SnowOrder({
             {toEdit ? (
                 <div className="text-lg font-semibold">Edit Snow Order</div>
             ) : (
-                <AppHeader label="Snow Order Form" />
+                <AppHeader label="Snowfrost Order Form" />
             )}
 
             <div className="table-wrapper">

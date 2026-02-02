@@ -11,7 +11,7 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-const status = ['OPEN', 'UNDER RENOVATION/CONSTRUCTION', 'ACTIVE', 'INACTIVE']; 
+const status = ['UNDER RENOVATION/CONSTRUCTION', 'ACTIVE', 'INACTIVE']; 
 
 interface Props {
     setReload: React.Dispatch<React.SetStateAction<boolean>>;
@@ -71,7 +71,7 @@ export function UpdateBranch({setReload, toUpdate, setUpdate }: Props) {
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>Branch Name</div>
                             <div className="flex border border-gray rounded-md max-md:w-full">
-                                <input value="Krispy Papi" className="w-24 text-center border-0" readOnly />
+                                <input value="KrispyPapi" className="w-24 text-center border-0" readOnly />
                                 <Input    
                                     className="w-full" 
                                     name ="name"  

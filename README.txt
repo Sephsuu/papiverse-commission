@@ -1,0 +1,1 @@
+[NOTICE FEB 2] For the mean time external price will be the same as internal price on supplues

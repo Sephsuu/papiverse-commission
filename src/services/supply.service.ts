@@ -34,7 +34,7 @@ export class SupplyService {
         minStock: Number(supply.minStock),
         convertedQuantity: Number(supply.convertedQuantity),
         unitQuantity: Number(supply.unitQuantity),
-        unitPriceInternal: Number(supply.unitPriceInternal),
+        unitPriceInternal: Number(supply.unitPriceExternal), // [NOTICE]
         unitPriceExternal: Number(supply.unitPriceExternal),
     };
 
@@ -52,7 +52,7 @@ export class SupplyService {
         name: capitalizeWords(supply.name!),
         category: supply.isDeliverables ? supply.category : 'NONDELIVERABLES',
         unitQuantity: Number(supply.unitQuantity),
-        unitPriceInternal: supply.isDeliverables ? Number(supply.unitPriceInternal) : 0,
+        unitPriceInternal: supply.isDeliverables ? Number(supply.unitPriceExternal) : 0, // [NOTICE]
         unitPriceExternal: supply.isDeliverables ? Number(supply.unitPriceExternal) : 0,
     };
 

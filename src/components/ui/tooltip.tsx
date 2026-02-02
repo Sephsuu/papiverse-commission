@@ -62,9 +62,9 @@ function TooltipContent({
         {...props}
       >
         {children}
-        {showArrow && (
+        {/* {showArrow && (
           <TooltipPrimitive.Arrow className={`bg-primary fill-primary z-50 size-2.5 translate-y-[calc(-50%-2px)] rotate-45 rounded-[2px] ${"bg-white!"}`} />
-        )}
+        )} */}
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   )

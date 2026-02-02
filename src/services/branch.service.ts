@@ -22,7 +22,7 @@ export class BranchService {
     static async addBranch(branch: Branch) {
         const payload = {
             ...branch,
-            name: `Krispy Papi ${branch.name}`,
+            name: `KrispyPapi ${branch.name}`,
             zipCode: Number(branch.zipCode),
         };
 

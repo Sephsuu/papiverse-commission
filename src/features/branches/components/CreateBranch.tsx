@@ -18,7 +18,7 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-const status = ['Open', 'Under Renovation/Construction', 'Active', 'Inactive']; 
+const status = ['UNDER RENOVATION/CONSTRUCTION', 'ACTIVE', 'INACTIVE']; 
 
 interface Props {
     setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -51,11 +51,11 @@ export function CreateBranch({ setOpen, setReload }: Props) {
             if (data) {
                 toast.success(`Branch ${branch.name} registered successfully!`);
                 setReload(prev => !prev);
-                setProcess(false);
                 setOpen(!open);
             }    
         }
         catch(error){ toast.error(`${error}`) }
+        finally { setProcess(false) }
     }
 
     useEffect(() => {
@@ -87,7 +87,7 @@ export function CreateBranch({ setOpen, setReload }: Props) {
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>Branch Name</div>
                             <div className="flex border border-gray rounded-md max-md:w-full">
-                                <input value="Krispy Papi" className="w-24 text-center border-0" readOnly />
+                                <input value="KrispyPapi" className="w-24 text-center border-0" readOnly />
                                 <Input    
                                     className="w-full" 
                                     name ="name"  
@@ -99,7 +99,7 @@ export function CreateBranch({ setOpen, setReload }: Props) {
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>Branch Status</div>
                             <Select 
-                                value={ branch.status ?? "" }
+                                value={branch.status ?? ""}
                                 onValueChange={ (value) => setBranch(prev => ({
                                     ...prev,
                                     status: value
@@ -118,7 +118,7 @@ export function CreateBranch({ setOpen, setReload }: Props) {
                             </Select>
                         </div>
                         <div className="flex flex-col gap-1 col-span-2">
-                            <div>Branch Status</div>
+                            <div>Branch Type</div>
                             <RadioGroup
                                 className="mt-2 flex"
                                 value={String(branch.isInternal)}              
@@ -139,6 +139,19 @@ export function CreateBranch({ setOpen, setReload }: Props) {
                                     <Label htmlFor="r2">External Branch</Label>
                                 </div>
                             </RadioGroup>
+                        </div>
+                        <div className="flex flex-col gap-1 col-span-2">
+                            <div>Delivery Fee</div>
+                            <div className="flex border border-gray rounded-md">
+                                <input disabled value="₱" className="w-10 text-center" /> 
+                                <Input 
+                                    type="number"
+                                    className="w-full max-md:w-full" 
+                                    name ="deliveryFee"  
+                                    value={ branch.deliveryFee }
+                                    onChange={ e => handleChange(e, setBranch) }
+                                />
+                            </div>
                         </div>
                         <div className="col-span-2 font-semibold mt-2">Location of the Branch</div>
                         <div className="flex flex-col gap-1 col-span-2">

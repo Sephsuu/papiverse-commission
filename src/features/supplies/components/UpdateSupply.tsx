@@ -80,10 +80,7 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                             <div>SKU ID</div>
                             <Input    
                                 className="w-full border border-gray rounded-md max-md:w-full" 
-                                // placeholder="e.g. RAW001"
-                                // name ="code"  
                                 value={supply.sku}
-                                // onChange={ e => handleChange(e, setSupply)}
                                 disabled
                             />  
                         </div>
@@ -171,7 +168,7 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                                 </Select>
                             </div>
                         </div>
-                        <div className="flex flex-col gap-1">
+                        {/* <div className="flex flex-col gap-1">
                             <div>Internal Price</div>
                             <div className="flex border border-gray rounded-md">
                                 <input disabled value="₱" className={`${!supply.isDeliverables && "text-gray"} w-10 text-center`} />
@@ -184,8 +181,8 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                                     disabled={ !supply.isDeliverables }
                                 />
                             </div>
-                        </div>
-                        <div className="flex flex-col gap-1">
+                        </div> */}
+                        <div className="flex flex-col gap-1 col-span-2">
                             <div>External Price</div>
                             <div className="flex border border-gray rounded-md">
                                 <input disabled value="₱" className={`${!supply.isDeliverables && "text-gray"} w-10 text-center`} />

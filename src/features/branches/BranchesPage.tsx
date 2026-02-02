@@ -17,12 +17,14 @@ import { DeleteBranch } from "./components/DeleteBranch";
 import { OrderStatusBadge } from "@/components/ui/badge";
 import { useCrudState } from "@/hooks/use-crud-state";
 import { ViewBranch } from "./components/ViewBranch";
+import { formatToPeso } from "@/lib/formatter";
 
 const pageKey = "branchPage";
 const columns = [
     { title: "Branch Name", style: "" },
     { title: "Full Address", style: "col-span-2" },
     { title: "Branch Type", style: "" },
+    { title: "Delivery Fee", style: "" },
     { title: "Actions", style: "" },
 ]
 const filters = ['All', 'Internal Branch', 'External Branch'];
@@ -61,7 +63,7 @@ export function BranchesPage() {
             />
 
             <div className="table-wrapper">
-                <div className="thead grid grid-cols-5">
+                <div className="thead grid grid-cols-6">
                     {columns.map((item, _) => (
                         <div key={_} className={`th ${item.style}`}>{ item.title }</div>
                     ))}
@@ -70,7 +72,7 @@ export function BranchesPage() {
                 <div className="animate-fade-in-up" key={`${page}-${filter}`}>
                     {paginated.length > 0 ? (
                         paginated.map((item, index) => (
-                            <div className="tdata grid grid-cols-5" key={index}>
+                            <div className="tdata grid grid-cols-6" key={index}>
                                 <div className="td">{ item.name }</div>
                                 <div className="td col-span-2 wrap-break-words">
                                     {`${item.streetAddress}, ${item.barangay}, ${item.city}, ${item.province}`}
@@ -81,7 +83,11 @@ export function BranchesPage() {
                                         status={item.isInternal ? "Internal Branch" : "External Branch"} 
                                     />
                                 </div>
-                                <div className="td flex-center-y gap-2">
+                                <div className="td justify-between">
+                                    <div>₱</div>
+                                    <div>{formatToPeso(item.deliveryFee!).slice(1,)}</div>
+                                </div>
+                                <div className="td flex-center gap-2">
                                     <button onClick={() => setUpdate(item)}><SquarePen className="w-4 h-4 text-darkgreen" /></button>
                                     <button onClick={() => setView(item)}><Info className="w-4 h-4" /></button>
                                     <button onClick={() => setDelete(item)}><Trash2 className="w-4 h-4 text-darkred" /></button>
@@ -112,6 +118,7 @@ export function BranchesPage() {
 
             {toView && (
                 <ViewBranch
+                    setReload={setReload}
                     toView={ toView }
                     setView={ setView }
                 />

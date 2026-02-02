@@ -1,6 +1,6 @@
 import { BASE_URL } from "@/lib/urls";
 import { requestData } from "./_config";
-import { CompleteOrder, SupplyItem } from "@/types/supplyOrder";
+import { CompleteOrder, SupplyItem, SupplyOrder } from "@/types/supplyOrder";
 
 const url = `${BASE_URL}/supply-order`;
 const meatUrl = `${BASE_URL}/meat-order`

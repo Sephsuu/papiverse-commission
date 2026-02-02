@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation";
 import { Dispatch, SetStateAction, useState } from "react";
 import { toast } from "sonner";
 
-const tabs = ['Meat Order', 'Snow Order']
+const tabs = ['Meat Commissary', 'Snowfrost Commissary']
 
 export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
     claims: Claim;
@@ -31,7 +31,7 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
     const { data: delivery, loading, error } = useFetchOne<Delivery>(DeliveryService.getDeliveryFeeByBranch, [], [claims.branch.branchId]);
 
     const router = useRouter()
-    const [tab, setTab] = useState('Meat Order');
+    const [tab, setTab] = useState(tabs[0]);
     const [open, setOpen] = useState(false);
     const [onProcess, setProcess] = useState(false);
     
@@ -112,7 +112,7 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
                     <Button
                         key={i}
                         onClick={ () => setTab(item) }
-                        className={`w-30 rounded-full bg-slate-50! text-dark hover:opacity-50 ${tab === item && "bg-darkbrown! text-light hover:opacity-100"}`}
+                        className={`w-42 rounded-full bg-slate-50! text-dark hover:opacity-50 ${tab === item && "bg-darkbrown! text-light hover:opacity-100"}`}
                     >
                         { item }
                     </Button>
@@ -123,7 +123,7 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
                 claims={claims}
                 tab={ tab }
                 orders={
-                    tab === 'Meat Order'
+                    tab === tabs[0]
                         ? (meatReceipt ?? [])
                         : (snowFrostReceipt ?? [])
                 }
@@ -181,7 +181,7 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal }: {
         <div className="p-4 bg-white rounded-md shadow-sm relative animate-fade-in-up" key={tab}>
             <Image src="/images/kp_logo.png" alt="KP Logo" width={60} height={60} className="top-2 right-2 absolute" />
             <div className="flex justify-center items-center gap-2 max-sm:mt-6">
-                { tab === 'Meat Order' ? <Ham /> : <Snowflake /> }
+                { tab === tabs[0] ? <Ham /> : <Snowflake /> }
                 <div className="font-semibold">{ tab } Receipt</div>
             </div>
             <div className="text-center text-sm text-gray">Please review carefully your order form.</div>
@@ -192,7 +192,7 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal }: {
                     <span className="text-gray">Order the supplies first</span>
                 </div>
                 <div className="text-sm ms-auto max-sm:ms-0">
-                    <span className="font-bold">To: </span>KP Comissary
+                    <span className="font-bold">To: </span>KP Commissary
                 </div>
                 <div className="text-sm flex-center-y gap-2">
                     <span className="font-bold">Status: </span>
@@ -228,7 +228,7 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal }: {
                 Meat Order <span className="font-semibold text-dark">+ { formatToPeso(meatTotal) }</span>
             </div>
             <div className="text-gray text-sm text-end mx-4 mt-2">
-                Snow Order <span className="font-semibold text-dark">+ { formatToPeso(snowTotal) }</span>
+                Snowfrost Order <span className="font-semibold text-dark">+ { formatToPeso(snowTotal) }</span>
             </div>
             <div className="text-gray text-sm text-end mx-4 mt-2">
                 Delivery Fee <span className="font-semibold text-dark">+ { formatToPeso(delivery ? delivery.deliveryFee : 0) }</span>

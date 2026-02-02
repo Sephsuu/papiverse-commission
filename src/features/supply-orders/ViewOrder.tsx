@@ -16,7 +16,7 @@ import { formatCompactNumber, formatDateToWords, formatToPeso } from "@/lib/form
 import { InventoryService } from "@/services/inventory.service";
 import { SupplyOrderService } from "@/services/supplyOrder.service"
 import { Inventory } from "@/types/inventory";
-import { SupplyItem, SupplyOrder } from "@/types/supplyOrder"
+import { SupplyOrder } from "@/types/supplyOrder"
 import { ArrowLeft, Ham, MoveRight, Snowflake } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { EditOrderForm } from "./order-form/EditOrderForm";
 import { EmptyState } from "@/components/ui/fallback";
 
-const tabs = ['Meat Order', 'Snow Order']
+const tabs = ['Meat Commissary', 'Snowfrost Commissary']
 
 const columns = [
     { title: 'No.', style: 'text-center' },
@@ -43,30 +43,45 @@ export function ViewOrderPage({ id }: { id: number }) {
     const { data: inventories, loading: inventoryLoading } = useFetchData(InventoryService.getInventoryByBranch, [claims.branch.branchId, reload], [claims.branch.branchId])
     const { onProcess, enableSave, handleSubmit } = useSupplyOrderApproval(data!, claims, setReload);    
     
-    const [tab, setTab] = useState('Meat Order');
+    const [tab, setTab] = useState(tabs[0]);
     const [open, setOpen] = useState(false);
     const [toEdit, setEdit] = useState(false);
     const [toReject, setReject] = useState(false);
     const [meatApproved, setMeatApproved] = useState<boolean | undefined>(undefined);
     const [snowApproved, setSnowApproved] = useState<boolean | undefined>(undefined);
 
+    useEffect(() => {
+        if (!data) return;
+
+        setMeatApproved(
+            data.meatCategory === null
+            ? true
+            : data.meatCategory
+                ? data.meatCategory.isApproved
+                : undefined
+        );
+
+        setSnowApproved(
+            data.snowfrostCategory === null
+            ? true
+            : data.snowfrostCategory
+                ? data.snowfrostCategory.isApproved
+                : undefined
+        );
+    }, [data]);
+
+
+
     const hasSnowfrost = Boolean(data?.snowfrostCategory);
     const hasMeat = Boolean(data?.meatCategory);
 
     const hasMissingCategory = !hasSnowfrost || !hasMeat;
 
-    useEffect(() => {
-        if (data) {
-            setMeatApproved(data.meatCategory?.isApproved ?? false);
-            setSnowApproved(data.snowfrostCategory?.isApproved ?? false);
-        }
-    }, [data]);    
-
     if (loading || authLoading || inventoryLoading) return <PapiverseLoading /> 
     if (toEdit) return <EditOrderForm 
         orderId={ data!.orderId! }
         meatId={data?.meatCategory?.meatOrderId ?? "No meat order"}
-        snowId={data?.snowfrostCategory?.snowFrostOrderId ?? "No snow order"}
+        snowId={data?.snowfrostCategory?.snowFrostOrderId ?? "No snowfrost order"}
         meatApproved={ data!.meatCategory!.isApproved }
         snowApproved={ data!.snowfrostCategory!.isApproved }
         toEditItems={[
@@ -97,7 +112,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                     onClick={() => {history.back()}}
                 />
                 <AppHeader 
-                    label={ `${data!.meatCategory?.meatOrderId ?? "No Meat Order"} | ${data!.snowfrostCategory?.snowFrostOrderId ?? "No Snow Order"}`  } 
+                    label={ `${data!.meatCategory?.meatOrderId ?? "No Meat Order"} | ${data!.snowfrostCategory?.snowFrostOrderId ?? "No Snowfrost Order"}`  } 
                     hidePapiverseLogo={true}
                 />
             </div>
@@ -107,7 +122,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                         <Button
                             key={i}
                             onClick={ () => setTab(item) }
-                            className={`w-30 rounded-full bg-slate-50! text-dark hover:opacity-50 ${tab === item && "bg-darkbrown! text-light hover:opacity-100"}`}
+                            className={`w-42 rounded-full bg-slate-50! text-dark hover:opacity-50 ${tab === item && "bg-darkbrown! text-light hover:opacity-100"}`}
                         >
                             { item }
                         </Button>
@@ -156,12 +171,12 @@ export function ViewOrderPage({ id }: { id: number }) {
                 <div className="top-2 left-2 flex-center-y gap-2">
                     <Checkbox id="meat" 
                         className="border border-gray shadow-sm w-5 h-5 data-[state=checked]:bg-darkgreen" 
-                        checked={ tab === 'Snow Order' ? snowApproved : meatApproved }
-                        onCheckedChange={(checked: boolean) => { tab === 'Snow Order' ? setSnowApproved(checked) : setMeatApproved(checked)}}
-                        disabled={ ["APPROVED", "DELIVERED", "REJECTED"].includes(data!.status!) || !isFranchisor }
+                        checked={ tab === tabs[1] ? snowApproved : meatApproved }
+                        onCheckedChange={(checked: boolean) => { tab === tabs[1] ? setSnowApproved(checked) : setMeatApproved(checked)}}
+                        disabled={ ["APPROVED", "DELIVERED", "REJECTED"].includes(data!.status!) || !isFranchisor || (tab === tabs[0] && data?.meatCategory === null) || (tab === tabs[1] && data?.snowfrostCategory === null) }
                     />
                     <label htmlFor="meat" className={`text-[16px] font-semibold ${["APPROVED", "DELIVERED", "REJECTED"].includes(data!.status!) && "text-gray"}`}>
-                        {tab === 'Snow Order' ? 
+                        {tab === tabs[1] ? 
                             snowApproved ? 'Approved' : 'Not Approved'
                             : meatApproved ? 'Approved' : 'Not Approved'
                         }
@@ -169,7 +184,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                 </div>
                 <Image src="/images/kp_logo.png" alt="KP Logo" width={60} height={60} className="top-2 right-2 absolute" />
                 <div className="flex justify-center items-center gap-2">
-                    { tab === 'Snow Order' ? <Snowflake /> : <Ham /> }
+                    { tab === tabs[1] ? <Snowflake /> : <Ham /> }
                     <div className="font-semibold">{ tab } Receipt</div>
                 </div>
                 {claims.roles[0] === 'FRANCHISOR' ? 
@@ -178,7 +193,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                 }
                 <div className="grid grid-cols-2 gap-1 mt-2 max-sm:grid-cols-1 max-sm:gap-1.5">
                     <div className="text-sm"><span className="font-bold">Order ID: </span>
-                        { tab === 'Snow Order' ? 
+                        { tab === tabs[1] ? 
                             data!.snowfrostCategory?.snowFrostOrderId 
                             : data!.meatCategory?.meatOrderId
                         }
@@ -189,7 +204,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                         <OrderStatusBadge className="scale-110" status={ data!.status} />
                     </div>
                     <div className="text-sm ms-auto inline-block max-sm:ms-0"><span className="font-bold">Date:</span> { formatDateToWords(data!.orderDate) }</div>
-                    <div className="text-sm"><span className="font-bold">Tel No: </span>{ "+63 123 456 7890" }</div>
+                    <div className="text-sm"><span className="font-bold">Tel No: </span>{ "+63 945 501 8376" }</div>
                     <div className="text-sm ms-auto max-sm:ms-0"><span className="font-bold">Delivery within: </span>{ data!.branchName }</div>
                 </div>
 
@@ -199,7 +214,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                             <div key={_} className={`th ${item.style}`}>{ item.title }</div>
                         ))}
                     </div>
-                    {tab === "Meat Order" ? (
+                    {tab === tabs[0] ? (
                         data?.meatCategory ? (
                             <Orders
                             orders={data.meatCategory.meatItems}
@@ -224,7 +239,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                     Meat Order <span className="font-semibold text-dark">+ { data?.meatCategory ?  formatToPeso(data!.meatCategory!.categoryTotal) : formatToPeso(0) }</span>
                 </div>
                 <div className="text-gray text-sm text-end mx-4 mt-2">
-                    Snow Order <span className="font-semibold text-dark">+ { data?.snowfrostCategory ?formatToPeso(data!.snowfrostCategory!.categoryTotal) : formatToPeso(0) }</span>
+                    Snowfrost Order <span className="font-semibold text-dark">+ { data?.snowfrostCategory ?formatToPeso(data!.snowfrostCategory!.categoryTotal) : formatToPeso(0) }</span>
                 </div>
                 <div className="text-gray text-sm text-end mx-4 mt-2">
                     Delivery Fee <span className="font-semibold text-dark">+ { formatToPeso(data!.deliveryFee) }</span>
@@ -345,7 +360,7 @@ function ConfirmSave({ setOpen, order, meatApproved, snowApproved, onProcess, ha
                     </div>
                     <Separator className="h-2 bg-gray" />
                     <div className="flex-center flex-col gap-2">
-                        <div className="text-center">Snow Order Approval</div>
+                        <div className="text-center">Snowfrost Order Approval</div>
                         {order.snowfrostCategory?.isApproved === snowApproved ?
                             <div className={`text-center font-bold ${snowApproved ? "text-darkgreen" : "text-darkred"}`}>
                                 { snowApproved ? 'Approved' : 'Not Approved' }
@@ -419,25 +434,4 @@ function ConfirmReject({ orderId, open, setOpen, setReload }: {
             </DialogContent>
         </Dialog>
     )
-}
-
-function SafeOrders({
-    items,
-    inventories,
-    emptyLabel,
-}: {
-    items?: {
-        rawMaterialCode: string;
-        rawMaterialName: string;
-        quantity: number;
-        price: number;
-    } [];
-    inventories: Inventory[];
-    emptyLabel: string;
-}) {
-    if (!items || items.length === 0) {
-        return <p className="text-muted-foreground">{emptyLabel}</p>;
-    }
-
-    return <Orders orders={items} inventories={inventories} />;
 }
