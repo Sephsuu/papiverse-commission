@@ -8,6 +8,8 @@ import { TestimonialSection } from "./Testimonials";
 import { VisionSection } from "./Vision";
 import { useRevealOnScroll } from "@/hooks/use-reveal";
 import CurvedLoop from "@/components/blocks/CurvedLoop/CurvedLoop";
+import { InquiriesPage } from "../inquiries/InquiriesPage";
+import { InquiryFormPage } from "../inquiries/InquiryFormPage";
 
 export function Homepage() {
 	useRevealOnScroll();
@@ -26,6 +28,7 @@ export function Homepage() {
 			<MissionSection />
 			{/* <SucsessStorySection /> */}
 			<TestimonialSection />
+			<InquiryFormPage />
 
 			<section className="h-40" />
 		</section>

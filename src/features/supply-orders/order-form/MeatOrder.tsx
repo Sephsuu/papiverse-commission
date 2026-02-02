@@ -1,48 +1,86 @@
-"use client"
+"use client";
 
 import { AppHeader } from "@/components/shared/AppHeader";
 import { Button } from "@/components/ui/button";
+import {
+    Command,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import { useSearchFilter } from "@/hooks/use-search-filter";
 import { formatToPeso } from "@/lib/formatter";
 import { Supply } from "@/types/supply";
 import { SupplyItem } from "@/types/supplyOrder";
-import { Ham, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import Link from "next/link";
-import { Fragment } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 const columns = [
-    { title: 'SKU ID', style: '' },
-    { title: 'Qty', style: '' },
-    { title: 'Supply Name', style: 'col-span-2' },
-    { title: 'Unit', style: '' },
-    { title: 'Unit Price', style: '' },
-    { title: 'Total', style: '' },
-    { title: 'Remove', style: '' },
-]
+    { title: "SKU ID", style: "" },
+    { title: "Qty", style: "" },
+    { title: "Supply Name", style: "col-span-2" },
+    { title: "Unit", style: "" },
+    { title: "Unit Price", style: "" },
+    { title: "Total", style: "" },
+    { title: "Remove", style: "" },
+];
 
 interface Props {
     supplies: Supply[];
     selectedItems: SupplyItem[];
     setActiveForm: (i: string) => void;
-    onSelect: (i: string) => void;
+    onSelect: (sku: string) => void;
     onQuantityChange: (sku: string, quantity: number) => void;
-    onRemove: (i: string) => void;
-    toEdit?: false | boolean,
+    onRemove: (sku: string) => void;
+    toEdit?: boolean;
     className?: string;
 }
 
-export function MeatOrder({ supplies, selectedItems, setActiveForm, onSelect, onQuantityChange, onRemove, toEdit, className }: Props) {
-    const { search, setSearch, filteredItems: filteredSupplies } = useSearchFilter(supplies, ['name', 'sku'])
+export function MeatOrder({
+    supplies,
+    selectedItems,
+    setActiveForm,
+    onSelect,
+    onQuantityChange,
+    onRemove,
+    toEdit,
+    className,
+}: Props) {
+    const [open, setOpen] = useState(false);
 
-    const handleSubmit = async () => {
-        setActiveForm("snow")
+    const selectedSkus = new Set(
+        selectedItems
+            .filter((i) => i.category === "MEAT")
+            .map((i) => i.sku)
+    );
+
+    const availableSupplies = supplies.filter(
+        (s) => !selectedSkus.has(s.sku)
+    );
+
+    const { search, setSearch, filteredItems: filteredSupplies } =
+        useSearchFilter(availableSupplies, ["name", "sku"]);
+
+    const handleSubmit = () => {
+        if (!selectedItems.some((i) => i.category === "MEAT")) {
+            toast.error("Please select at least one meat item");
+            return;
+        }
+        setActiveForm("snow");
     };
 
-    return(
-        <section className={`stack-md animate-fade-in-up pb-12 overflow-hidden max-md:mt-12 ${className}`}>
+    return (
+        <section
+            className={`stack-md animate-fade-in-up pb-120 overflow-hidden max-md:mt-12 ${className}`}
+        >
             {toEdit ? (
                 <div className="text-lg font-semibold">Edit Meat Order</div>
             ) : (
@@ -51,70 +89,120 @@ export function MeatOrder({ supplies, selectedItems, setActiveForm, onSelect, on
 
             <div className="table-wrapper">
                 <div className="thead grid max-md:w-250! grid-cols-8 bg-[#ead09f]!">
-                    {columns.map((item, _) => (
-                        <div key={_} className={`th ${item.style}`}>{ item.title }</div>
+                    {columns.map((item, index) => (
+                        <div key={index} className={`th ${item.style}`}>
+                            {item.title}
+                        </div>
                     ))}
                 </div>
-                
-                {selectedItems.filter(i => i.category === 'MEAT').map((item, index) => (
-                    <div className="tdata grid grid-cols-8 max-md:w-250!" key={index}>
-                        <div className="td">{ item.sku }</div>
-                        <div className="td p-0!">
-                            <Input
-                                type="number"
-                                min="1"
-                                value={item.quantity || ""}
-                                onChange={(e) => {
-                                    const value = e.target.value;
-                                    if (value === "") {
-                                        onQuantityChange(item.sku!, 0);
-                                        return;
-                                    }
-                                    let num = Number(value);
-                                    if (num < 1) {
-                                        num = 1;
-                                    }
-                                    num = Number(String(num));
-                                    onQuantityChange(item.sku!, num);
-                                }}
-                                className="text-[16px] font-semibold w-18 border-0 pl-2 mx-auto"
-                            />
-                        </div>
-                        <div className="td col-span-2">{ item.name }</div>
-                        <div className="td">{item.unitQuantity} { item.unitMeasurement }</div>
-                        <div className="td">{ formatToPeso(item.unitPrice!) }</div>
-                        <div className="td">{ formatToPeso(item.unitPrice! * item.quantity!) }</div>
-                        <div className="flex td">
-                            <Button 
-                                type="button"
-                                variant="secondary" 
-                                size="sm"
-                                onClick={() => onRemove(item.sku!)}
-                                className="h-fit! py-1 my-auto"
-                            >
-                                <Trash2 className="text-darkred" />
-                            </Button>
-                        </div>
-                    </div>
-                ))}
-                <div className="tdata grid grid-cols-8">
-                    <Select onValueChange={ onSelect }>
-                        <SelectTrigger className="p-0 pl-2 m-0 border-0 shadow-none mx-auto w-fit">
-                            <SelectValue placeholder="Select Item">Select Item</SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
+
+                {selectedItems
+                    .filter((i) => i.category === "MEAT")
+                    .map((item, index) => (
+                        <div className="tdata grid grid-cols-8 max-md:w-250!" key={index}>
+                            <div className="td">{item.sku}</div>
+
+                            <div className="td p-0!">
                                 <Input
-                                    placeholder="Search for a supply"
-                                    onChange={ e => setSearch(e.target.value) }
+                                    type="number"
+                                    min="1"
+                                    value={item.quantity || ""}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (value === "") {
+                                            onQuantityChange(item.sku!, 0);
+                                            return;
+                                        }
+                                        let num = Number(value);
+                                        if (num < 1) {
+                                            num = 1;
+                                        }
+                                        num = Number(String(num));
+                                        onQuantityChange(item.sku!, num);
+                                    }}
+                                    className="text-[16px] font-semibold w-18 border-0 pl-2 mx-auto"
                                 />
-                                <SelectLabel>Meat Supplies</SelectLabel>
-                                {filteredSupplies.map((item) => (
-                                    <SelectItem key={item.sku} value={item.sku!}>{item.sku} - {item.name}</SelectItem>
-                                ))}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
+                            </div>
+
+                            <div className="td col-span-2">{item.name}</div>
+                            <div className="td">
+                                {item.unitQuantity} {item.unitMeasurement}
+                            </div>
+                            <div className="td">
+                                {formatToPeso(item.unitPrice!)}
+                            </div>
+                            <div className="td">
+                                {formatToPeso(item.unitPrice! * item.quantity!)}
+                            </div>
+
+                            <div className="flex td">
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => onRemove(item.sku!)}
+                                    className="h-fit! py-1 my-auto"
+                                >
+                                    <Trash2 className="text-darkred" />
+                                </Button>
+                            </div>
+                        </div>
+                    ))}
+
+                <div className="tdata grid grid-cols-8">
+                    <Popover 
+                        open={open}
+                        onOpenChange={(isOpen) => {
+                            setOpen(isOpen);
+
+                            if (!isOpen) {
+                                setSearch("");
+                            }
+                        }}
+                    >
+                        <PopoverTrigger asChild>
+                            <button className="p-2 border rounded-md mx-auto">
+                                Select Item
+                            </button>
+                        </PopoverTrigger>
+
+                        <PopoverContent 
+                            className="w-72 p-0 ml-48"
+                            side="bottom"
+                            align="center"
+                            sideOffset={8}
+                            avoidCollisions={false}
+                            onOpenAutoFocus={(e) => e.preventDefault()} 
+                        >
+                            <Command>
+                                <CommandInput
+                                    placeholder="Search for a supply"
+                                    value={search}
+                                    onValueChange={setSearch}
+                                    autoFocus={false}
+                                />
+                                <CommandList>
+                                    {filteredSupplies.length === 0 && (
+                                        <div className="p-2 text-sm text-muted-foreground">
+                                            No items available for "{search}"
+                                        </div>
+                                    )}
+
+                                    {filteredSupplies.map((item) => (
+                                        <CommandItem
+                                            key={item.sku}
+                                            onSelect={() => {
+                                                onSelect(item.sku!);
+                                                setOpen(false);
+                                            }}
+                                        >
+                                            {item.sku} - {item.name}
+                                        </CommandItem>
+                                    ))}
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
                 </div>
             </div>
 
@@ -123,8 +211,8 @@ export function MeatOrder({ supplies, selectedItems, setActiveForm, onSelect, on
                     <Link href="/inventory?tab=summary">
                         <Button variant="secondary">Return</Button>
                     </Link>
-                    <Button 
-                        onClick={ () => handleSubmit() } 
+                    <Button
+                        onClick={handleSubmit}
                         className="bg-darkbrown text-light hover:opacity-90"
                     >
                         Proceed

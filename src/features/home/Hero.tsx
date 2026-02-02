@@ -48,14 +48,23 @@ export function HeroSection() {
 							</a>
 						</div>
 					</div>
-					<Link href="/auth">
-						<Button
-							className="absolute right-4 top-1/2 -translate-y-1/2
-							z-50 bg-lightbrown rounded-full text-[16px] font-semibold h-12 w-25"
-						>
-							Login
-						</Button>
-					</Link>
+
+					<div className="flex-center-y gap-2 absolute right-8 top-1/2 -translate-y-1/2 z-50">
+						<Link href="/auth">
+							<Button
+								className="!bg-lightbrown rounded-full text-[16px] font-semibold h-12 w-32 hover:opacity-90"
+							>
+								Login
+							</Button>
+						</Link>
+						<Link href="/auth">
+							<Button
+								className="bg-white text-darkbrown rounded-full text-[16px] font-semibold h-12 w-32 hover:bg-orange-100"
+							>
+								Contact Us
+							</Button>
+						</Link>
+					</div>
 					
 
 				</div>

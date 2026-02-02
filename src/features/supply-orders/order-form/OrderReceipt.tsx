@@ -64,35 +64,35 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
             let snowFinal: { id: string } | null = null;
 
             if (meatReceipt && meatReceipt.length > 0) {
-            const meatOrder = {
-                id: "",
-                branchId: claims.branch.branchId,
-                categoryItems: meatReceipt,
-            };
-            meatFinal = await SupplyOrderService.createMeatOrder(meatOrder);
+                const meatOrder = {
+                    id: "",
+                    branchId: claims.branch.branchId,
+                    categoryItems: meatReceipt,
+                };
+                meatFinal = await SupplyOrderService.createMeatOrder(meatOrder);
             }
 
             if (snowFrostReceipt && snowFrostReceipt.length > 0) {
-            const snowOrder = {
-                id: "",
-                branchId: claims.branch.branchId,
-                categoryItems: snowFrostReceipt,
-            };
-            snowFinal = await SupplyOrderService.createSnowOrder(snowOrder);
+                const snowOrder = {
+                    id: "",
+                    branchId: claims.branch.branchId,
+                    categoryItems: snowFrostReceipt,
+                };
+                snowFinal = await SupplyOrderService.createSnowOrder(snowOrder);
             }
 
             const orderSupply = {
-            branchId: claims.branch.branchId,
-            remarks: "",
-            meatCategoryItemId: meatFinal?.id ?? null,
-            snowfrostCategoryItemId: snowFinal?.id ?? null,
-            deliveryFee: delivery ? delivery.deliveryFee : 0,
+                branchId: claims.branch.branchId,
+                remarks: "",
+                meatCategoryItemId: meatFinal?.id ?? null,
+                snowfrostCategoryItemId: snowFinal?.id ?? null,
+                deliveryFee: delivery ? delivery.deliveryFee : 0,
             };
 
             const data = await SupplyOrderService.createSupplyOrder(orderSupply);
 
             if (data) {
-            toast.success("Supply Order Created");
+                toast.success("Supply Order Created");
             }
         } catch (error) {
             toast.error(`${error}`);
@@ -120,6 +120,7 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
             </div>
 
             <Orders
+                claims={claims}
                 tab={ tab }
                 orders={
                     tab === 'Meat Order'
@@ -159,7 +160,8 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
     );
 }
 
-function Orders({ tab, orders, delivery, meatTotal, snowTotal }: {
+function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal }: {
+    claims: Claim,
     tab: string;
     orders: SupplyItem[];
     delivery: Delivery;
@@ -198,10 +200,10 @@ function Orders({ tab, orders, delivery, meatTotal, snowTotal }: {
                 </div>
                 <div className="text-sm ms-auto inline-block max-sm:ms-0"><span className="font-bold">Date</span> { formatDateToWords(new Date().toLocaleDateString() ) }</div>
                 <div className="text-sm"><span className="font-bold">Tel No: </span>{ "09475453783" }</div>
-                <div className="text-sm ms-auto max-sm:ms-0"><span className="font-bold">Delivery within: </span> Branch Name</div>
+                <div className="text-sm ms-auto max-sm:ms-0"><span className="font-bold">Delivery within: </span> {claims.branch.branchName}</div>
             </div>
 
-            <div className="mt-4">
+            <div className="table-wrapper mt-4">
                 <div className="thead grid grid-cols-[60px_1fr_60px_1fr_1fr_1fr]">
                     {columns.map((item, _) => (
                         <div key={_} className={`th ${item.style}`}>{ item.title }</div>
@@ -221,19 +223,19 @@ function Orders({ tab, orders, delivery, meatTotal, snowTotal }: {
                 : (
                     <div className="text-sm text-gray font-semibold text-center py-6">You have no items for { tab }.</div>
                 )}
-                <div className="text-gray text-sm text-end mx-4 mt-2">
-                    Meat Order <span className="font-semibold text-dark">+ { formatToPeso(meatTotal) }</span>
-                </div>
-                <div className="text-gray text-sm text-end mx-4 mt-2">
-                    Snow Order <span className="font-semibold text-dark">+ { formatToPeso(snowTotal) }</span>
-                </div>
-                <div className="text-gray text-sm text-end mx-4 mt-2">
-                    Delivery Fee <span className="font-semibold text-dark">+ { formatToPeso(delivery ? delivery.deliveryFee : 0) }</span>
-                </div> 
-                <Separator className="my-4 bg-gray" />
-                <div className="text-gray text-end mx-4">
-                    Complete Order Total:  <span className="ml-2 font-semibold text-darkbrown inline-block scale-x-120">{ formatToPeso(meatTotal + snowTotal + (delivery ? delivery.deliveryFee : 0)) }</span>
-                </div>
+            </div>
+            <div className="text-gray text-sm text-end mx-4 mt-4">
+                Meat Order <span className="font-semibold text-dark">+ { formatToPeso(meatTotal) }</span>
+            </div>
+            <div className="text-gray text-sm text-end mx-4 mt-2">
+                Snow Order <span className="font-semibold text-dark">+ { formatToPeso(snowTotal) }</span>
+            </div>
+            <div className="text-gray text-sm text-end mx-4 mt-2">
+                Delivery Fee <span className="font-semibold text-dark">+ { formatToPeso(delivery ? delivery.deliveryFee : 0) }</span>
+            </div> 
+            <Separator className="my-4 bg-gray" />
+            <div className="text-gray text-end mx-4">
+                Complete Order Total:  <span className="ml-2 font-semibold text-darkbrown inline-block scale-x-120">{ formatToPeso(meatTotal + snowTotal + (delivery ? delivery.deliveryFee : 0)) }</span>
             </div>
         </div>
     )

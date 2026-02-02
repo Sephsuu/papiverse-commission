@@ -36,18 +36,18 @@ function InquiryLeftSide() {
                     className="w-35"
                 />
             </div>
-            <div className="text-4xl font-extrabold text-shadow-2xs text-darkbrown">Krispy Papi Inquiry</div>
-            <div className="text-gray-900 text-[16px] scale-x-105 origin-left w-100">
+            <div className="text-5xl font-extrabold text-shadow-2xs text-darkbrown">Krispy Papi Inquiry</div>
+            <div className="text-gray-900 text-lg scale-x-105 origin-left w-100">
                 Have a question or inquiry to Krispy Papi? Reach us out using this form. We&apos;re here to help!
             </div>  
-            <div className="text-[16px] text-gray-900 mt-8 scale-x-105 origin-left">
+            <div className="text-lg text-gray-900 mt-8 scale-x-105 origin-left">
                 <div className="text-sm text-gray scale-x-105 origin-left">Our main location:</div>
                 <div>Silang Manguyam - Main Branch</div>
                 <div>Cavite Philippines</div>
             </div>
             <div className="mt-8">
                 <div className="text-sm text-gray scale-x-105 origin-left">Email us at:</div>
-                <div className="text-gray-900 text-[16px] scale-x-105 origin-left">papiverse@gmail.com</div>
+                <div className="text-gray-900 text-lg scale-x-105 origin-left">papiverse@gmail.com</div>
             </div>
             <div className="flex gap-2 mt-4">
                 <div className="rounded-full border-[1.5px] border-darkbrown flex-center w-10 h-10">
@@ -135,7 +135,7 @@ function InquiryForm() {
             <Button
                 onClick={handleSubmit}
                 disabled={onProcess}
-                className="font-bold text-lg !bg-darkbrown w-35 scale-x-105"
+                className="font-bold text-lg !bg-darkbrown w-35 scale-x-105 h-12"
             >
                 <FormLoader
                     onProcess={onProcess}
