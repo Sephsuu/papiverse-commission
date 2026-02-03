@@ -200,7 +200,7 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal }: {
                 </div>
                 <div className="text-sm ms-auto inline-block max-sm:ms-0"><span className="font-bold">Date</span> { formatDateToWords(new Date().toLocaleDateString() ) }</div>
                 <div className="text-sm"><span className="font-bold">Tel No: </span>{ "09475453783" }</div>
-                <div className="text-sm ms-auto max-sm:ms-0"><span className="font-bold">Delivery within: </span> {claims.branch.branchName}</div>
+                <div className="text-sm ms-auto max-sm:ms-0"><span className="font-bold">Delivery to: </span> {claims.branch.branchName}</div>
             </div>
 
             <div className="table-wrapper mt-4">

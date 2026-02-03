@@ -205,7 +205,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                     </div>
                     <div className="text-sm ms-auto inline-block max-sm:ms-0"><span className="font-bold">Date:</span> { formatDateToWords(data!.orderDate) }</div>
                     <div className="text-sm"><span className="font-bold">Tel No: </span>{ "+63 945 501 8376" }</div>
-                    <div className="text-sm ms-auto max-sm:ms-0"><span className="font-bold">Delivery within: </span>{ data!.branchName }</div>
+                    <div className="text-sm ms-auto max-sm:ms-0"><span className="font-bold">Delivery to: </span>{ data!.branchName }</div>
                 </div>
 
                 <div className="mt-4 table-wrapper">
@@ -219,6 +219,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                             <Orders
                             orders={data.meatCategory.meatItems}
                             inventories={inventories}
+                            isFranchisor={isFranchisor}
                             />
                         ) : (
                             <EmptyState message="No meat items in this order" />
@@ -228,6 +229,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                             <Orders
                             orders={data.snowfrostCategory.snowFrostItems}
                             inventories={inventories}
+                            isFranchisor={isFranchisor}
                             />
                         ) : (
                             <EmptyState message="No snowfrost items in this order" />
@@ -275,7 +277,7 @@ export function ViewOrderPage({ id }: { id: number }) {
     )
 }
 
-function Orders({ orders, inventories }: {
+function Orders({ orders, inventories, isFranchisor }: {
     orders: {
         rawMaterialCode: string;
         rawMaterialName: string;
@@ -283,6 +285,7 @@ function Orders({ orders, inventories }: {
         price: number;
     } [];
     inventories: Inventory[];
+    isFranchisor: boolean;
 })  {
     return (
         <>
@@ -300,12 +303,14 @@ function Orders({ orders, inventories }: {
                                 </TooltipTrigger>
                                 <TooltipContent>Quantity: { item.quantity }</TooltipContent>
                             </Tooltip>
-                            <Tooltip>
-                                <TooltipTrigger>
-                                    <Badge className="text-[10px] rounded-full">{ formatCompactNumber(currentStock!) }</Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>Current Stock: { currentStock }</TooltipContent>
-                            </Tooltip>
+                            {!isFranchisor && (
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Badge className="text-[10px] rounded-full">{ formatCompactNumber(currentStock!) }</Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Current Stock: { currentStock }</TooltipContent>
+                                </Tooltip>
+                            )}
                         </div>
                         
                         <div className="td">{ formatToPeso(item.price) }</div>
