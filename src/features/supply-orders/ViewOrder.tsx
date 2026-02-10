@@ -70,23 +70,22 @@ export function ViewOrderPage({ id }: { id: number }) {
         );
     }, [data]);
 
-
-
     const hasSnowfrost = Boolean(data?.snowfrostCategory);
     const hasMeat = Boolean(data?.meatCategory);
 
     const hasMissingCategory = !hasSnowfrost || !hasMeat;
 
     if (loading || authLoading || inventoryLoading) return <PapiverseLoading /> 
-    if (toEdit) return <EditOrderForm 
+    if (toEdit) return <EditOrderForm   
+        setEdit={setEdit}
         orderId={ data!.orderId! }
         meatId={data?.meatCategory?.meatOrderId ?? "No meat order"}
         snowId={data?.snowfrostCategory?.snowFrostOrderId ?? "No snowfrost order"}
-        meatApproved={ data!.meatCategory!.isApproved }
-        snowApproved={ data!.snowfrostCategory!.isApproved }
+        // meatApproved={ data!.meatCategory!.isApproved ?? true }
+        // snowApproved={ data!.snowfrostCategory!.isApproved ?? true }
         toEditItems={[
             ...(data?.meatCategory?.meatItems ?? []).map((item) => ({
-                code: item.rawMaterialCode,
+                sku: item.rawMaterialCode,
                 quantity: item.quantity,
                 name: item.rawMaterialName,
                 unitMeasurement: item.unitMeasurement,
@@ -94,7 +93,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                 category: "MEAT"
             })),
             ...(data?.snowfrostCategory?.snowFrostItems ?? []).map((item) => ({
-                code: item.rawMaterialCode,
+                sku: item.rawMaterialCode,
                 quantity: item.quantity,
                 name: item.rawMaterialName,
                 unitMeasurement: item.unitMeasurement,
@@ -102,7 +101,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                 category: "SNOWFROST"
             })),
         ]}
-
+        setReload={setReload}
     />
     return (
         <section className="stack-md animate-fade-in-up overflow-hidden pb-12 max-md:mt-12">
@@ -247,8 +246,20 @@ export function ViewOrderPage({ id }: { id: number }) {
                     Delivery Fee <span className="font-semibold text-dark">+ { formatToPeso(data!.deliveryFee) }</span>
                 </div>
                 <Separator className="my-4 bg-gray" />
-                <div className="text-gray text-end mx-4">
-                    Complete Order Total:  <span className="ml-2 font-semibold text-darkbrown inline-block scale-x-120">{ formatToPeso(data!.completeOrderTotalAmount) }</span>
+                <div className="flex-center-y justify-between">
+                    <div>
+                        {data!.status === "PENDING"  && ( 
+                            <Button
+                                onClick={ () => setEdit(true) }
+                                className="bg-darkgreen! hover:opacity-90"
+                            >
+                                Edit Order
+                            </Button>
+                        )}
+                    </div>
+                    <div className="text-gray text-end mx-4">
+                        Complete Order Total:  <span className="ml-2 font-semibold text-darkbrown inline-block scale-x-120">{ formatToPeso(data!.completeOrderTotalAmount) }</span>
+                    </div>
                 </div>
             </div>
 

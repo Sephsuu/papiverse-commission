@@ -40,9 +40,9 @@ export function NotificationSheet({ setOpen, notifications }: {
                 </SheetHeader>
 
                 {/* Toolbar */}
-                <div className="flex-center-y gap-2">
+                <div className="flex-center-y gap-2 ml-4 max-sm:grid! max-sm:mx-4">
                     <div
-                        className="flex-center-y gap-2 border-1 border-slate-300 w-fit ml-4 px-4 py-2 shadow-sm rounded-md text-sm"
+                        className="flex-center-y gap-2 border border-slate-300 w-fit px-4 py-2 shadow-sm rounded-md text-sm max-sm:w-full"
                     >
                         <Checkbox 
                             disabled={isEmpty}
@@ -62,7 +62,7 @@ export function NotificationSheet({ setOpen, notifications }: {
                     <Button
                         onClick={ handleDelete }
                         disabled={ toDelete.length === 0 || onProcess || isEmpty }
-                        className="w-fit !bg-darkgreen hover:opacity-90"
+                        className="w-fit bg-darkgreen! hover:opacity-90 max-sm:w-full"
                     >
                         {notifications.length === toDelete.length && !isEmpty
                             ? "Mark all as read"
