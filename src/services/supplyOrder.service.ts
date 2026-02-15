@@ -1,5 +1,5 @@
 import { BASE_URL } from "@/lib/urls";
-import { requestData } from "./_config";
+import { requestBlob, requestData } from "./_config";
 import { CompleteOrder, SupplyItem, SupplyOrder } from "@/types/supplyOrder";
 
 const url = `${BASE_URL}/supply-order`;
@@ -80,6 +80,59 @@ export class SupplyOrderService {
         );
     }
 
+    // static async exportForm(id: number, type: string, category: string) {
+    //     return await requestData(
+    //         `${url}/export?orderId=${id}&type=${type}&category=${category}`,
+    //         "GET"
+    //     );
+    // }
+
+    static async exportForm(
+        orderId: number,
+        type: string,
+        category: string,
+    ) {
+
+
+        const res = await fetch(
+        `${url}/export?orderId=${orderId}&type=${type}&category=${category}`,
+        {
+            method: "GET",
+            // ✅ if your backend auth is cookie/session
+            credentials: "include",
+
+            // ✅ if your backend auth is Bearer token instead, use this and remove credentials
+            // headers: {
+            //   Accept: "application/pdf",
+            //   Authorization: `Bearer ${localStorage.getItem("token")}`,
+            // },
+
+            headers: {
+            Accept: "application/pdf",
+            },
+        }
+        );
+
+        if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(text || "Failed to export PDF");
+        }
+
+        const blob = await res.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = `order-${orderId}-${type}-${category}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        window.URL.revokeObjectURL(blobUrl);
+
+        return { message: "success" };
+    }
+
     static async updateOrderStatus(
         id: number,
         newStatus: string,
@@ -105,7 +158,12 @@ export class SupplyOrderService {
         );
     }
 
-
+    static async updateExpectedDeliveryDate(expDel: string, orderId: number) {
+        return await requestData(
+            `${url}/update-expected?newExpected=${expDel}&id=${orderId}`,
+            "POST",
+        )
+    }
 
     static async updateMeatOrder(meatOrder: SupplyItem[], id: string) {
         const payload = {

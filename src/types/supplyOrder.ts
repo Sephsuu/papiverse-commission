@@ -39,6 +39,9 @@ export interface SupplyOrder {
         id: number,
         orderDestination: string;
     }
+
+    internalShipment: boolean;
+    expectedDelivery: string;
 }
 
 export interface SupplyItem {

@@ -30,7 +30,6 @@ export function Homepage() {
 			<TestimonialSection />
 			<InquiryFormPage />
 
-			<section className="h-40" />
 		</section>
 	);
 }

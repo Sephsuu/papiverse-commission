@@ -17,13 +17,15 @@ import { InventoryService } from "@/services/inventory.service";
 import { SupplyOrderService } from "@/services/supplyOrder.service"
 import { Inventory } from "@/types/inventory";
 import { SupplyOrder } from "@/types/supplyOrder"
-import { ArrowLeft, Ham, MoveRight, Snowflake } from "lucide-react";
+import { ArrowLeft, Ham, MoveRight, ShoppingCart, Snowflake, SquarePen, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { EditOrderForm } from "./order-form/EditOrderForm";
 import { EmptyState } from "@/components/ui/fallback";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ExpectedDeliveryDatePicker } from "./components/ExpectedDeliveryDatePicker";
 
 const tabs = ['Meat Commissary', 'Snowfrost Commissary']
 
@@ -39,16 +41,39 @@ const columns = [
 export function ViewOrderPage({ id }: { id: number }) {
     const [reload, setReload] = useState(false);
     const { claims, loading: authLoading, isFranchisor } = useAuth();
-    const { data, loading } = useFetchOne<SupplyOrder>(SupplyOrderService.getSupplyOrderById, [id, reload], [id]);
-    const { data: inventories, loading: inventoryLoading } = useFetchData(InventoryService.getInventoryByBranch, [claims.branch.branchId, reload], [claims.branch.branchId])
-    const { onProcess, enableSave, handleSubmit } = useSupplyOrderApproval(data!, claims, setReload);    
+
+    const { data, loading } = useFetchOne<SupplyOrder>(
+        SupplyOrderService.getSupplyOrderById, 
+        [id, reload], 
+        [id]
+    );
+    const { data: inventories, loading: inventoryLoading } = useFetchData(
+        InventoryService.getInventoryByBranch, 
+        [claims.branch.branchId, reload], 
+        [claims.branch.branchId]
+    )
+    const { onProcess, enableSave, handleSubmit } = useSupplyOrderApproval(
+        data!, 
+        claims, 
+        setReload
+    );    
     
-    const [tab, setTab] = useState(tabs[0]);
+    const [tab, setTab] = useState(tabs[1]);
     const [open, setOpen] = useState(false);
     const [toEdit, setEdit] = useState(false);
     const [toReject, setReject] = useState(false);
     const [meatApproved, setMeatApproved] = useState<boolean | undefined>(undefined);
     const [snowApproved, setSnowApproved] = useState<boolean | undefined>(undefined);
+
+    const [processExpDel, setProcessExpDel] = useState(false);
+    const [openExpDel, setOpenExpDel] = useState(false);
+    const [expDel, setExpDel] = useState<string | null>(null);
+
+
+    useEffect(() => {
+        if (data?.meatCategory?.meatOrderId) setTab(tabs[0]);
+        else setTab(tabs[1]);
+    }, [data?.meatCategory?.meatOrderId]);
 
     useEffect(() => {
         if (!data) return;
@@ -75,14 +100,61 @@ export function ViewOrderPage({ id }: { id: number }) {
 
     const hasMissingCategory = !hasSnowfrost || !hasMeat;
 
+    async function exportForm(type: string, category: string) {
+        try {
+            const res = await SupplyOrderService.exportForm(data!.orderId!, type, category);
+
+            if (res) {
+                toast.success('Form export success.')
+            }
+
+        } catch (error) {
+            toast.error(String(error))
+        }
+    }
+
+    async function handleUpdateExpDel() {
+        if (!data?.orderId) return
+        if (!expDel) return toast.warning('select an expected delivery date.');
+        try {
+            setProcessExpDel(true);
+            const res = await SupplyOrderService.updateExpectedDeliveryDate(expDel, data?.orderId)
+
+            if (res) {
+                toast.success('expected delivery updated successfully.')
+                setReload(prev => !prev)
+                setOpenExpDel(false)
+            }
+        } catch (error) {
+            toast.error(String(error))
+        } finally { setProcessExpDel(false) }
+    }
+    console.log('view order', [
+        ...(data?.meatCategory?.meatItems ?? []).map((item) => ({
+            sku: item.rawMaterialCode,
+            quantity: item.quantity,
+            name: item.rawMaterialName,
+            unitMeasurement: item.unitMeasurement,
+            unitPrice: item.price,
+            category: "MEAT"
+        })),
+        ...(data?.snowfrostCategory?.snowFrostItems ?? []).map((item) => ({
+            sku: item.rawMaterialCode,
+            quantity: item.quantity,
+            name: item.rawMaterialName,
+            unitMeasurement: item.unitMeasurement,
+            unitPrice: item.price,
+            category: "SNOWFROST"
+        })),
+    ]);
+    
+
     if (loading || authLoading || inventoryLoading) return <PapiverseLoading /> 
     if (toEdit) return <EditOrderForm   
         setEdit={setEdit}
         orderId={ data!.orderId! }
         meatId={data?.meatCategory?.meatOrderId ?? "No meat order"}
         snowId={data?.snowfrostCategory?.snowFrostOrderId ?? "No snowfrost order"}
-        // meatApproved={ data!.meatCategory!.isApproved ?? true }
-        // snowApproved={ data!.snowfrostCategory!.isApproved ?? true }
         toEditItems={[
             ...(data?.meatCategory?.meatItems ?? []).map((item) => ({
                 sku: item.rawMaterialCode,
@@ -117,15 +189,29 @@ export function ViewOrderPage({ id }: { id: number }) {
             </div>
             <div className="flex justify-between items-center max-sm:grid! max-sm:gap-2!">
                 <div className="flex-center bg-slate-50 shadow-sm rounded-full max-sm:w-fit max-sm:mx-auto">
-                    {tabs.map((item, i) => (
-                        <Button
-                            key={i}
-                            onClick={ () => setTab(item) }
-                            className={`w-42 rounded-full bg-slate-50! text-dark hover:opacity-50 ${tab === item && "bg-darkbrown! text-light hover:opacity-100"}`}
-                        >
-                            { item }
-                        </Button>
-                    ))}
+                    {tabs.map((item, i) => {
+                        const isMeatTab = i === 0;
+                        const isSnowTab = i === 1;
+
+                        const disabled =
+                            (isMeatTab && !data?.meatCategory?.meatOrderId) ||
+                            (isSnowTab && !data?.snowfrostCategory?.snowFrostOrderId);
+                            
+                        return (
+                            <Button
+                                key={i}
+                                onClick={ () => setTab(item) }
+                                disabled={disabled}
+                                className={[
+                                    "w-42 rounded-full bg-slate-50! text-dark hover:opacity-50",
+                                    tab === item ? "bg-darkbrown! text-light hover:opacity-100" : "",
+                                    disabled ? "opacity-40 cursor-not-allowed hover:opacity-40" : "",
+                                ].join(" ")}
+                            >
+                                { item }
+                            </Button>   
+                        )
+                     })}
                 </div>
                 <div className="flex gap-2 my-2">
                     {claims.roles[0] === 'FRANCHISOR' && (
@@ -182,29 +268,52 @@ export function ViewOrderPage({ id }: { id: number }) {
                     </label>
                 </div>
                 <Image src="/images/kp_logo.png" alt="KP Logo" width={60} height={60} className="top-2 right-2 absolute" />
-                <div className="flex justify-center items-center gap-2">
-                    { tab === tabs[1] ? <Snowflake /> : <Ham /> }
-                    <div className="font-semibold">{ tab } Receipt</div>
+
+                <div className="max-md:mt-8 max-md:mb-6">
+                    <div className="flex justify-center items-center gap-2">
+                        { tab === tabs[1] ? <Snowflake /> : <Ham /> }
+                        <div className="font-semibold">{ tab } Receipt</div>
+                    </div>
+                    {claims.roles[0] === 'FRANCHISOR' ? 
+                        <div className="text-center text-sm text-gray">
+                            Showing only the order form receipt for this { tab.toLowerCase() }.
+                        </div> 
+                        : <div className="text-center text-sm text-gray">
+                            Please review carefully your order form.
+                        </div>
+                    }
                 </div>
-                {claims.roles[0] === 'FRANCHISOR' ? 
-                    <div className="text-center text-sm text-gray">Showing only the order form receipt for this { tab.toLowerCase() }.</div> 
-                    : <div className="text-center text-sm text-gray">Please review carefully your order form.</div>
-                }
-                <div className="grid grid-cols-2 gap-1 mt-2 max-sm:grid-cols-1 max-sm:gap-1.5">
+
+                <div className="grid grid-cols-2 gap-2 mt-2 max-sm:grid-cols-1 max-sm:gap-1.5">
                     <div className="text-sm"><span className="font-bold">Order ID: </span>
                         { tab === tabs[1] ? 
                             data!.snowfrostCategory?.snowFrostOrderId 
                             : data!.meatCategory?.meatOrderId
                         }
                     </div>
-                    <div className="text-sm ms-auto max-sm:ms-0"><span className="font-bold">To: </span>{ "KP Comissary" }</div>
+                    <div className="ms-auto font-bold max-sm:ms-0">PURCHASE ORDER</div>
                     <div className="text-sm flex-center-y gap-2">
                         <span className="font-bold">Status: </span>
                         <OrderStatusBadge className="scale-110" status={ data!.status} />
                     </div>
-                    <div className="text-sm ms-auto inline-block max-sm:ms-0"><span className="font-bold">Date:</span> { formatDateToWords(data!.orderDate) }</div>
-                    <div className="text-sm"><span className="font-bold">Tel No: </span>{ "+63 945 501 8376" }</div>
-                    <div className="text-sm ms-auto max-sm:ms-0"><span className="font-bold">Delivery to: </span>{ data!.branchName }</div>
+                    <div className="text-sm ms-auto inline-block max-sm:ms-0">
+                        <span className="font-bold">Date:</span> { formatDateToWords(data!.orderDate) }
+                    </div>
+                    <div className="text-sm">
+                        <span className="font-bold">Tel No: </span>{ "+63 945 501 8376" }
+                    </div>
+                    <div className="text-sm ms-auto max-sm:ms-0">
+                        <span className="font-bold">Delivery to: </span>{ data!.branchName }
+                    </div>
+                    <div className="flex-center-y gap-2 text-sm">
+                        <span className="font-bold">Expected Delivery: </span>{ data?.expectedDelivery ? formatDateToWords(data.expectedDelivery) : "Delivery date not set" } 
+                        {data?.status === "PENDING" && (
+                            <SquarePen 
+                                className="w-4 h-4 text-gray" 
+                                onClick={() => setOpenExpDel(true)}
+                            />
+                        )}
+                    </div>
                 </div>
 
                 <div className="mt-4 table-wrapper">
@@ -243,17 +352,43 @@ export function ViewOrderPage({ id }: { id: number }) {
                     Snowfrost Order <span className="font-semibold text-dark">+ { data?.snowfrostCategory ?formatToPeso(data!.snowfrostCategory!.categoryTotal) : formatToPeso(0) }</span>
                 </div>
                 <div className="text-gray text-sm text-end mx-4 mt-2">
-                    Delivery Fee <span className="font-semibold text-dark">+ { formatToPeso(data!.deliveryFee) }</span>
+                    Delivery Fee 
+                    {!data?.internalShipment ? (
+                        <Badge className="ml-2 bg-darkbrown">For Pickup</Badge>
+                    ) : (
+                        <span className="ml-1 font-semibold text-dark"> 
+                            + { formatToPeso(data!.deliveryFee) }
+                        </span>
+                    )}
                 </div>
                 <Separator className="my-4 bg-gray" />
                 <div className="flex-center-y justify-between">
-                    <div>
+                    <div className="flex-center-y gap-2">
+                        {data!.status === "APPROVED"  && ( 
+                            <DropdownMenu>
+                                <DropdownMenuTrigger className="flex-center-y gap-2">
+                                    <SquarePen className="w-4 h-4" /> Export Order
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="">
+                                    <DropdownMenuItem
+                                        onClick={() => exportForm("purchase", tab === tabs[0] ? "meat" : "snow")}
+                                    >
+                                        <ShoppingCart /> Purchase Order
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => exportForm("delivery", tab === tabs[0] ? "meat" : "snow")}
+                                    >
+                                        <Truck /> Delivery Receipt
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
                         {data!.status === "PENDING"  && ( 
                             <Button
                                 onClick={ () => setEdit(true) }
-                                className="bg-darkgreen! hover:opacity-90"
+                                variant="secondary"
                             >
-                                Edit Order
+                                <SquarePen /> Edit Order
                             </Button>
                         )}
                     </div>
@@ -277,6 +412,17 @@ export function ViewOrderPage({ id }: { id: number }) {
                 onProcess={ onProcess }
                 handleSubmit={ handleSubmit }
             />}
+
+            {openExpDel && (
+                <ExpectedDeliveryDatePicker 
+                    date={expDel}
+                    setDate={setExpDel}
+                    open={openExpDel}
+                    setOpen={setOpenExpDel}
+                    onProcess={processExpDel}
+                    handleSubmit={handleUpdateExpDel}
+                />
+            )}
 
             {toReject && <ConfirmReject
                 orderId={ id }

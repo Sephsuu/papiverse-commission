@@ -29,6 +29,8 @@ export function EditOrderForm({ setEdit, toEditItems, orderId, meatId, snowId, s
     // meatApproved: boolean
     // snowApproved: boolean
 }) {
+    console.log('edit form', toEditItems);
+        
     const router = useRouter();
     const { claims, loading: authLoading } = useAuth();
     const { data, loading } = useFetchData<Supply>(SupplyService.getDeliverableSupplies);
@@ -50,8 +52,8 @@ export function EditOrderForm({ setEdit, toEditItems, orderId, meatId, snowId, s
     const [tab, setTab] = useState(meatId === "No meat order" ? tabs[1] : tabs[0]);
 
     useEffect(() => {
-        setSelectedItems(toEditItems);
-    }, [toEditItems, setSelectedItems]);
+        setSelectedItems(toEditItems)
+    }, [toEditItems])
 
     async function handleSubmit() {
         try {

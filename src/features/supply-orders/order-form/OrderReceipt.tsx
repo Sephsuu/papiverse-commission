@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/shared/AppHeader";
 import { ModalTitle } from "@/components/shared/ModalTitle";
 import { OrderStatusBadge } from "@/components/ui/badge";
 import { AddButton, Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 import { PapiverseLoading } from "@/components/ui/loader";
 import { Separator } from "@/components/ui/separator";
@@ -15,11 +16,12 @@ import { SupplyOrderService } from "@/services/supplyOrder.service";
 import { Claim } from "@/types/claims";
 import { Delivery } from "@/types/delivery";
 import { SupplyItem } from "@/types/supplyOrder";
-import { Ham, Snowflake } from "lucide-react";
+import { Ham, Snowflake, SquarePen } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ExpectedDeliveryDatePicker } from "../components/ExpectedDeliveryDatePicker";
 
 const tabs = ['Meat Commissary', 'Snowfrost Commissary']
 
@@ -34,6 +36,10 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
     const [tab, setTab] = useState(tabs[0]);
     const [open, setOpen] = useState(false);
     const [onProcess, setProcess] = useState(false);
+    const [intShip, setIntShip] = useState(true);
+
+    const [openExpDel, setOpenExpDel] = useState(false);
+    const [expDel, setExpDel] = useState<string | null>(null);
     
     const meatReceipt =
         selectedItems.filter((s) => s.category === "MEAT").length > 0
@@ -59,6 +65,8 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
     async function handleSubmit() {
         try {
             setProcess(true);
+
+            if (!expDel) return toast.warning("Please set an expected delivery date.")
 
             let meatFinal: { id: string } | null = null;
             let snowFinal: { id: string } | null = null;
@@ -86,22 +94,29 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
                 remarks: "",
                 meatCategoryItemId: meatFinal?.id ?? null,
                 snowfrostCategoryItemId: snowFinal?.id ?? null,
-                deliveryFee: delivery ? delivery.deliveryFee : 0,
+                deliveryFee: (delivery && intShip) ? delivery.deliveryFee : 0,
+                internalShipment: intShip,
+                expectedDelivery: expDel
             };
 
             const data = await SupplyOrderService.createSupplyOrder(orderSupply);
 
             if (data) {
                 toast.success("Supply Order Created");
+                router.push("supply-orders");
             }
         } catch (error) {
             toast.error(`${error}`);
         } finally {
             setProcess(false);
-            router.push("supply-orders");
+            setOpen(false)
         }
     }
 
+    function handleExpDelSumbit() {
+        if (!expDel) return toast.warning("select expected delivery date")
+        setOpenExpDel(false);
+    }
 
     if (loading) return <PapiverseLoading />
     return(
@@ -130,6 +145,10 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
                 delivery={ delivery! }
                 meatTotal={ totalMeatAmount }
                 snowTotal={ totalSnowFrostAmount }
+                intShip={intShip}
+                setIntShip={setIntShip}
+                expDel={expDel}
+                setOpenExpDel={setOpenExpDel}
             />
         
             <div className="flex justify-end gap-2 mt-2">
@@ -156,17 +175,32 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
                 />
             )}
 
+            {openExpDel && (
+                <ExpectedDeliveryDatePicker 
+                    date={expDel}
+                    setDate={setExpDel}
+                    open={openExpDel}
+                    setOpen={setOpenExpDel}
+                    onProcess={false}
+                    handleSubmit={handleExpDelSumbit}
+                />
+            )}
+
         </section>
     );
 }
 
-function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal }: {
+function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal, intShip, setIntShip, expDel, setOpenExpDel }: {
     claims: Claim,
     tab: string;
     orders: SupplyItem[];
     delivery: Delivery;
     meatTotal: number;
     snowTotal: number;
+    intShip: boolean;
+    setIntShip: Dispatch<SetStateAction<boolean>>
+    expDel: string | null;
+    setOpenExpDel: Dispatch<SetStateAction<boolean>>
 }) {
     const columns = [
         { title: 'No.', style: 'text-center' },
@@ -180,13 +214,18 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal }: {
     return (
         <div className="p-4 bg-white rounded-md shadow-sm relative animate-fade-in-up" key={tab}>
             <Image src="/images/kp_logo.png" alt="KP Logo" width={60} height={60} className="top-2 right-2 absolute" />
-            <div className="flex justify-center items-center gap-2 max-sm:mt-6">
-                { tab === tabs[0] ? <Ham /> : <Snowflake /> }
-                <div className="font-semibold">{ tab } Receipt</div>
+            
+            <div className="max-md:mt-8 max-md:mb-6">
+                <div className="flex justify-center items-center gap-2 max-sm:mt-6">
+                    { tab === tabs[0] ? <Ham /> : <Snowflake /> }
+                    <div className="font-semibold">{ tab } Receipt</div>
+                </div>
+                <div className="text-center text-sm text-gray">
+                    Please review carefully your order form.
+                </div>
             </div>
-            <div className="text-center text-sm text-gray">Please review carefully your order form.</div>
 
-            <div className="grid grid-cols-2 gap-1 mt-2 max-sm:grid-cols-1 max-sm:gap-1.5">
+            <div className="grid grid-cols-2 gap-2 mt-2 max-sm:grid-cols-1 max-sm:gap-1.5">
                 <div className="text-sm">
                     <span className="font-bold">Order ID: </span>
                     <span className="text-gray">Order the supplies first</span>
@@ -198,9 +237,22 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal }: {
                     <span className="font-bold">Status: </span>
                     <OrderStatusBadge className="scale-110 bg-slate-200 text-dark!" status="NO STATUS" />
                 </div>
-                <div className="text-sm ms-auto inline-block max-sm:ms-0"><span className="font-bold">Date</span> { formatDateToWords(new Date().toLocaleDateString() ) }</div>
-                <div className="text-sm"><span className="font-bold">Tel No: </span>{ "09475453783" }</div>
-                <div className="text-sm ms-auto max-sm:ms-0"><span className="font-bold">Delivery to: </span> {claims.branch.branchName}</div>
+                <div className="text-sm ms-auto inline-block max-sm:ms-0">
+                    <span className="font-bold">Date</span> { formatDateToWords(new Date().toLocaleDateString() ) }
+                </div>
+                <div className="text-sm">
+                    <span className="font-bold">Tel No: </span>{ "09475453783" }
+                </div>
+                <div className="text-sm ms-auto max-sm:ms-0">
+                    <span className="font-bold">Delivery to: </span> {claims.branch.branchName}
+                </div>
+                <div className={`flex-center-y gap-2 text-sm ${expDel ? "" : "text-red-600"}`}>
+                    <span className="font-bold text-black">Expected Delivery: </span> {expDel ? formatDateToWords(expDel) : "Delivery date not set"}
+                    <SquarePen
+                        className="w-4 h-4 text-gray cursor-pointer"
+                        onClick={() => setOpenExpDel(prev => !prev)}
+                    />
+                </div>
             </div>
 
             <div className="table-wrapper mt-4">
@@ -231,11 +283,28 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal }: {
                 Snowfrost Order <span className="font-semibold text-dark">+ { formatToPeso(snowTotal) }</span>
             </div>
             <div className="text-gray text-sm text-end mx-4 mt-2">
-                Delivery Fee <span className="font-semibold text-dark">+ { formatToPeso(delivery ? delivery.deliveryFee : 0) }</span>
+                Delivery Fee <span className="font-semibold text-dark">+ { formatToPeso((delivery && intShip) ? delivery.deliveryFee : 0) }</span>
             </div> 
             <Separator className="my-4 bg-gray" />
-            <div className="text-gray text-end mx-4">
-                Complete Order Total:  <span className="ml-2 font-semibold text-darkbrown inline-block scale-x-120">{ formatToPeso(meatTotal + snowTotal + (delivery ? delivery.deliveryFee : 0)) }</span>
+            <div className="flex-center-y justify-between">
+                <div className="flex-center-y gap-1.5">
+                    <Checkbox
+                        id="intShip"
+                        className="border-gray border-2"
+                        checked={intShip}
+                        onCheckedChange={(v) => setIntShip(v === true)}
+                    />
+
+                    <label
+                        htmlFor="intShip"
+                        className="cursor-pointer select-none"
+                    >
+                        Internal Shipping
+                    </label>
+                </div>
+                <div className="text-gray text-end mx-4">
+                    Complete Order Total:  <span className="ml-2 font-semibold text-darkbrown inline-block scale-x-120">{ formatToPeso(meatTotal + snowTotal + ((delivery && intShip) ? delivery.deliveryFee : 0)) }</span>
+                </div>
             </div>
         </div>
     )
