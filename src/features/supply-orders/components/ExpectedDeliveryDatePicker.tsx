@@ -30,10 +30,10 @@ export function ExpectedDeliveryDatePicker({
 
     const minSelectable = addDays(today, 2);
 
-    const disableInvalidDates = (d: Date) => {
-        const day = startOfDay(d);
-        return isBefore(day, minSelectable);
-    };
+    // const disableInvalidDates = (d: Date) => {
+    //     const day = startOfDay(d);
+    //     return isBefore(day, minSelectable);
+    // };
 
     const selectedDay = useMemo(() => (date ? new Date(date) : undefined), [date]);
 
@@ -56,7 +56,7 @@ export function ExpectedDeliveryDatePicker({
                         mode="single"
                         selected={selectedDay}
                         onSelect={handleDayChange}
-                        disabled={disableInvalidDates}
+                        // disabled={disableInvalidDates}
                         className="w-full grid mb-12"
                     />
                     <form 

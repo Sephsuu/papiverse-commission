@@ -26,6 +26,7 @@ import { EditOrderForm } from "./order-form/EditOrderForm";
 import { EmptyState } from "@/components/ui/fallback";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ExpectedDeliveryDatePicker } from "./components/ExpectedDeliveryDatePicker";
+import { useRouter } from "next/navigation";
 
 const tabs = ['Meat Commissary', 'Snowfrost Commissary']
 
@@ -257,7 +258,10 @@ export function ViewOrderPage({ id }: { id: number }) {
                     <Checkbox id="meat" 
                         className="border border-gray shadow-sm w-5 h-5 data-[state=checked]:bg-darkgreen" 
                         checked={ tab === tabs[1] ? snowApproved : meatApproved }
-                        onCheckedChange={(checked: boolean) => { tab === tabs[1] ? setSnowApproved(checked) : setMeatApproved(checked)}}
+                        onCheckedChange={(checked: boolean) => { 
+                            tab === tabs[1] ? setSnowApproved(checked) 
+                            : setMeatApproved(checked)
+                        }}
                         disabled={ ["APPROVED", "DELIVERED", "REJECTED"].includes(data!.status!) || !isFranchisor || (tab === tabs[0] && data?.meatCategory === null) || (tab === tabs[1] && data?.snowfrostCategory === null) }
                     />
                     <label htmlFor="meat" className={`text-[16px] font-semibold ${["APPROVED", "DELIVERED", "REJECTED"].includes(data!.status!) && "text-gray"}`}>
@@ -294,7 +298,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                     <div className="ms-auto font-bold max-sm:ms-0">PURCHASE ORDER</div>
                     <div className="text-sm flex-center-y gap-2">
                         <span className="font-bold">Status: </span>
-                        <OrderStatusBadge className="scale-110" status={ data!.status} />
+                        <OrderStatusBadge className="scale-110" status={data!.status} />
                     </div>
                     <div className="text-sm ms-auto inline-block max-sm:ms-0">
                         <span className="font-bold">Date:</span> { formatDateToWords(data!.orderDate) }
@@ -354,7 +358,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                 <div className="text-gray text-sm text-end mx-4 mt-2">
                     Delivery Fee 
                     {!data?.internalShipment ? (
-                        <Badge className="ml-2 bg-darkbrown">For Pickup</Badge>
+                        <Badge className="ml-2 bg-darkbrown">{data?.deliveryType}</Badge>
                     ) : (
                         <span className="ml-1 font-semibold text-dark"> 
                             + { formatToPeso(data!.deliveryFee) }
@@ -560,15 +564,16 @@ function ConfirmReject({ orderId, open, setOpen, setReload }: {
     setOpen: Dispatch<SetStateAction<boolean>>
     setReload: Dispatch<SetStateAction<boolean>>
 }) {
+    const router = useRouter();
+
     const [onProcess, setProcess] = useState(false);
 
     async function handleReject() {
         try {
             const data = await SupplyOrderService.updateOrderStatus(orderId, "REJECTED", false, false);
             if (data) {
-                toast.success('Supply order has been rejected.');
-                setOpen(false)
-                setReload(prev => !prev);
+                toast.success('Supply order has been rejected.')
+                window.location.href = '/inventory/supply-orders'
             }
         } catch (error) {
             toast.error(`${error}`)

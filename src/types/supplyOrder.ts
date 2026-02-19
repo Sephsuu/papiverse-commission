@@ -42,6 +42,7 @@ export interface SupplyOrder {
 
     internalShipment: boolean;
     expectedDelivery: string;
+    deliveryType: string
 }
 
 export interface SupplyItem {

@@ -23,7 +23,7 @@ import useNotifications from "@/hooks/use-notification";
 import { useCrudState } from "@/hooks/use-crud-state";
 import { NotificationSheet } from "@/components/shared/NotificationSheet";
 
-const tabs = ['Pending', 'Completed', 'Rejected']
+const tabs = ['Pending', 'Completed']
 
 export function SupplyOrdersPage() {
     const searchParams = useSearchParams();

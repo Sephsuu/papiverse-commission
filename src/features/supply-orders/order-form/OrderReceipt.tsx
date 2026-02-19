@@ -22,7 +22,10 @@ import { useRouter } from "next/navigation";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ExpectedDeliveryDatePicker } from "../components/ExpectedDeliveryDatePicker";
+import { Switch } from "@/components/ui/switch";
+import { AppSelect } from "@/components/shared/AppSelect";
 
+type DeliveryType = "" | "DELIVERY" | "LALAMOVE" | "PICKUP";
 const tabs = ['Meat Commissary', 'Snowfrost Commissary']
 
 export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
@@ -37,6 +40,7 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
     const [open, setOpen] = useState(false);
     const [onProcess, setProcess] = useState(false);
     const [intShip, setIntShip] = useState(true);
+    const [delType, setDelType] = useState<DeliveryType>("DELIVERY");
 
     const [openExpDel, setOpenExpDel] = useState(false);
     const [expDel, setExpDel] = useState<string | null>(null);
@@ -67,6 +71,7 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
             setProcess(true);
 
             if (!expDel) return toast.warning("Please set an expected delivery date.")
+            if (delType === "") return toast.warning("Please select delivery type.")
 
             let meatFinal: { id: string } | null = null;
             let snowFinal: { id: string } | null = null;
@@ -96,7 +101,8 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
                 snowfrostCategoryItemId: snowFinal?.id ?? null,
                 deliveryFee: (delivery && intShip) ? delivery.deliveryFee : 0,
                 internalShipment: intShip,
-                expectedDelivery: expDel
+                expectedDelivery: expDel,
+                deliveryType: delType,
             };
 
             const data = await SupplyOrderService.createSupplyOrder(orderSupply);
@@ -117,6 +123,16 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
         if (!expDel) return toast.warning("select expected delivery date")
         setOpenExpDel(false);
     }
+
+    useEffect(() => {
+        if (intShip) setDelType("DELIVERY");
+        else setDelType(""); 
+    }, [intShip]);
+
+    useEffect(()=> {
+        console.log(delType);
+        
+    }, [delType])
 
     if (loading) return <PapiverseLoading />
     return(
@@ -149,6 +165,8 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
                 setIntShip={setIntShip}
                 expDel={expDel}
                 setOpenExpDel={setOpenExpDel}
+                delType={delType}
+                setDelType={setDelType}
             />
         
             <div className="flex justify-end gap-2 mt-2">
@@ -190,7 +208,7 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
     );
 }
 
-function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal, intShip, setIntShip, expDel, setOpenExpDel }: {
+function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal, intShip, setIntShip, expDel, setOpenExpDel, delType, setDelType }: {
     claims: Claim,
     tab: string;
     orders: SupplyItem[];
@@ -201,6 +219,8 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal, intShip, 
     setIntShip: Dispatch<SetStateAction<boolean>>
     expDel: string | null;
     setOpenExpDel: Dispatch<SetStateAction<boolean>>
+    delType: string,
+    setDelType: (i: DeliveryType) => void;
 }) {
     const columns = [
         { title: 'No.', style: 'text-center' },
@@ -286,21 +306,23 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal, intShip, 
                 Delivery Fee <span className="font-semibold text-dark">+ { formatToPeso((delivery && intShip) ? delivery.deliveryFee : 0) }</span>
             </div> 
             <Separator className="my-4 bg-gray" />
-            <div className="flex-center-y justify-between">
-                <div className="flex-center-y gap-1.5">
-                    <Checkbox
-                        id="intShip"
-                        className="border-gray border-2"
-                        checked={intShip}
-                        onCheckedChange={(v) => setIntShip(v === true)}
-                    />
+            <div className="flex justify-between">
+                <div className="space-y-4">
+                    <div className="flex-center-y gap-1.5">
+                        <Switch id="intShip" checked={intShip} onCheckedChange={setIntShip} />
+                        <label htmlFor="intShip" className="cursor-pointer select-none">
+                            Internal Shipping
+                        </label>
+                    </div>
 
-                    <label
-                        htmlFor="intShip"
-                        className="cursor-pointer select-none"
-                    >
-                        Internal Shipping
-                    </label>
+                    {!intShip && (
+                        <AppSelect
+                        items={["LALAMOVE", "PICKUP"]}
+                        value={delType}
+                        onChange={(value) => setDelType(value as DeliveryType)}
+                        placeholder="Delivery Type"
+                        />
+                    )}
                 </div>
                 <div className="text-gray text-end mx-4">
                     Complete Order Total:  <span className="ml-2 font-semibold text-darkbrown inline-block scale-x-120">{ formatToPeso(meatTotal + snowTotal + ((delivery && intShip) ? delivery.deliveryFee : 0)) }</span>

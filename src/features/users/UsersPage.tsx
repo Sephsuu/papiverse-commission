@@ -78,7 +78,7 @@ export function UsersPage() {
             />
 
             <div className="table-wrapper">
-                <div className="thead grid grid-cols-5 max-md:!w-250">
+                <div className="thead grid grid-cols-5 max-md:w-250!">
                     {columns.map((item, _) => (
                         <div key={_} className={`th ${item.style}`}>{ item.title }</div>
                     ))}
