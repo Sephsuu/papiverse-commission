@@ -64,7 +64,7 @@ export function ExpectedDeliveryDatePicker({
                             e.preventDefault();
                             handleSubmit();
                         }}
-                        className="absolute bottom-8 right-8 flex-center-y gap-6"
+                        className="absolute bottom-0 right-8 flex-center-y gap-6"
                     >
                         <DialogClose className="font-normal text-[16px]">Cancel</DialogClose>
                         <UpdateButton 

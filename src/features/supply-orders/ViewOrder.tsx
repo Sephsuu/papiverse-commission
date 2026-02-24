@@ -160,6 +160,9 @@ export function ViewOrderPage({ id }: { id: number }) {
         orderId={ data!.orderId! }
         meatId={data?.meatCategory?.meatOrderId ?? "No meat order"}
         snowId={data?.snowfrostCategory?.snowFrostOrderId ?? "No snowfrost order"}
+        internalShipment={data?.internalShipment ?? false}
+        deliveryType={data?.deliveryType ?? ""}
+        expectedDelivery={data?.expectedDelivery ?? ""}
         toEditItems={[
             ...(data?.meatCategory?.meatItems ?? []).map((item) => ({
                 sku: item.rawMaterialCode,
