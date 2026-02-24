@@ -165,6 +165,15 @@ export class SupplyOrderService {
         )
     }
 
+    static async updateShipmentType(updatedShipment: Record<any, any>) {
+        return await requestData(
+            `${url}/update-type`,
+            "POST",
+            undefined,
+            updatedShipment
+        )
+    }
+
     static async updateMeatOrder(meatOrder: SupplyItem[], id: string) {
         const payload = {
             id: id,

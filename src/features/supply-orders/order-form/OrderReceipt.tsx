@@ -129,11 +129,6 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
         else setDelType(""); 
     }, [intShip]);
 
-    useEffect(()=> {
-        console.log(delType);
-        
-    }, [delType])
-
     if (loading) return <PapiverseLoading />
     return(
         <section className="stack-md animate-fade-in-up pb-12 overflow-hidden max-md:mt-12">
@@ -317,10 +312,10 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal, intShip, 
 
                     {!intShip && (
                         <AppSelect
-                        items={["LALAMOVE", "PICKUP"]}
-                        value={delType}
-                        onChange={(value) => setDelType(value as DeliveryType)}
-                        placeholder="Delivery Type"
+                            items={["LALAMOVE", "PICKUP"]}
+                            value={delType}
+                            onChange={(value) => setDelType(value as DeliveryType)}
+                            placeholder="Delivery Type"
                         />
                     )}
                 </div>
