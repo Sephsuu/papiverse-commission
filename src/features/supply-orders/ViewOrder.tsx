@@ -446,7 +446,7 @@ export function ViewOrderPage({ id }: { id: number }) {
 
             {data?.remarks && (
                 <div className="border border-dashed border-gray w-full bg-light p-4">
-                    <span className="font-semibold">Commisary Remarks: </span> { data?.remarks }
+                    <span className="font-semibold">Commissary Remarks: </span> { data?.remarks }
                 </div>
             )}
 
