@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useToday } from "@/hooks/use-today";
 import { format } from "date-fns";
-import { DatePickerModal } from "./components/DatePickerModal";
+import { DatePickerModal } from "../_inventory-v2/components/DatePickerModal";
 import {
     ArrowLeft,
     ArrowUpDown,
@@ -366,8 +366,10 @@ export function InventoryPricingPage({ className }: { className?: string }) {
                                             ) : (
                                                 <TrendingDown className="w-3.5 h-3.5" />
                                             )}
-                                            {Math.round(
-                                                ((item.currentInventory - item.previousInventory) / item.previousInventory) * 100
+                                            {Number(
+                                                (
+                                                    ((item.currentInventory - item.previousInventory) / item.previousInventory) * 100
+                                                ).toFixed(2)
                                             )}
                                             %
                                         </span>

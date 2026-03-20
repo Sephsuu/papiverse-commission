@@ -1,4 +1,4 @@
-import { BellRing, Download, Funnel, Plus } from "lucide-react";
+import { BellRing, Download, Funnel, Plus, Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Button } from "../ui/button";
 import { Dispatch, SetStateAction } from "react";
@@ -9,7 +9,7 @@ import { NotificationResponse } from "@/types/notification";
 
 const pages = [10, 20, 30, 40, 50, 100]
 
-export function TableFilter({ setSearch, searchPlaceholder, setOpen, buttonLabel, size, setSize, removeAdd, filters, filter,  setFilter, removeFilter, filteredNotifications, setShowNotif, pageKey }: {
+export function TableFilter({ setSearch, searchPlaceholder, setOpen, buttonLabel, size, setSize, removeAdd, filters, filter,  setFilter, removeFilter, filteredNotifications, setShowNotif, pageKey, className }: {
     setSearch: (i: string) => void;
     searchPlaceholder: string;
     size: number;
@@ -24,15 +24,19 @@ export function TableFilter({ setSearch, searchPlaceholder, setOpen, buttonLabel
     filteredNotifications?: NotificationResponse[];
     setShowNotif?: Dispatch<SetStateAction<boolean>>;
     pageKey?: string
+    className?: string;
 }) {
     return (
-        <div className={`flex items-center max-md:flex-col max-md:gap-2`}>
+        <div className={`flex items-center max-md:flex-col max-md:gap-2 ${className}`}>
             <div className="flex-center-y gap-2 w-full">
-                <input
-                    className="py-1 pl-3 rounded-md bg-light shadow-xs w-100 max-md:w-full"
-                    placeholder={ searchPlaceholder }
-                    onChange={ e => setSearch(e.target.value) }
-                />
+                <div className="relative w-100 max-md:w-full">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray" />
+                    <input
+                        className="w-full rounded-md bg-light py-1 pl-9 pr-3 shadow-xs"
+                        placeholder={ searchPlaceholder }
+                        onChange={ e => setSearch(e.target.value) }
+                    />
+                </div>
                 <Select 
                     value={ String(size) }
                     onValueChange={ (value) => setSize(prev => Number(value)) }

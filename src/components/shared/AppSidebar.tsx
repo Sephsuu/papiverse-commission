@@ -11,7 +11,7 @@ import { ChevronDown, ChevronsUpDown, CircleUserRound, LogOut, Menu } from "luci
 import { AppAvatar } from "./AppAvatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Claim } from "@/types/claims";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { AuthService } from "@/services/auth.service";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -27,10 +27,10 @@ export function AppSidebar() {
     const isMobile = useIsMobile();
     const { claims, loading } = useAuth();
     const { open } = useSidebar();
-    const { notifications, loading: notifLoading } = useNotifications({
+    const { notifications } = useNotifications({
         claims, 
         onNewNotification: (notification: NotificationResponse) => {
-            toast.custom((t) => (
+            toast.custom(() => (
                 <ElegantToast
                     title={notification.title}
                     message={notification.message}
@@ -66,6 +66,37 @@ export function AppSidebar() {
     if (role === "FRANCHISOR") route = adminRoute;
     else if (role === "FRANCHISEE") route = franchiseeRoute;
     else redirect("/unauthorized");
+
+    const normalizePath = (path: string) => {
+        if (path === "/") return path;
+        return path.replace(/\/+$/, "");
+    };
+
+    const currentPath = normalizePath(pathName);
+    const routeHrefs = route.flatMap((item) => [
+        ...(item.href ? [normalizePath(item.href)] : []),
+        ...item.children.map((child) => normalizePath(child.href)),
+    ]);
+
+    const getRouteMatchScore = (href: string) => {
+        if (currentPath === href) return href.length + 1000;
+        if (currentPath.startsWith(`${href}/`)) return href.length;
+        return -1;
+    };
+
+    const activeHref = routeHrefs.reduce<string | null>((bestMatch, href) => {
+        const currentBestScore = bestMatch ? getRouteMatchScore(bestMatch) : -1;
+        const nextScore = getRouteMatchScore(href);
+
+        return nextScore > currentBestScore ? href : bestMatch;
+    }, null);
+
+    const isRouteActive = (href?: string) =>
+        href ? normalizePath(href) === activeHref : false;
+
+    const isParentRouteActive = (item: PapiverseRoute) =>
+        isRouteActive(item.href) ||
+        item.children.some((child) => isRouteActive(child.href));
 
     const notifCounts = {
         SUPPLY: notifications.filter(n => n.type === "SUPPLY").length,
@@ -124,44 +155,55 @@ export function AppSidebar() {
                                 />
                             </Link>
                             <SidebarMenu className="mt-4">
-                            {route?.map((item, i) => (
-                                item.children.length > 0 ? (
-                                <Collapsible key={i}>
-                                    <CollapsibleTrigger asChild>
-                                    <SidebarMenuButton className="flex gap-2 pl-4">
-                                        <item.icon className="w-4 h-4" />
-                                        {item.title}
-                                        <ChevronDown className="ml-auto" />
-                                    </SidebarMenuButton>
-                                    </CollapsibleTrigger>
-                                    <CollapsibleContent>
-                                    <SidebarMenuSub>
-                                        {item.children.map((sub, index) => (
-                                        <SidebarMenuButton key={index}>
-                                            <Link href={sub.href} className="w-full h-full">
-                                            {sub.title}
-                                            </Link>
+                            {route?.map((item, i) => {
+                                const isItemActive = isParentRouteActive(item);
+
+                                return item.children.length > 0 ? (
+                                    <Collapsible key={i} defaultOpen={isItemActive}>
+                                        <CollapsibleTrigger asChild>
+                                        <SidebarMenuButton
+                                            className="flex gap-2 pl-4"
+                                            isActive={isItemActive}
+                                        >
+                                            <item.icon className="w-4 h-4" />
+                                            {item.title}
+                                            <ChevronDown className="ml-auto" />
                                         </SidebarMenuButton>
-                                        ))}
-                                    </SidebarMenuSub>
-                                    </CollapsibleContent>
-                                </Collapsible>
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent>
+                                        <SidebarMenuSub>
+                                            {item.children.map((sub, index) => (
+                                            <SidebarMenuButton
+                                                key={index}
+                                                isActive={isRouteActive(sub.href)}
+                                            >
+                                                <Link href={sub.href} className="w-full h-full">
+                                                {sub.title}
+                                                </Link>
+                                            </SidebarMenuButton>
+                                            ))}
+                                        </SidebarMenuSub>
+                                        </CollapsibleContent>
+                                    </Collapsible>
                                 ) : (
-                                <SidebarMenuItem key={i}>
-                                    <Link href={item.href!} className="w-full">
-                                    <SidebarMenuButton className="flex gap-2 pl-4">
-                                        <item.icon className="w-4 h-4" />
-                                        {item.title}
-                                        { item.title === "Announcements" && (
-                                            <Badge className="rounded-full bg-darkred">
-                                                { notifications.filter(i => i.type === "ANNOUNCEMENT").length }
-                                            </Badge>
-                                        )}
-                                    </SidebarMenuButton>
-                                    </Link>
-                                </SidebarMenuItem>
-                                )
-                            ))}
+                                    <SidebarMenuItem key={i}>
+                                        <Link href={item.href!} className="w-full">
+                                        <SidebarMenuButton
+                                            className="flex gap-2 pl-4"
+                                            isActive={isRouteActive(item.href)}
+                                        >
+                                            <item.icon className="w-4 h-4" />
+                                            {item.title}
+                                            { item.title === "Announcements" && (
+                                                <Badge className="rounded-full bg-darkred">
+                                                    { notifications.filter(i => i.type === "ANNOUNCEMENT").length }
+                                                </Badge>
+                                            )}
+                                        </SidebarMenuButton>
+                                        </Link>
+                                    </SidebarMenuItem>
+                                );
+                            })}
                             </SidebarMenu>
                             <SidebarFooter className="mt-auto mb-1">
                                 <DropdownFooter 
@@ -212,12 +254,17 @@ export function AppSidebar() {
                         )}
                     </Link>
                     <SidebarMenu className={`mt-4 ${!open && "flex-center"}`}>
-                        {route?.map((item, i) => (
-                            item.children.length !== 0 ?
-                            <Collapsible className="group/collapsible" key={ i }>
+                        {route?.map((item, i) => {
+                            const isItemActive = isParentRouteActive(item);
+
+                            return item.children.length !== 0 ?
+                            <Collapsible className="group/collapsible" key={ i } defaultOpen={isItemActive}>
                                 <SidebarMenuItem>
                                     <CollapsibleTrigger asChild>
-                                        <SidebarMenuButton className="flex gap-2 pl-4">
+                                        <SidebarMenuButton
+                                            className="flex gap-2 pl-4"
+                                            isActive={isItemActive}
+                                        >
                                             <item.icon className="w-4 h-4" />
                                             { item.title }
                                             { item.title === "Catalog" && (notifCounts.PRODUCT > 0 || notifCounts.SUPPLY > 0) && (
@@ -236,7 +283,11 @@ export function AppSidebar() {
                                     <CollapsibleContent>
                                         <SidebarMenuSub>
                                             {item.children.map((sub, index) => (
-                                                <SidebarMenuButton className="py-0" key={ index }>
+                                                <SidebarMenuButton
+                                                    className="py-0"
+                                                    key={ index }
+                                                    isActive={isRouteActive(sub.href)}
+                                                >
                                                     <Link 
                                                         href={ sub.href } 
                                                         className="flex-center-y gap-2 w-full h-full my-auto"
@@ -281,7 +332,10 @@ export function AppSidebar() {
                                 key={ i }
                             >
                                 <SidebarMenuItem>
-                                    <SidebarMenuButton className="flex gap-2 pl-4">
+                                    <SidebarMenuButton
+                                        className="flex gap-2 pl-4"
+                                        isActive={isRouteActive(item.href)}
+                                    >
                                         <item.icon className="w-4 h-4" />
                                         { item.title }
                                         { item.title === "Announcements" && notifCounts.ANNOUNCEMENT > 0 && (
@@ -301,8 +355,8 @@ export function AppSidebar() {
                                         )}
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
-                            </Link>
-                        ))}
+                            </Link>;
+                        })}
                     </SidebarMenu>
 
                     <SidebarFooter className="mt-auto mb-1">

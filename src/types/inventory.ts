@@ -20,7 +20,71 @@ export interface Inventory {
     type?: string;
     source?: string;
     unitType?: string;
+    unitCost?: number;
 }
+
+export interface InventoryTransactionSummaryItem {
+    name: string;
+    sku: string;
+    totalIn: number;
+    totalOut: number;
+    unitMeasurement: string;
+    category: string;
+    currentInventory: number;
+    previousInventory: number;
+}
+
+export interface InventoryTransactionSummary {
+    branchId: number;
+    branchName: string;
+    from: string;
+    to: string;
+    summary: InventoryTransactionSummaryItem[],
+}
+
+export interface InventoryReportBreakdown {
+    branchId: number;
+    branchName: string;
+    startDate: string;
+    endDate: string;
+    totalCapital: number;
+    totalSales: number;
+    totalProfit: number;
+    totalExpenses: number;
+    items: {
+        rawMaterialId: number;
+        sku: string;
+        rawMaterialName: string;
+        category: string;
+        unitMeasurement: string;
+        producedQuantity: number;
+        soldQuantity: number;
+        capital: number;
+        sales: number;
+        profit: number;
+        currentStock: number;
+        stockLevel: string;
+    } []
+}
+
+export interface InventoryItemAudit {
+    id: number;
+    inventoryid: number;
+    rawMaterialCode: string;
+    rawMaterialName: string;
+    branchId: number;
+    branchName: string;
+    quantityChanged: number;
+    unitMeasurement: string;
+    type: string;
+    source: string;
+    order: {
+        id: number;
+        orderDestination: string;
+    };
+    dateTime: string;
+}
+
 
 export interface DetailedCommissary {
     totalOut: number;
@@ -28,7 +92,6 @@ export interface DetailedCommissary {
     currentInventory: number;
     stockLevel: string;
     previousInventory: number;
-     
     rawMaterial: Partial<Supply>
 }
 

@@ -3,6 +3,8 @@
 import { useMemo } from "react";
 
 export function useToday(inputDate?: string) {
+    const today = new Date().toISOString().split("T")[0];
+
     const dateObj = useMemo(() => {
         if (inputDate) {
             return new Date(inputDate + "T00:00:00+08:00");
@@ -40,6 +42,7 @@ export function useToday(inputDate?: string) {
     });
 
     return {
+        today,
         dateObj,
         day,
         monthNumber,

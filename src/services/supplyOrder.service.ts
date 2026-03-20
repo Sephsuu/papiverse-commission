@@ -1,6 +1,7 @@
 import { BASE_URL } from "@/lib/urls";
 import { requestBlob, requestData } from "./_config";
 import { CompleteOrder, SupplyItem, SupplyOrder } from "@/types/supplyOrder";
+import { log } from "node:console";
 
 const url = `${BASE_URL}/supply-order`;
 const meatUrl = `${BASE_URL}/meat-order`
@@ -151,7 +152,7 @@ export class SupplyOrderService {
         if (snowApproved !== undefined) {
             params.append("snowApproved", String(snowApproved));
         }
-
+        
         return requestData(
             `${url}/update-status?${params.toString()}`,
             "POST"

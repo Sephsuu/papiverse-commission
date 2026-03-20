@@ -23,7 +23,7 @@ interface Props {
 export function CreateSupply({ setOpen, setReload }: Props) {
     const [onProcess, setProcess] = useState(false);
 
-    const [supply, setSupply] = useState<Supply>(supplyInit);
+    const [supply, setSupply] = useState<Partial<Supply>>(supplyInit);
 
     async function handleSubmit() {
         try{         
@@ -59,7 +59,7 @@ export function CreateSupply({ setOpen, setReload }: Props) {
 
     return(
         <Dialog open onOpenChange={ setOpen }>
-            <DialogContent className="h-9/10 overflow-y-auto">
+            <DialogContent className="max-h-9/10 overflow-y-auto">
                 <DialogTitle className="flex items-center gap-2">  
                     <Image
                         src="/images/kp_logo.png"
@@ -173,7 +173,7 @@ export function CreateSupply({ setOpen, setReload }: Props) {
                                 />
                             </div>
                         </div> */}
-                        <div className="flex flex-col gap-1 col-span-2">
+                        <div className="flex flex-col gap-1">
                             <div>External Price</div>
                             <div className="flex border border-gray rounded-md">
                                 <input disabled value="₱" className={`${!supply.isDeliverables && "text-gray"} w-10 text-center`} /> 
@@ -187,6 +187,21 @@ export function CreateSupply({ setOpen, setReload }: Props) {
                                 />
                             </div>
                         </div>
+
+                        <div className="flex flex-col gap-1">
+                            <div>Unit Cost</div>
+                            <div className="flex border border-gray rounded-md">
+                                <input disabled value="₱" className="w-10 text-center" /> 
+                                <Input 
+                                    type="number"
+                                    className="w-full max-md:w-full" 
+                                    name ="unitCost"  
+                                    value={ supply.unitCost }
+                                    onChange={ e => handleChange(e, setSupply) }
+                                />
+                            </div>
+                        </div>
+
                         <div className="flex flex-col gap-1">
                             <div>Delivery Type</div>
                             <Select

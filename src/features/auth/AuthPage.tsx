@@ -21,8 +21,9 @@ export function AuthPage() {
         try {
             setProcess(true);
             const token = await AuthService.authenticateUser(credentials);
+            
             if (token) {
-                localStorage.setItem('token', token);
+                localStorage.setItem('token', token.token);
                 const res = await AuthService.setCookie(token);
                 toast.success(res.message);
                 window.location.href = '/'

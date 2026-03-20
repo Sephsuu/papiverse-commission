@@ -2,7 +2,7 @@
 
 import { PapiverseLoading } from "@/components/ui/loader";
 import { Branch } from "@/types/branch";
-import { Info, SquarePen, Trash2 } from "lucide-react";
+import { Boxes, Info, SquarePen, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useSearchFilter } from "@/hooks/use-search-filter";
 import { useFetchData } from "@/hooks/use-fetch-data";
@@ -18,6 +18,8 @@ import { OrderStatusBadge } from "@/components/ui/badge";
 import { useCrudState } from "@/hooks/use-crud-state";
 import { ViewBranch } from "./components/ViewBranch";
 import { formatToPeso } from "@/lib/formatter";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useRouter } from "next/navigation";
 
 const pageKey = "branchPage";
 const columns = [
@@ -30,6 +32,8 @@ const columns = [
 const filters = ['All', 'Internal Branch', 'External Branch'];
 
 export function BranchesPage() {
+    const router = useRouter();
+
     const [reload, setReload] = useState(false);
     const [filter, setFilter] = useState(filters[0]);
 
@@ -91,6 +95,17 @@ export function BranchesPage() {
                                     <button onClick={() => setUpdate(item)}><SquarePen className="w-4 h-4 text-darkgreen" /></button>
                                     <button onClick={() => setView(item)}><Info className="w-4 h-4" /></button>
                                     <button onClick={() => setDelete(item)}><Trash2 className="w-4 h-4 text-darkred" /></button>
+                                    <Tooltip>
+                                        <TooltipTrigger 
+                                            className="w-4 h-4"
+                                            onClick={() => router.push(`/branches/inventory?name=${item.name}&id=${item.id}`)}
+                                        >
+                                            <Boxes className="w-4 h-4 text-darkbrown" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            View Branch Inventory
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </div>
                             </div>
                         ))

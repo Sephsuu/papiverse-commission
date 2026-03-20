@@ -12,9 +12,10 @@ export type Supply = {
     category?: string;
     minStock?: number;
     unitPrice?: number; 
+    unitCost: number;
 }
 
-export const supplyInit: Supply = {
+export const supplyInit: Partial<Supply> = {
     name: "",
     isDeliverables: true,
     unitQuantity: 0,
@@ -23,6 +24,7 @@ export const supplyInit: Supply = {
     convertedMeasurement: "",
     unitPriceInternal: 0,
     unitPriceExternal: 0,
+    unitCost: 0,
     category: "",
     minStock: 0
 };
@@ -33,5 +35,6 @@ export const supplyFields: (keyof Supply)[] = [
     "unitMeasurement",
     "unitPriceInternal",
     "unitPriceExternal",
+    "unitCost",
     "category",
 ];

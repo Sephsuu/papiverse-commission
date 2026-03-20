@@ -2,12 +2,18 @@ import { AppSelect } from "@/components/shared/AppSelect";
 import { UpdateButton } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { handleChange } from "@/lib/form-handle";
+import { ModalLoader } from "@/components/ui/loader";
+import { useAuth } from "@/hooks/use-auth";
+import { parseOptionalDecimal, sanitizeDecimalInput } from "@/lib/decimal-input";
+import { formatToPeso } from "@/lib/formatter";
 import { InventoryService } from "@/services/inventory.service";
 import { Inventory, inventoryFields } from "@/types/inventory";
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { toast } from "sonner";
+
+const tabs = ["NORMAL INPUT", "PRODUCTION INPUT"] as const;
+const inventoryFlows = ["IN", "OUT"] as const;
 
 interface Props {
     toUpdate: Inventory;
@@ -16,8 +22,29 @@ interface Props {
 }
 
 export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
+    const { loading: authLoading, isFranchisor } = useAuth();
+
     const [onProcess, setProcess] = useState(false);
-    const [inventory, setInventory] = useState<Inventory>({ ...toUpdate, changedQuantity: 0, type: 'IN', unitType: 'BASE' });
+    const [tab, setTab] = useState<(typeof tabs)[number]>(tabs[0]);
+    const [inventory, setInventory] = useState<Inventory>({
+        ...toUpdate,
+        changedQuantity: 0,
+        type: 'IN',
+        unitType: 'BASE',
+        source: 'INPUT',
+        unitCost: toUpdate.unitCost,
+    });
+    const [changedQuantityInput, setChangedQuantityInput] = useState("0");
+
+    function handleChangedQuantityChange(value: string) {
+        const sanitizedValue = sanitizeDecimalInput(value);
+
+        setChangedQuantityInput(sanitizedValue);
+        setInventory((prev) => ({
+            ...prev,
+            changedQuantity: parseOptionalDecimal(sanitizedValue),
+        }));
+    }
 
     async function handleSubmit() {
         try{         
@@ -30,10 +57,29 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                     inventory[field] === 0
                 ) {
                     toast.info("Please fill up all fields!");
-                return; 
+                    return; 
                 }
             }
-            const data = await InventoryService.createInventoryInput(inventory);
+            if (
+                tab === "PRODUCTION INPUT" &&
+                inventory.type === "IN" &&
+                (!inventory.unitCost || inventory.unitCost <= 0)
+            ) {
+                toast.info("Please provide a valid unit cost for production input!");
+                return;
+            }
+
+            const payload: Inventory = {
+                ...inventory,
+                type: inventory.type,
+                source: "INPUT",
+                unitCost:
+                    tab === "PRODUCTION INPUT" && inventory.type === "IN"
+                        ? inventory.unitCost
+                        : undefined,
+            };
+
+            const data = await InventoryService.createInventoryInput(payload);
             if (data) {
                 toast.success(`Supply ${inventory.name} updated successfully!`);  
                 setReload(prev => !prev); 
@@ -44,11 +90,7 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
         finally { setProcess(false) }
     }
 
-    useEffect(() => {
-        console.log(inventory);
-        
-    }, [inventory])
-
+    if (authLoading) return <ModalLoader />
     return(
         <Dialog open onOpenChange={ (open) => { if (!open) setUpdate(undefined) } }>
             <DialogContent className="overflow-y-auto">
@@ -61,6 +103,33 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                     />
                     <div className="font-semibold text-xl">Update Inventory Quantity</div>      
                 </DialogTitle>
+
+                {isFranchisor && (
+                    <div className="mt-2 flex w-full">
+                        {tabs.map((item) => {
+                            const isActive = tab === item;
+
+                            return (
+                                <button
+                                    key={item}
+                                    type="button"
+                                    onClick={() => setTab(item)}
+                                    className={`group relative w-full pb-4 text-center text-sm font-medium transition-colors
+                                        ${isActive ? "text-darkbrown font-semibold" : "text-slate-500 hover:text-darkbrown"}
+                                    `}
+                                >
+                                    <span className="block truncate">{item}</span>
+                                    <span
+                                        className={`absolute bottom-0 left-0 h-0.5 bg-darkbrown transition-all duration-300
+                                            ${isActive ? "w-full" : "w-0 group-hover:w-full group-hover:bg-orange-100"}
+                                        `}
+                                    />
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+
                 <form 
                     className="flex flex-col gap-4"
                     onSubmit={ e => {
@@ -72,7 +141,7 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                         <div className="flex flex-col gap-1">
                             <div>SKU ID</div>
                             <Input    
-                                className="w-full border-1 border-gray rounded-md max-md:w-full" 
+                                className="w-full border border-gray rounded-md max-md:w-full" 
                                 value={ inventory.sku }
                                 disabled
                             />  
@@ -80,7 +149,7 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                         <div className="flex flex-col gap-1">
                             <div>Inventory Supply</div>
                             <Input    
-                                className="w-full border-1 border-gray rounded-md max-md:w-full" 
+                                className="w-full border border-gray rounded-md max-md:w-full" 
                                 value={ inventory.name }
                                 disabled
                             />  
@@ -88,16 +157,16 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                         <div className="flex flex-col gap-1">
-                            <div>Quantity Change</div>
-                            <div className="flex border-1 border-gray rounded-md">
+                            <div>{tab === "PRODUCTION INPUT" ? "Produced Quantity" : "Quantity Change"}</div>
+                            <div className="flex border border-gray rounded-md">
                                 <Input    
-                                    className="w-full border-1 border-none rounded-md max-md:w-full" 
-                                    min={0.00001} 
-                                    type="number"
-                                    step="any"
+                                    className="w-full border border-none rounded-md max-md:w-full" 
+                                    type="text"
+                                    inputMode="decimal"
+                                    pattern="[0-9]*[.]?[0-9]{0,2}"
                                     name="changedQuantity"  
-                                    value={inventory.changedQuantity}
-                                    onChange={ e => handleChange(e, setInventory)}
+                                    value={changedQuantityInput}
+                                    onChange={(e) => handleChangedQuantityChange(e.target.value)}
                                 />  
                                 <input disabled value={ inventory.unitType === 'BASE' ? inventory.unitMeasurement : inventory.convertedMeasurement } className={`w-20 text-center`} /> 
                             </div>
@@ -105,13 +174,13 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                         <div className="flex flex-col gap-1">
                             <div>Inventory Flow</div>
                             <AppSelect
-                                items={ ['IN', 'OUT'] }
-                                value={ inventory.type ?? 'IN' }
+                                items={ [...inventoryFlows] }
+                                value={ inventory.type ?? "IN" }
                                 onChange={ (value) => setInventory(prev => ({
                                     ...prev,
                                     type: value
                                 })) }
-                            />   
+                            />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
@@ -126,7 +195,16 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                                 })) }
                             />   
                         </div>
-                        
+                        {tab === "PRODUCTION INPUT" && inventory.type === "IN" && (
+                            <div className="flex flex-col gap-1">
+                                <div>Unit Cost</div>
+                                <Input
+                                    className="w-full border border-gray rounded-md max-md:w-full"
+                                    value={inventory.unitCost ? formatToPeso(inventory.unitCost) : "Not available"}
+                                    disabled
+                                />
+                            </div>
+                        )}
                     </div>
                     
                     <div className="flex justify-end gap-4">

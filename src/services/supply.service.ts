@@ -27,7 +27,7 @@ export class SupplyService {
     );
   }
 
-  static async addSupply(supply: Supply) {
+  static async addSupply(supply: Partial<Supply>) {
     const payload = {
         ...supply,
         name: capitalizeWords(supply.name!),
@@ -52,6 +52,7 @@ export class SupplyService {
         name: capitalizeWords(supply.name!),
         category: supply.isDeliverables ? supply.category : 'NONDELIVERABLES',
         unitQuantity: Number(supply.unitQuantity),
+        unitCost: Number(supply.unitCost),
         unitPriceInternal: supply.isDeliverables ? Number(supply.unitPriceExternal) : 0, // [NOTICE]
         unitPriceExternal: supply.isDeliverables ? Number(supply.unitPriceExternal) : 0,
     };

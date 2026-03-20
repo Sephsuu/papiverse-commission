@@ -3,6 +3,7 @@ import { ModalTitle } from "@/components/shared/ModalTitle";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent } from "@/components/ui/alert-dialog";
 import { UpdateButton } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { useFetchData } from "@/hooks/use-fetch-data";
 import { SupplyOrderService } from "@/services/supplyOrder.service";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -22,6 +23,11 @@ export function UpdateShipment({setOpen, setReload, orderId, internalShipment, d
         if (intShip) setDelType("DELIVERY");
         // else setDelType(); 
     }, [intShip]);
+
+    useEffect(() => {
+        console.log(intShip, delType);
+        
+    }, [intShip, delType])
 
     const handleSubmit = async () => {
         try {

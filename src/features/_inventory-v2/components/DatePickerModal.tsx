@@ -66,7 +66,6 @@ export function DatePickerModal({
 	const applyWeek = () => {
 		if (!weekRange) return;
 		const startStr = toYMD(weekRange.start);
-		const endStr = toYMD(weekRange.end);
 
 		setDate(startStr);
 		setByWeek(true);

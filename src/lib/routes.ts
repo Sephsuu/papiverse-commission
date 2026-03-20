@@ -1,4 +1,4 @@
-import { BookMarked, ChartNoAxesCombined, CircleQuestionMark, Container, Ham, LucideIcon, Megaphone, MessageCircleMore, MessageCircleQuestionMark, Store, UserRound, UsersRound, Wallet } from "lucide-react";
+import { BookMarked, ChartNoAxesCombined, CircleQuestionMark, Container, Ham, HandCoins, LucideIcon, Megaphone, MessageCircleMore, MessageCircleQuestionMark, Store, UserRound, UsersRound, Wallet } from "lucide-react";
 import { hrtime } from "process";
 
 export interface PapiverseRoute {
@@ -34,10 +34,20 @@ export const adminRoute = [
         title: 'Inventory', 
         icon: Container,
         children: [
-            { title: 'Summary', href: '/inventory'},
             { title: 'Inventories', href: '/inventory/inventories' },
             { title: 'Supply Orders', href: '/inventory/supply-orders' },
             { title: 'Inventory Logs', href: '/inventory/logs' },
+            { title: 'Transaction Summary', href: '/inventory/transaction-summary' },
+            { title: 'Branch Purchase Item', href: '/inventory/branch-purchase-item' },
+        ]
+    },
+    { 
+        title: 'Finance', 
+        icon: HandCoins,
+        children: [
+            { title: 'Expenses', href: '/finance/expenses' },
+            { title: 'Inventory Reports', href: '/finance/inventory-reports' },
+            { title: 'Inventory Breakdown', href: '/finance/inventory-breakdown' },
         ]
     },
     // { 

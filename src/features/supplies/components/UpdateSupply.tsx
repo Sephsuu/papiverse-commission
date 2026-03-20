@@ -1,15 +1,12 @@
 import { ModalTitle } from "@/components/shared/ModalTitle";
 import { UpdateButton } from "@/components/ui/button";
-import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { handleChange } from "@/lib/form-handle";
 import { SupplyService } from "@/services/supply.service";
 import { Supply, supplyFields } from "@/types/supply";
-import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { toast } from "sonner";
 
 const categories = ["MEAT", "SNOWFROST", "NONDELIVERABLES"];
@@ -22,7 +19,6 @@ interface Props {
 }
 
 export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
-    const [loading, setLoading] = useState(true);
     const [onProcess, setProcess] = useState(false);
 
     const [supply, setSupply] = useState<Supply>(toUpdate);
@@ -60,10 +56,6 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
             setProcess(false);
         }
     }
-
-    useEffect(() => {
-        console.log(supply);
-    }, [supply])
     return(
         <Dialog open onOpenChange={ (open) => { if (!open) setUpdate(undefined) } }>
             <DialogContent className="h-9/10 overflow-y-auto">
@@ -182,7 +174,7 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                                 />
                             </div>
                         </div> */}
-                        <div className="flex flex-col gap-1 col-span-2">
+                        <div className="flex flex-col gap-1">
                             <div>External Price</div>
                             <div className="flex border border-gray rounded-md">
                                 <input disabled value="₱" className={`${!supply.isDeliverables && "text-gray"} w-10 text-center`} />
@@ -193,6 +185,20 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                                     value={ supply.isDeliverables ? supply.unitPriceExternal : 0 }
                                     onChange={ e => handleChange(e, setSupply) }
                                     disabled={ !supply.isDeliverables }
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                            <div>Unit Cost</div>
+                            <div className="flex border border-gray rounded-md">
+                                <input disabled value="₱" className="w-10 text-center" />
+                                <Input
+                                    type="number"
+                                    className="w-full max-md:w-full"
+                                    name="unitCost"
+                                    value={supply.unitCost}
+                                    onChange={e => handleChange(e, setSupply)}
                                 />
                             </div>
                         </div>

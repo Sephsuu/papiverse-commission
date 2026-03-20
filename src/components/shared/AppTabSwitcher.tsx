@@ -15,8 +15,8 @@ export function AppTabSwitcher({ tabs, selectedTab, setSelectedTab }: TabSwitche
         <Button
           key={i}
           onClick={() => setSelectedTab(item)}
-          className={`w-30 rounded-full bg-slate-50 text-dark hover:bg-[#e1cfb2] transition 
-            ${selectedTab === item && "!bg-darkbrown text-light hover:opacity-100"}`}
+          className={`w-30 rounded-full bg-slate-50 text-dark hover:border hover:border-slate-300 hover:text-darkbrown hover:bg-transparent 
+            ${selectedTab === item && "bg-darkbrown! text-light! hover:opacity-100"}`}
         >
           {item}
         </Button>

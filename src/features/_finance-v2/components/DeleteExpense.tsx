@@ -18,19 +18,26 @@ export function DeleteExpense({ toDelete, setDelete, setReload }: Props) {
         try {
             setProcess(true);
             await ExpenseService.deleteExpense(toDelete.id!);
-            toast.success(`Expense ${toDelete.purpose} deleted successfully.`)
-        } catch (error) { toast.error(`${error}`) }
-        finally { 
-            setProcess(false); 
+            toast.success(`Expense ${toDelete.purpose} deleted successfully.`);
             setDelete(undefined);
-            setReload(prev => !prev); 
+            setReload(prev => !prev);
+        } catch (error) {
+            toast.error(`${error}`);
+        } finally { 
+            setProcess(false); 
         }
     }
 
     return(
         <Dialog open={ !!toDelete } onOpenChange={ (open) => { if (!open) setDelete(undefined) } }>
             <DialogContent>
-                <DialogTitle className="text-sm">Are you sure you want to delete expense <span className="text-darkred">{ toDelete.purpose }</span></DialogTitle>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        handleDelete();
+                    }}
+                >
+                    <DialogTitle className="text-sm">Are you sure you want to delete expense <span className="text-darkred">{ toDelete.purpose }</span></DialogTitle>
                     <div className="flex justify-end items-end gap-4">
                         <DialogClose>Close</DialogClose>
                         <DeleteButton
@@ -40,6 +47,7 @@ export function DeleteExpense({ toDelete, setDelete, setReload }: Props) {
                             loadingLabel="Deleting Expenditure"
                         />
                     </div>
+                </form>
             </DialogContent>
         </Dialog>
     );

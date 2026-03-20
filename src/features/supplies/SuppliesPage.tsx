@@ -22,27 +22,25 @@ import { useAuth } from "@/hooks/use-auth";
 import useNotifications from "@/hooks/use-notification";
 import { NotificationSheet } from "@/components/shared/NotificationSheet";
 import { ViewSupply } from "./components/ViewSupply";
+import { getCategoryIcon } from "@/hooks/use-helper";
 
 const pageKey = "supplyPage";
 const columns = [
-    { title: "SKU ID", style: "" },
-    { title: "Supply Name", style: "" },
+    { title: "Supply", style: "col-span-2" },
     { title: "Base Measurement", style: "" },
     { title: "Converted Measurement", style: "" },
     { title: "Minimum Stock Required", style: "" },
-    { title: "Internal Price", style: "text-right" },
-    { title: "External Price", style: "text-right" },
+    { title: "Price", style: "text-right" },
+    { title: "Unit Cost", style: "text-right" },
     { title: 'Action', style: 'text-center' }
 ]
 const franchiseeColumns = [
-    { title: "SKU ID", style: "" },
-    { title: "Supply Name", style: "" },
+    { title: "Supply", style: "" },
     { title: "Base Measurement", style: "" },
     { title: "Converted Measurement", style: "" },
+    { title: "Minimun Stock Required", style: "text-right" },
     { title: "Price", style: "text-right" },
-    { title: "Minimum Stock Required", style: "text-right" },
 ]
-
 
 const filters = ['All', 'Meat', 'Snow Frost', 'Non Deliverables'];
 
@@ -55,7 +53,6 @@ export function SuppliesPage() {
     const { filteredNotifications, loading: notifLoading } = useNotifications({ claims, type: "SUPPLY" })
     const { search, setSearch, filteredItems } = useSearchFilter(data, ['code', 'name']); 
     
-
     const filteredData = filteredItems.filter(i => {
         if (filter === 'Meat') return i.category === 'MEAT';
         if (filter === 'Snow Frost') return i.category === 'SNOWFROST';
@@ -70,6 +67,7 @@ export function SuppliesPage() {
     return(
         <section className="stack-md animate-fade-in-up overflow-hidden max-md:mt-12">
             <AppHeader label="All Supplies" />
+
             <TableFilter 
                 setSearch={ setSearch }
                 searchPlaceholder="Search for a supply"
@@ -86,7 +84,7 @@ export function SuppliesPage() {
             />
 
             <div className="table-wrapper">
-                <div className={`thead grid max-md:w-250! ${isFranchisor ? "grid-cols-8" : "grid-cols-6"}`}>
+                <div className={`thead grid max-md:w-250! ${isFranchisor ? "grid-cols-8" : "grid-cols-5"}`}>
                     {(isFranchisor ? columns : franchiseeColumns).map((item, index) => (
                         <div key={index} className={`th ${item.style}`}>{item.title}</div>
                     ))}                     
@@ -95,25 +93,37 @@ export function SuppliesPage() {
                 <div className="animate-fade-in-up" key={`${page}-${filter}`}>
                     {paginated.length > 0 ?
                         paginated.map((item, index) => (
-                            <div className={`tdata grid max-md:w-250! ${isFranchisor ? "grid-cols-8" : "grid-cols-6"}`} key={ index }>
-                                <div onClick={ () => setView(item) } className="td">{ item.sku }</div>
-                                <div className="td flex gap-2">
+                            <div className={`tdata grid max-md:w-250! ${isFranchisor ? "grid-cols-8" : "grid-cols-5"}`} key={ index }>
+                                <div 
+                                    className={`td gap-2 ${isFranchisor ? "col-span-2" : ""}`}
+                                    onClick={ () => setView(item) }
+                                >
                                     <Tooltip>
-                                        <TooltipTrigger>
-                                            {item.category === 'MEAT' ? <Ham className="w-4 h-4 text-darkbrown"/> 
-                                            : item.category === 'SNOWFROST' ? <Snowflake className="w-4 h-4 text-blue" />
-                                            : <PackageX className="w-4 h-4 text-slate-400" />
-                                            }
+                                        <TooltipTrigger asChild>
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
+                                                {getCategoryIcon(item.category!)}
+                                            </div>
                                         </TooltipTrigger>
-                                        <TooltipContent>{ item.category === 'MEAT' ? "MEAT Category" : item.category === 'SNOWFROST' ? "SNOW FROST Category" : "NON DELIVERABLES"}</TooltipContent>
+                                        <TooltipContent>{item.category}</TooltipContent>
                                     </Tooltip>
-                                    <div>{ item.name }</div>
+    
+                                    <div className="min-w-0">
+                                        <div className="truncate font-semibold text-slate-900">
+                                            {item.name}
+                                        </div>
+                                        <div className="text-xs text-slate-500">
+                                            {item.sku}
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="td flex gap-2">{ `${item.unitQuantity?.toFixed(2)} ${item.unitMeasurement}` }</div>
                                <div className="td flex gap-2 ">
                                     {item.convertedQuantity && item.convertedMeasurement
                                         ? `${item.convertedQuantity.toFixed(2)} ${item.convertedMeasurement}`
                                         : <div className="text-darkred font-semibold">N/A</div>}
+                                </div>
+                                <div className={`td`}>
+                                    { item.minStock } { item.unitMeasurement ?? '' }
                                 </div>
                                 {!isFranchisor && (
                                     <div className="td justify-between">
@@ -125,18 +135,16 @@ export function SuppliesPage() {
                                             </> }
                                     </div>
                                 )}
-                                <div className={`td`}>
-                                    { item.minStock } { item.unitMeasurement ?? '' }
-                                </div>
                                 {isFranchisor && (
-                                    <><div className="td justify-between">
+                                    <>
+                                    {/* <div className="td justify-between">
                                         { !item.isDeliverables 
                                             ? <OrderStatusBadge className="scale-110 bg-slate-200 text-dark!" status="NON DELIVERABLE" /> 
                                             : <>
                                                 <div>₱</div>
                                                 <div>{formatToPeso(item.unitPriceInternal!).slice(1,)}</div>
                                             </> }
-                                    </div>
+                                    </div> */}
                                     <div className="td justify-between">
                                         { !item.isDeliverables 
                                             ? <OrderStatusBadge className="scale-110 bg-slate-200 text-dark!" status="NON DELIVERABLE" /> 
@@ -144,6 +152,19 @@ export function SuppliesPage() {
                                                 <div>₱</div>
                                                 <div>{formatToPeso(item.unitPriceExternal!).slice(1,)}</div>
                                             </> }
+                                    </div>
+                                    <div className="td justify-between">
+                                        {item.unitCost 
+                                            ? <>
+                                                <div>₱</div>
+                                                <div>{formatToPeso(item.unitCost).slice(1,)}</div>
+                                            </>
+                                            : <>
+                                                <span className="text-xs text-gray">
+                                                    Not available
+                                                </span>
+                                            </>
+                                        }
                                     </div>
                                     <div className="flex-center-y gap-2 mx-auto">
                                         <button onClick={ () => setUpdate(item) }><SquarePen className="w-4 h-4 text-darkgreen" /></button>

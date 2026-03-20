@@ -1,50 +1,59 @@
 import { AddButton } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { FormLoader } from "@/components/ui/loader";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { parseOptionalDecimal, sanitizeDecimalInput } from "@/lib/decimal-input";
 import { handleChange } from "@/lib/form-handle";
-import { EmployeeService } from "@/services/employee.service";
 import { ExpenseService } from "@/services/expense.service";
-import { Claim } from "@/types/claims";
-import { Employee } from "@/types/employee";
 import { Expense, expenseFields, expenseInit } from "@/types/expense";
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { Dispatch, SetStateAction, useState } from "react";
 import { toast } from "sonner";
 
-const paymentModes = ['Cash', 'Credit Card', 'Debit Card', 'Bank Transfer'];
+const paymentModes = [
+    { label: "Cash", value: "CASH" },
+    { label: "Bank Transfer", value: "BANK_TRANSFER" },
+    { label: "Online Payment", value: "ONLINE_PAYMENT" },
+    { label: "Credit Card", value: "CREDIT_CARD" },
+    { label: "Debit Card", value: "DEBIT_CARD" },
+];
 
 interface Props {
-    claims: Claim;
     setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-    setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    setReload: Dispatch<SetStateAction<boolean>>;
 }
 
-export function CreateExpense({ claims, setOpen, setReload }: Props) {
-    const [loading, setLoading] = useState(true);
+export function CreateExpense({ setOpen, setReload }: Props) {
     const [onProcess, setProcess] = useState(false);
-    const [expense, setExpense] = useState<Expense>(expenseInit);
-    const [employees, setEmployees] = useState<Employee[]>([]);
+    const [expense, setExpense] = useState<Partial<Expense>>(expenseInit);
+    const [totalInput, setTotalInput] = useState(
+        expenseInit.total ? String(expenseInit.total) : ""
+    );
 
-    useEffect(() => {
-        async function fetchData() {
-            try {
-                const data = await EmployeeService.getEmployeesByBranch(claims.branch.branchId);
-                setEmployees(data);
-            } catch (error) { toast.error(`${error}`) }
-            finally { setLoading(false) }
-        }  
-        fetchData();
-    }, [claims]);
+    function handleTotalChange(value: string) {
+        const sanitizedValue = sanitizeDecimalInput(value);
+
+        setTotalInput(sanitizedValue);
+        setExpense((prev) => ({
+            ...prev,
+            total: parseOptionalDecimal(sanitizedValue),
+        }));
+    }
 
     async function handleSubmit() {
         try {
             setProcess(true);
             let invalid = false;
             for (const field of expenseFields) {
-                if (!expense[field]) {
+                const value = expense[field];
+
+                if (
+                    value === undefined ||
+                    value === null ||
+                    (typeof value === "string" && value.trim() === "") ||
+                    (field === "total" && Number(value) <= 0)
+                ) {
                     invalid = true;
                 }
             }
@@ -53,12 +62,14 @@ export function CreateExpense({ claims, setOpen, setReload }: Props) {
                 setProcess(false);
                 return
             }
+            
             const data = await ExpenseService.createExpense(expense);
             if (data) {
                 toast.success(`Expenditure for ${expense.purpose} added successfully.`);
                 setReload(prev => !prev);
-                setOpen(!open);
+                setOpen(false);
                 setExpense(expenseInit);
+                setTotalInput("");
             }
         } catch (error) { toast.error(`${error}`) }
         finally { setProcess(false) }
@@ -77,31 +88,9 @@ export function CreateExpense({ claims, setOpen, setReload }: Props) {
                 </DialogTitle>
 
                 <div className="grid grid-cols-2 gap-2">
-                    <div className="col-span-2 flex flex-col gap-1">
-                        <div>Spender</div>
-                        <Select
-                            value={ expense.spenderId ? String(expense.spenderId) : "" }
-                            onValueChange={ (value) => setExpense(prev => ({
-                                ...prev,
-                                spenderId: Number(value),
-                            }))}
-                        >
-                            <SelectTrigger className="w-full border-1 border-gray">
-                                <SelectValue placeholder="Select an Employee" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectLabel>Employees</SelectLabel>
-                                    {employees.map((item, index) => (
-                                        <SelectItem key={ index } value={ String(item.id) }>{ `${item.firstName} ${item.middleName} ${item.lastName}` }</SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </div>
                     <div className="flex flex-col gap-1">
                         <div>Expense</div>
-                        <div className="flex border-1 border-gray rounded-md">
+                        <div className="flex border border-gray rounded-md">
                             <input
                                 disabled
                                 placeholder="₱"
@@ -109,30 +98,32 @@ export function CreateExpense({ claims, setOpen, setReload }: Props) {
                             />
                             <Input 
                                 className="border-0"
-                                type="number"
-                                name="expense"
-                                value={ expense.expense }
-                                onChange={ e => handleChange(e, setExpense) }
+                                type="text"
+                                inputMode="decimal"
+                                pattern="[0-9]*[.]?[0-9]{0,2}"
+                                name="total"
+                                value={ totalInput }
+                                onChange={ (e) => handleTotalChange(e.target.value) }
                             />
                         </div>
                     </div>
                     <div className="flex flex-col gap-1">
                         <div>Mode of Payment</div>
                         <Select
-                            value={ expense.paymentMode }
+                            value={ expense.modeOfPayment ?? expenseInit.modeOfPayment }
                             onValueChange={ (value) => setExpense(prev => ({
                                 ...prev,
-                                paymentMode: value,
+                                modeOfPayment: value,
                             }))}
                         >
-                            <SelectTrigger className="w-full border-1 border-gray">
+                            <SelectTrigger className="w-full border border-gray">
                                 <SelectValue placeholder="Select Payment Mode" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectLabel>Payment Methods</SelectLabel>
                                     {paymentModes.map((item, index) => (
-                                        <SelectItem key={ index } value={ item }>{ item }</SelectItem>
+                                        <SelectItem key={ index } value={ item.value }>{ item.label }</SelectItem>
                                     ))}
                                 </SelectGroup>
                             </SelectContent>
@@ -141,9 +132,9 @@ export function CreateExpense({ claims, setOpen, setReload }: Props) {
                     <div className="flex flex-col gap-1 col-span-2">
                         <div>Expenditure Purpose</div>
                         <Textarea 
-                            className="border-1 border-gray"
+                            className="border border-gray"
                             name="purpose"
-                            value={ expense.purpose }
+                            value={ expense.purpose ?? "" }
                             onChange={ e => handleChange(e, setExpense) }
                         />
                     </div>

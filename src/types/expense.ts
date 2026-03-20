@@ -1,26 +1,23 @@
 export interface Expense {
-    id?: number;
-    spenderId: number;
-    firstName?: string;
-    lastName?: string;
-    paymentMode: string;
-    expense: number;
+    id: number;
+    total: number;
+    addedById: number;
+    addedByUsername: string;
+    addedByName: string;
+    spentAt: string;
+    modeOfPayment: string;
     purpose: string;
-    date: string;
-    branchId?: number;
+
 }
 
-export const expenseInit: Expense = {
-    spenderId: 0,
-    paymentMode: "",
-    expense: 0,
-    purpose: "",
-    date: "",
+export const expenseInit: Partial<Expense> = {
+    total: 0,
+    modeOfPayment: 'CASH',
+    purpose: ''
 };
 
 export const expenseFields: (keyof Expense)[] = [
-    "spenderId",
-    "paymentMode",
-    "expense",  
-    "purpose",
+    "total",
+    "modeOfPayment",
+    "purpose",  
 ];  

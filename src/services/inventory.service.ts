@@ -5,74 +5,113 @@ import { Inventory } from "@/types/inventory";
 const url = `${BASE_URL}/inventory`;
 
 export class InventoryService {
-  static async getInventoryByBranch(id: number, page: number, size: number) {
-    return await requestData(
-        `${url}/get-by-branch?id=${id}&page=${page}&size=${size}`,
-        "GET"
-    );
-  }
+	static async getInventoryByBranch(id: number, page: number, size: number) {
+		return await requestData(
+			`${url}/get-by-branch?id=${id}&page=${page}&size=${size}`,
+			"GET"
+		);
+	}
 
-  static async getInventoryAudits(id: number, source: string, page: number, size: number) {
-    return await requestData(
-        `${url}/get-audits?branchId=${id}&source=${source}&page=${page}&size=${size}`,
-        "GET"
-    );
-  }
+	static async getInventoryAudits(id: number, source: string, month: string, year: string, page: number, size: number) {
+		return await requestData(
+			`${url}/get-audits?branchId=${id}&source=${source}&month=${month}&year=${year}&page=${page}&size=${size}`,
+			"GET"
+		);
+	}
 
-  static async getItemAudits(id: number, code: string, page: number, size: number) {
-    return await requestData(
-        `${url}/get-item-audit?branchId=${id}&code=${code}&page=${page}&size=${size}`,
-        "GET"
-    );
-  }
+	static async getItemAudits(id: number, code: string, page: number, size: number) {
+		return await requestData(
+			`${url}/get-item-audit?branchId=${id}&code=${code}&page=${page}&size=${size}`,
+			"GET"
+		);
+	}
 
-  static async createInventory(inventory: Inventory) {
-    return await requestData(
-        `${url}/create`,
-        "POST",
-        undefined,
-        inventory
-    );
-  }
+	static async getTransactionSummary(id: number, date: string) {
+		return await requestData(
+			`${url}/get-transaction-summary?id=${id}&start=${date}&end=${date}`,
+			"GET",
+		);
+	}
 
-  static async updateInventory(inventory: Inventory) {
-    return await requestData(
-        `${url}/update`,
-        "POST",
-        undefined,
-        inventory
-    );
-  }
+	static async getItemAuditByDate(id: number, type: string, sku: string, date: string) {
+		return await requestData(
+			`${url}/get-item-audit-by-date`,
+			"POST",
+			undefined,
+			{
+				id: id,
+				sku: sku,
+				type: type,
+				start: date,
+				end: date,
+				page: 0,
+				size: 1000,
+			}
+		);
+	}
 
-  static async deleteInventory(id: number) {
-    return await requestData(
-        `${url}/delete?id=${id}`,
-        "POST"
-    );
-  }
+	static async getCommissaryFinanceReport(id: number, startDate: string, endDate: string) {
+		return await requestData(
+			`${url}/get-commissary-finance-report?id=${id}&start=${startDate}&end=${endDate}`,
+			"GET",
+		);
+	}
 
-  static async createInventoryInput(inventory: Inventory) {
-    return await requestData(
-        `${url}/process-transaction-input`,
-        "POST",
-        undefined,
-        {
-          rawMaterialCode: inventory.sku,
-          branchId: inventory.branchId,
-          changedQuantity: inventory.changedQuantity,
-          type: inventory.type,
-          unitType: inventory.unitType,
-          source: 'INPUT'
-        }
-    );
-  }
+	static async getCommissaryFinanceBreakdown(id: number, startDate: string, endDate: string) {
+		return await requestData(
+			`${url}/get-commissary-finance-breakdown?id=${id}&start=${startDate}&end=${endDate}`,
+			"GET",
+		);
+	}
 
-  static async createInventoryOrder(inventory: Inventory) {
-    return await requestData(
-        `${url}/process-transaction-order`,
-        "POST",
-        undefined,
-        inventory
-    );
-  }
+	static async createInventory(inventory: Inventory) {
+		return await requestData(
+			`${url}/create`,
+			"POST",
+			undefined,
+			inventory
+		);
+	}
+
+	static async updateInventory(inventory: Inventory) {
+		return await requestData(
+			`${url}/update`,
+			"POST",
+			undefined,
+			inventory
+		);
+	}
+
+	static async deleteInventory(id: number) {
+		return await requestData(
+			`${url}/delete?id=${id}`,
+			"POST"
+		);
+	}
+
+	static async createInventoryInput(inventory: Inventory) {
+		return await requestData(
+			`${url}/process-transaction-input`,
+			"POST",
+			undefined,
+			{
+				rawMaterialCode: inventory.sku,
+				branchId: inventory.branchId,
+				changedQuantity: inventory.changedQuantity,
+				type: inventory.type,
+				unitType: inventory.unitType,
+				source: 'INPUT',
+				unitCost: inventory.unitCost,
+			}
+		);
+	}
+
+	static async createInventoryOrder(inventory: Inventory) {
+		return await requestData(
+			`${url}/process-transaction-order`,
+			"POST",
+			undefined,
+			inventory
+		);
+	}
 }
