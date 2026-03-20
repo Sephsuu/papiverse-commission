@@ -10,7 +10,7 @@ import React, { useState } from "react";
 import { toast } from "sonner";
 
 const categories = ["MEAT", "SNOWFROST", "NONDELIVERABLES"];
-const units = ["bar","block","bottle","box","bundle","can","gallon","grams","kilograms","liter","milligrams","milliliters","oz","pack","piece","roll","serving","set","tray"]
+const units = ["bar","block","bottle","box","bundle","can","gallon","grams","kilograms","liter","milligrams","milliliters","oz","pack","piece","roll","serving","set","tray","tub"]
 
 interface Props {
     toUpdate: Supply;
