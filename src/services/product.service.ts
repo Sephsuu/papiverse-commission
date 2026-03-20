@@ -46,7 +46,7 @@ export class ProductService {
         )
     }
 
-    static async updateProduct(supply: Supply) {
+    static async updateProduct(supply: Partial<Supply>) {
         return await requestData(
             `${url}/update`,
             'POST',
