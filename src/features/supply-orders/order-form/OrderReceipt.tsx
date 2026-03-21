@@ -4,10 +4,10 @@ import { AppHeader } from "@/components/shared/AppHeader";
 import { ModalTitle } from "@/components/shared/ModalTitle";
 import { OrderStatusBadge } from "@/components/ui/badge";
 import { AddButton, Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 import { PapiverseLoading } from "@/components/ui/loader";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useFetchOne } from "@/hooks/use-fetch-one";
 import { formatDateToWords, formatToPeso } from "@/lib/formatter";
 import { DeliveryService } from "@/services/delivery.service";
@@ -24,6 +24,9 @@ import { toast } from "sonner";
 import { ExpectedDeliveryDatePicker } from "../components/ExpectedDeliveryDatePicker";
 import { Switch } from "@/components/ui/switch";
 import { AppSelect } from "@/components/shared/AppSelect";
+import { useFetchData } from "@/hooks/use-fetch-data";
+import { BranchService } from "@/services/branch.service";
+import { Branch } from "@/types/branch";
 
 type DeliveryType = "" | "DELIVERY" | "LALAMOVE" | "PICKUP";
 const tabs = ['Meat Commissary', 'Snowfrost Commissary']
@@ -33,8 +36,6 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
     setActiveForm: (i: string) => void;
     selectedItems: SupplyItem[];
 }) {
-    const { data: delivery, loading, error } = useFetchOne<Delivery>(DeliveryService.getDeliveryFeeByBranch, [], [claims.branch.branchId]);
-
     const router = useRouter()
     const [tab, setTab] = useState(tabs[0]);
     const [open, setOpen] = useState(false);
@@ -44,6 +45,23 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
 
     const [openExpDel, setOpenExpDel] = useState(false);
     const [expDel, setExpDel] = useState<string | null>(null);
+
+    const [selectedBranch, setSelectedBranch] = useState<number | null>(null) 
+
+    const deliveryBranchId =
+        claims.roles[0] === "FRANCHISOR"
+            ? selectedBranch ?? claims.branch.branchId
+            : claims.branch.branchId;
+
+    const { data: delivery, loading: deliveryLoading } = useFetchOne<Delivery>(
+        DeliveryService.getDeliveryFeeByBranch,
+        [],
+        [deliveryBranchId]
+    );
+
+    const { data: branches, loading: loadingBranches } = useFetchData(
+        BranchService.getAllBranches
+    )
     
     const meatReceipt =
         selectedItems.filter((s) => s.category === "MEAT").length > 0
@@ -72,6 +90,20 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
 
             if (!expDel) return toast.warning("Please set an expected delivery date.")
             if (delType === "") return toast.warning("Please select delivery type.")
+            if (claims.roles[0] === "FRANCHISOR" && !selectedBranch) {
+                return toast.warning("Please select a branch.")
+            }
+            if (intShip && deliveryLoading) {
+                return toast.warning("Please wait for the delivery fee to load.")
+            }
+            if (intShip && !delivery) {
+                return toast.warning("Delivery fee is unavailable for the selected branch.")
+            }
+
+            const destinationBranchId =
+                claims.roles[0] === "FRANCHISOR"
+                    ? selectedBranch!
+                    : claims.branch.branchId;
 
             let meatFinal: { id: string } | null = null;
             let snowFinal: { id: string } | null = null;
@@ -79,7 +111,7 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
             if (meatReceipt && meatReceipt.length > 0) {
                 const meatOrder = {
                     id: "",
-                    branchId: claims.branch.branchId,
+                    branchId: destinationBranchId,
                     categoryItems: meatReceipt,
                 };
                 meatFinal = await SupplyOrderService.createMeatOrder(meatOrder);
@@ -88,14 +120,14 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
             if (snowFrostReceipt && snowFrostReceipt.length > 0) {
                 const snowOrder = {
                     id: "",
-                    branchId: claims.branch.branchId,
+                    branchId: destinationBranchId,
                     categoryItems: snowFrostReceipt,
                 };
                 snowFinal = await SupplyOrderService.createSnowOrder(snowOrder);
             }
 
             const orderSupply = {
-                branchId: claims.branch.branchId,
+                branchId: destinationBranchId,
                 remarks: "",
                 meatCategoryItemId: meatFinal?.id ?? null,
                 snowfrostCategoryItemId: snowFinal?.id ?? null,
@@ -129,7 +161,7 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
         else setDelType(""); 
     }, [intShip]);
 
-    if (loading) return <PapiverseLoading />
+    if (claims.roles[0] === "FRANCHISOR" && loadingBranches) return <PapiverseLoading />
     return(
         <section className="stack-md animate-fade-in-up pb-12 overflow-hidden max-md:mt-12">
             <AppHeader label="Supply Order Receipt" />
@@ -153,7 +185,8 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
                         ? (meatReceipt ?? [])
                         : (snowFrostReceipt ?? [])
                 }
-                delivery={ delivery! }
+                delivery={delivery}
+                deliveryLoading={deliveryLoading}
                 meatTotal={ totalMeatAmount }
                 snowTotal={ totalSnowFrostAmount }
                 intShip={intShip}
@@ -162,6 +195,9 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
                 setOpenExpDel={setOpenExpDel}
                 delType={delType}
                 setDelType={setDelType}
+                branches={branches}
+                selectedBranch={selectedBranch}
+                setSelectedBranch={setSelectedBranch}
             />
         
             <div className="flex justify-end gap-2 mt-2">
@@ -175,6 +211,7 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
                 <Button 
                     onClick={ () => setOpen(true) }
                     className="px-4 bg-darkgreen! hover:opacity-90"
+                    disabled={deliveryLoading}
                 >
                     Order Supplies
                 </Button>
@@ -203,11 +240,12 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
     );
 }
 
-function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal, intShip, setIntShip, expDel, setOpenExpDel, delType, setDelType }: {
+function Orders({ claims, tab, orders, delivery, deliveryLoading, meatTotal, snowTotal, intShip, setIntShip, expDel, setOpenExpDel, delType, setDelType, branches, selectedBranch, setSelectedBranch }: {
     claims: Claim,
     tab: string;
     orders: SupplyItem[];
-    delivery: Delivery;
+    delivery: Delivery | null;
+    deliveryLoading: boolean;
     meatTotal: number;
     snowTotal: number;
     intShip: boolean;
@@ -216,6 +254,9 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal, intShip, 
     setOpenExpDel: Dispatch<SetStateAction<boolean>>
     delType: string,
     setDelType: (i: DeliveryType) => void;
+    branches: Branch[];
+    selectedBranch: number | null;
+    setSelectedBranch: Dispatch<SetStateAction<number | null>>;
 }) {
     const columns = [
         { title: 'No.', style: 'text-center' },
@@ -225,6 +266,10 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal, intShip, 
         { title: 'Unit Price', style: '' },
         { title: 'Total Amount', style: '' },
     ]
+
+    const deliveryFee = intShip ? (delivery?.deliveryFee ?? 0) : 0;
+    const completeOrderTotal = meatTotal + snowTotal + deliveryFee;
+    const showDeliveryFeeSkeleton = intShip && deliveryLoading;
     
     return (
         <div className="p-4 bg-white rounded-md shadow-sm relative animate-fade-in-up" key={tab}>
@@ -258,9 +303,25 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal, intShip, 
                 <div className="text-sm">
                     <span className="font-bold">Tel No: </span>{ "09475453783" }
                 </div>
-                <div className="text-sm ms-auto max-sm:ms-0">
-                    <span className="font-bold">Delivery to: </span> {claims.branch.branchName}
-                </div>
+                {claims.roles[0] === "FRANCHISOR" ? (
+                    <div className="flex-center-y gap-2 ms-auto max-sm:ms-0">
+                        <span className="font-bold">Delivery to: </span> 
+                        <AppSelect
+                            items={branches.map((item) => ({
+                                label: item.name,
+                                value: String(item.id)
+                            }))}
+                            value={selectedBranch ? String(selectedBranch) : ""}
+                            onChange={(value) => setSelectedBranch(Number(value))}
+                            placeholder="Select Branch"
+                            triggerClassName="border-slate-300"
+                        />
+                    </div>
+                ) : (
+                    <div className="text-sm ms-auto max-sm:ms-0">
+                        <span className="font-bold">Delivery to: </span> {claims.branch.branchName}
+                    </div>
+                )}
                 <div className={`flex-center-y gap-2 text-sm ${expDel ? "" : "text-red-600"}`}>
                     <span className="font-bold text-black">Expected Delivery: </span> {expDel ? formatDateToWords(expDel) : "Delivery date not set"}
                     <SquarePen
@@ -298,7 +359,14 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal, intShip, 
                 Snowfrost Order <span className="font-semibold text-dark">+ { formatToPeso(snowTotal) }</span>
             </div>
             <div className="text-gray text-sm text-end mx-4 mt-2">
-                Delivery Fee <span className="font-semibold text-dark">+ { formatToPeso((delivery && intShip) ? delivery.deliveryFee : 0) }</span>
+                Delivery Fee{" "}
+                <span className="font-semibold text-dark">
+                    {showDeliveryFeeSkeleton ? (
+                        <Skeleton className="ml-2 inline-block h-5 w-20 align-middle" />
+                    ) : (
+                        <>+ { formatToPeso(deliveryFee) }</>
+                    )}
+                </span>
             </div> 
             <Separator className="my-4 bg-gray" />
             <div className="flex justify-between">
@@ -320,7 +388,14 @@ function Orders({ claims, tab, orders, delivery, meatTotal, snowTotal, intShip, 
                     )}
                 </div>
                 <div className="text-gray text-end mx-4">
-                    Complete Order Total:  <span className="ml-2 font-semibold text-darkbrown inline-block scale-x-120">{ formatToPeso(meatTotal + snowTotal + ((delivery && intShip) ? delivery.deliveryFee : 0)) }</span>
+                    Complete Order Total:{" "}
+                    {showDeliveryFeeSkeleton ? (
+                        <Skeleton className="ml-2 inline-block h-6 w-24 align-middle" />
+                    ) : (
+                        <span className="ml-2 font-semibold text-darkbrown inline-block scale-x-120">
+                            { formatToPeso(completeOrderTotal) }
+                        </span>
+                    )}
                 </div>
             </div>
         </div>

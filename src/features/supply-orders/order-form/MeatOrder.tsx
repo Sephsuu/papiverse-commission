@@ -19,9 +19,7 @@ import { formatToPeso } from "@/lib/formatter";
 import { Supply } from "@/types/supply";
 import { SupplyItem } from "@/types/supplyOrder";
 import { Trash2 } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
-import { toast } from "sonner";
 
 const columns = [
     { title: "SKU ID", style: "" },
@@ -180,7 +178,7 @@ export function MeatOrder({
                                 <CommandList>
                                     {filteredSupplies.length === 0 && (
                                         <div className="p-2 text-sm text-muted-foreground">
-                                            No items available for "{search}"
+                                            No items available for &quot;{search}&quot;
                                         </div>
                                     )}
 
@@ -189,6 +187,7 @@ export function MeatOrder({
                                             key={item.sku}
                                             onSelect={() => {
                                                 onSelect(item.sku!);
+                                                setSearch("");
                                                 setOpen(false);
                                             }}
                                         >

@@ -2,7 +2,7 @@ import { SupplyOrderFormPage } from "@/features/supply-orders/order-form/SupplyO
 import { requireRole } from "@/lib/auth";
 
 export default async function SupplyOrderForm() {
-    await requireRole(["FRANCHISEE"])
+    await requireRole(["FRANCHISEE", "FRANCHISOR"])
     return (
         <SupplyOrderFormPage />
     )

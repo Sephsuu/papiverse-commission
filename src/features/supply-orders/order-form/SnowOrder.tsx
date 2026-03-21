@@ -190,7 +190,7 @@ export function SnowOrder({
                                 <CommandList>
                                     {filteredSupplies.length === 0 && (
                                         <div className="p-2 text-sm text-muted-foreground">
-                                            No items available for "{search}"
+                                            No items available for &quot;{search}&quot;
                                         </div>
                                     )}
 
@@ -199,6 +199,7 @@ export function SnowOrder({
                                             key={item.sku}
                                             onSelect={() => {
                                                 onSelect(item.sku!);
+                                                setSearch("");
                                                 setOpen(false);
                                             }}
                                         >
