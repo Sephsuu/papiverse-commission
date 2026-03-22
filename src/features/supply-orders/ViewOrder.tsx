@@ -361,9 +361,9 @@ export function ViewOrderPage({ id }: { id: number }) {
                     {tab === tabs[0] ? (
                         data?.meatCategory ? (
                             <OrdersCard
-                            orders={data.meatCategory.meatItems}
-                            inventories={inventories}
-                            isFranchisor={isFranchisor}
+                                orders={data.meatCategory.meatItems}
+                                inventories={inventories}
+                                isFranchisor={isFranchisor}
                             />
                         ) : (
                             <EmptyState message="No meat items in this order" />
