@@ -3,7 +3,7 @@
 import { AppHeader } from "@/components/shared/AppHeader";
 import { useToday } from "@/hooks/use-today";
 import { useMemo, useState } from "react";
-import { formatDateToWords, formatToPeso } from "@/lib/formatter";
+import { formatDateToWords, formatNumber, formatToPeso } from "@/lib/formatter";
 import { useFetchOne } from "@/hooks/use-fetch-one";
 import { InventoryService } from "@/services/inventory.service";
 import { PapiverseLoading } from "@/components/ui/loader";
@@ -15,14 +15,6 @@ import { CalendarDays, Ham, PackageX, Snowflake } from "lucide-react";
 import Link from "next/link";
 import { DatePickerModal } from "./components/DatePickerModal";
 import { addDays, format } from "date-fns";
-
-const numberFormatter = new Intl.NumberFormat("en-PH", {
-    maximumFractionDigits: 0,
-});
-
-function formatNumber(value: number) {
-    return numberFormatter.format(value);
-}
 
 const columns = [
     {title: 'Product', style: ''},

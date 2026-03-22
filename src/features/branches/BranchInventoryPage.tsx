@@ -4,18 +4,17 @@ import { AppHeader } from "@/components/shared/AppHeader";
 import { TableFilter } from "@/components/shared/TableFilter";
 import { OrderStatusBadge } from "@/components/ui/badge";
 import { PapiverseLoading } from "@/components/ui/loader";
-import { useCrudState } from "@/hooks/use-crud-state";
-import { useFetchData } from "@/hooks/use-fetch-data";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useFetchOne } from "@/hooks/use-fetch-one";
 import { usePagination } from "@/hooks/use-pagination";
 import { useSearchFilter } from "@/hooks/use-search-filter";
 import { formatToPeso } from "@/lib/formatter";
 import { InventoryService } from "@/services/inventory.service";
 import { Inventory } from "@/types/inventory";
 import { useSearchParams } from "next/navigation"
-import { useState } from "react";
 import { ArrowLeft, Ham, PackageX, Snowflake } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { TablePagination } from "@/components/shared/TablePagination";
 
 const pageKey = "branchInventoryPage";
@@ -33,16 +32,20 @@ export function BranchInventoryPage() {
     const searchParam = useSearchParams();
     const branchId = searchParam.get('id');
     const branchName = searchParam.get('name');
-
-    const [reload, setReload] = useState(false);
     const [filter, setFilter] = useState(filters[0]);
 
-    const { data, loading, error } = useFetchData<Inventory>(
+    const { data: inventories, loading } = useFetchOne<{
+        total: {
+            inventoryCost: number;
+            inventoryValue: number;
+        },
+        inventories: Inventory[];
+    }>(
         InventoryService.getInventoryByBranch,
-        [branchId, reload],
-        [branchId]
+        [branchId],
+        [Number(branchId), 0, 1000]
     );
-    const { search, setSearch, filteredItems } = useSearchFilter(data, ['name', 'code']);
+    const { search, setSearch, filteredItems } = useSearchFilter(inventories?.inventories, ['name', 'code']);
 
     const filteredData = filteredItems.filter(i => {
         if (filter === 'Meat') return i.category === 'MEAT';
@@ -51,11 +54,9 @@ export function BranchInventoryPage() {
         return true;
     });    
 
-    const { page, setPage, size, setSize, paginated, totalPages } = usePagination(filteredData, 20, pageKey);
-    const { toView, setView, toUpdate, setUpdate, showNotif, setShowNotif } = useCrudState<Inventory>();
-    const { toView: toViewItem, setView: setViewItem } = useCrudState<Inventory>();
+    const { page, setPage, size, setSize, paginated } = usePagination(filteredData, 20, pageKey);
 
-    if (loading) return <PapiverseLoading />
+    if (loading || !inventories) return <PapiverseLoading />
 
     return (
         <section className="stack-md animate-fade-in-up overflow-hidden max-md:mt-12">
@@ -68,6 +69,31 @@ export function BranchInventoryPage() {
                     hidePapiverseLogo
                 />
             </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
+                {[
+                    {
+                        label: "Current Inventory Value",
+                        value: formatToPeso(inventories.total.inventoryValue ?? 0),
+                        helper: "Summation of inventory prices",
+                    },
+                    {
+                        label: "Current Inventory Cost",
+                        value: formatToPeso(inventories.total.inventoryCost ?? 0),
+                        helper: "Summation of inventory cost",
+                    },
+                ].map((item) => (
+                    <div key={item.label} className="gap-3 rounded-md border border-slate-300 bg-white p-5 shadow-sm">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-darkbrown">
+                            {item.label}
+                        </p>
+                        <p className="mt-3 text-2xl font-semibold text-slate-900">
+                            {item.value}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
+                    </div>
+                ))}
+            </div>
             
             <TableFilter 
                 setSearch={ setSearch }
@@ -78,7 +104,7 @@ export function BranchInventoryPage() {
                 filters={ filters }
                 filter={ filter }
                 setFilter={ setFilter }
-                setShowNotif={ setShowNotif }
+                className="mt-2"
             />
 
             <div className="table-wrapper">
@@ -92,7 +118,7 @@ export function BranchInventoryPage() {
                     {paginated.length > 0 ?
                         paginated.map((item, index) => (
                             <div 
-                                className={`tdata grid grid-cols-6 max-md:w-250! 
+                                className={`tdata grid grid-cols-5 max-md:w-250! 
                                     ${item.stockLevel === 'GOOD' 
                                             ? "" 
                                         : item.stockLevel === 'WARNING' 

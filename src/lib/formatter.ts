@@ -199,3 +199,11 @@ export function formatCompactNumber(value: number | string): string {
     }).format(value);
 }
 
+const numberFormatter = new Intl.NumberFormat("en-PH", {
+    maximumFractionDigits: 0,
+});
+
+export function formatNumber(value: number) {
+    return numberFormatter.format(value);
+}
+

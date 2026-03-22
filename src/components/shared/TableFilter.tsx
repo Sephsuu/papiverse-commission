@@ -32,7 +32,7 @@ export function TableFilter({ setSearch, searchPlaceholder, setOpen, buttonLabel
                 <div className="relative w-100 max-md:w-full">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray" />
                     <input
-                        className="w-full rounded-md bg-light py-1 pl-9 pr-3 shadow-xs"
+                        className="w-full rounded-md bg-light py-1 pl-9 pr-3 shadow-xs border border-slate-200"
                         placeholder={ searchPlaceholder }
                         onChange={ e => setSearch(e.target.value) }
                     />

@@ -7,7 +7,6 @@ import { formatToPeso } from "@/lib/formatter";
 import { Inventory } from "@/types/inventory";
 import { Ham, Info, LayoutList, List, PackageX, Snowflake, SquarePen } from "lucide-react";
 import { useState } from "react";
-import { useFetchData } from "@/hooks/use-fetch-data";
 import { InventoryService } from "@/services/inventory.service";
 import { useSearchFilter } from "@/hooks/use-search-filter";
 import { AppHeader } from "@/components/shared/AppHeader";
@@ -21,6 +20,7 @@ import { ViewInventory } from "./components/ViewInventory";
 import { ViewItemInventoryLog } from "./components/ViewItemInventoryLog";
 import useNotifications from "@/hooks/use-notification";
 import { NotificationSheet } from "@/components/shared/NotificationSheet";
+import { useFetchOne } from "@/hooks/use-fetch-one";
 
 const pageKey = "inventoryPage";
 const columns = [
@@ -38,12 +38,18 @@ export function InventoriesPage() {
     const [filter, setFilter] = useState(filters[0]);
 
     const { claims, loading: authLoading } = useAuth();
-    const { data, loading, error } = useFetchData<Inventory>(
+    const { data: inventories, loading, error } = useFetchOne<{
+        total: {
+            inventoryCost: number;
+            inventoryValue: number;
+        },
+        inventories: Inventory[];
+    }>(
         InventoryService.getInventoryByBranch,
         [claims.branch.branchId, reload],
-        [claims.branch.branchId]
+        [claims.branch.branchId, 0, 1000]
     );
-    const { search, setSearch, filteredItems } = useSearchFilter(data, ['name', 'code']);
+    const { search, setSearch, filteredItems } = useSearchFilter(inventories?.inventories, ['name', 'code']);
     const { filteredNotifications, loading: notifLoading } = useNotifications({ claims, type: "STOCK" })
 
     const filteredData = filteredItems.filter(i => {
@@ -62,6 +68,31 @@ export function InventoriesPage() {
         <section className="stack-md animate-fade-in-up overflow-hidden pb-12 max-md:mt-12">
             <AppHeader label="All Inventories" />
 
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
+                {[
+                    {
+                        label: "Current Inventory Value",
+                        value: formatToPeso(inventories?.total.inventoryValue ?? 0),
+                        helper: "Summation of inventory prices",
+                    },
+                    {
+                        label: "Current Inventory Cost",
+                        value: formatToPeso(inventories?.total.inventoryCost ?? 0),
+                        helper: "Summation of inventory cost",
+                    },
+                ].map((item) => (
+                    <div key={item.label} className="gap-3 p-5 bg-white shadow-sm rounded-md border border-slate-300">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-darkbrown">
+                            {item.label}
+                        </p>
+                        <p className="mt-3 text-2xl font-semibold text-slate-900">
+                            {item.value}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
+                    </div>
+                ))}
+            </div>
+
             <TableFilter 
                 setSearch={ setSearch }
                 searchPlaceholder="Search for an inventory"
@@ -73,6 +104,7 @@ export function InventoriesPage() {
                 setFilter={ setFilter }
                 filteredNotifications={ filteredNotifications }
                 setShowNotif={ setShowNotif }
+                className="mt-2"
             />
 
             <div className="table-wrapper">
