@@ -1,12 +1,18 @@
-import { AddButton } from "@/components/ui/button";
+import { AddButton, Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { parseOptionalDecimal, sanitizeDecimalInput } from "@/lib/decimal-input";
+import { parseExpenseCalendarDate, toExpenseDateTimeString } from "@/lib/expense-date";
 import { handleChange } from "@/lib/form-handle";
+import { cn } from "@/lib/utils";
 import { ExpenseService } from "@/services/expense.service";
 import { Expense, expenseFields, expenseInit } from "@/types/expense";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import Image from "next/image";
 import React, { Dispatch, SetStateAction, useState } from "react";
 import { toast } from "sonner";
@@ -26,10 +32,21 @@ interface Props {
 
 export function CreateExpense({ setOpen, setReload }: Props) {
     const [onProcess, setProcess] = useState(false);
-    const [expense, setExpense] = useState<Partial<Expense>>(expenseInit);
+    const [expense, setExpense] = useState<Partial<Expense>>(() => {
+        const spentAt = toExpenseDateTimeString(new Date());
+
+        return {
+            ...expenseInit,
+            spentAt,
+        };
+    });
     const [totalInput, setTotalInput] = useState(
         expenseInit.total ? String(expenseInit.total) : ""
     );
+    const [spentAtDate, setSpentAtDate] = useState<Date | undefined>(() =>
+        parseExpenseCalendarDate(toExpenseDateTimeString(new Date()))
+    );
+    const [dateOpen, setDateOpen] = useState(false);
 
     function handleTotalChange(value: string) {
         const sanitizedValue = sanitizeDecimalInput(value);
@@ -41,10 +58,21 @@ export function CreateExpense({ setOpen, setReload }: Props) {
         }));
     }
 
+    function handleSpentAtChange(date?: Date) {
+        if (!date) return;
+
+        setSpentAtDate(date);
+        setExpense((prev) => ({
+            ...prev,
+            spentAt: toExpenseDateTimeString(date, prev.spentAt),
+        }));
+        setDateOpen(false);
+    }
+
     async function handleSubmit() {
         try {
             setProcess(true);
-            let invalid = false;
+            let invalid = !expense.spentAt;
             for (const field of expenseFields) {
                 const value = expense[field];
 
@@ -68,7 +96,12 @@ export function CreateExpense({ setOpen, setReload }: Props) {
                 toast.success(`Expenditure for ${expense.purpose} added successfully.`);
                 setReload(prev => !prev);
                 setOpen(false);
-                setExpense(expenseInit);
+                const nextSpentAt = toExpenseDateTimeString(new Date());
+                setExpense({
+                    ...expenseInit,
+                    spentAt: nextSpentAt,
+                });
+                setSpentAtDate(parseExpenseCalendarDate(nextSpentAt));
                 setTotalInput("");
             }
         } catch (error) { toast.error(`${error}`) }
@@ -108,6 +141,33 @@ export function CreateExpense({ setOpen, setReload }: Props) {
                         </div>
                     </div>
                     <div className="flex flex-col gap-1">
+                        <div>Expense Date</div>
+                        <Popover open={dateOpen} onOpenChange={setDateOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className={cn(
+                                        "justify-start border border-gray text-left font-normal",
+                                        !spentAtDate && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="h-4 w-4" />
+                                    {spentAtDate ? format(spentAtDate, "PPP") : <span>Select expense date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={spentAtDate}
+                                    onSelect={handleSpentAtChange}
+                                    captionLayout="dropdown"
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                    <div className="flex flex-col gap-1 col-span-2">
                         <div>Mode of Payment</div>
                         <Select
                             value={ expense.modeOfPayment ?? expenseInit.modeOfPayment }

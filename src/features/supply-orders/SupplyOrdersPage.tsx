@@ -82,7 +82,7 @@ export function SupplyOrdersPage() {
                 searchPlaceholder="Search for a supply order"
                 size={ size }
                 setSize={ setSize }
-                // removeAdd={ claims.roles[0] === 'FRANCHISOR' ? true : false }
+                removeAdd={ claims.roles[0] === 'FRANCHISOR' ? true : false }
                 setOpen={ setOpen }
                 buttonLabel="Order supplies"
                 filter={ filter }

@@ -61,7 +61,7 @@ export function InventoryReportBreakdownPage() {
     const [toggleDate, setToggleDate] = useState(false);
     const [periodMode, setPeriodMode] = useState<BreakdownPeriodMode>("DAY");
     const [filter, setFilter] = useState(filters[0]);
-    const [sort, setSort] = useState<SortKey>("name_asc");
+    const [sort, setSort] = useState<SortKey>("profit_desc");
 
     const startDate = date;
     const parsedStartDate = useMemo(

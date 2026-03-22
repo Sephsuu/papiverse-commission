@@ -1,11 +1,17 @@
-import { UpdateButton } from "@/components/ui/button";
+import { Button, UpdateButton } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { parseOptionalDecimal, sanitizeDecimalInput } from "@/lib/decimal-input";
+import { parseExpenseCalendarDate, toExpenseDateTimeString } from "@/lib/expense-date";
+import { cn } from "@/lib/utils";
 import { ExpenseService } from "@/services/expense.service";
 import { Expense } from "@/types/expense";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import Image from "next/image";
 import React, { useState } from "react";
 import { toast } from "sonner";
@@ -24,24 +30,19 @@ interface Props {
     setReload: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-function toDateTimeLocalValue(dateString: string) {
-    const date = new Date(dateString);
-
-    if (Number.isNaN(date.getTime())) return "";
-
-    const tzOffset = date.getTimezoneOffset() * 60000;
-    return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
-}
-
 export function UpdateExpense({ toUpdate, setUpdate, setReload }: Props) {
     const [onProcess, setProcess] = useState(false);
     const [expense, setExpense] = useState<Partial<Expense>>({
         total: toUpdate.total,
-        spentAt: toDateTimeLocalValue(toUpdate.spentAt),
+        spentAt: toUpdate.spentAt,
         modeOfPayment: toUpdate.modeOfPayment,
         purpose: toUpdate.purpose,
     });
     const [totalInput, setTotalInput] = useState(String(toUpdate.total ?? ""));
+    const [spentAtDate, setSpentAtDate] = useState<Date | undefined>(() =>
+        parseExpenseCalendarDate(toUpdate.spentAt)
+    );
+    const [dateOpen, setDateOpen] = useState(false);
 
     function handleTotalChange(value: string) {
         const sanitizedValue = sanitizeDecimalInput(value);
@@ -51,6 +52,17 @@ export function UpdateExpense({ toUpdate, setUpdate, setReload }: Props) {
             ...prev,
             total: parseOptionalDecimal(sanitizedValue),
         }));
+    }
+
+    function handleSpentAtChange(date?: Date) {
+        if (!date) return;
+
+        setSpentAtDate(date);
+        setExpense((prev) => ({
+            ...prev,
+            spentAt: toExpenseDateTimeString(date, prev.spentAt ?? toUpdate.spentAt),
+        }));
+        setDateOpen(false);
     }
 
     async function handleSubmit() {
@@ -128,6 +140,34 @@ export function UpdateExpense({ toUpdate, setUpdate, setReload }: Props) {
                         </div>
 
                         <div className="flex flex-col gap-1">
+                            <div>Expense Date</div>
+                            <Popover open={dateOpen} onOpenChange={setDateOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className={cn(
+                                            "justify-start border border-gray text-left font-normal",
+                                            !spentAtDate && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="h-4 w-4" />
+                                        {spentAtDate ? format(spentAtDate, "PPP") : <span>Select expense date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={spentAtDate}
+                                        onSelect={handleSpentAtChange}
+                                        captionLayout="dropdown"
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        <div className="col-span-2 flex flex-col gap-1">
                             <div>Mode of Payment</div>
                             <Select
                                 value={expense.modeOfPayment ?? ""}
@@ -150,18 +190,6 @@ export function UpdateExpense({ toUpdate, setUpdate, setReload }: Props) {
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
-                        </div>
-
-                        <div className="col-span-2 flex flex-col gap-1">
-                            <div>Spent At</div>
-                            <Input
-                                type="datetime-local"
-                                value={expense.spentAt ?? ""}
-                                onChange={(e) => setExpense((prev) => ({
-                                    ...prev,
-                                    spentAt: e.target.value,
-                                }))}
-                            />
                         </div>
 
                         <div className="col-span-2 flex flex-col gap-1">

@@ -29,7 +29,7 @@ export class ExpenseService {
         const payload = {
             ...expense,
             total: Number(expense.total),
-            spentAt: getPhilippineTimeISO(),
+            spentAt: expense.spentAt ?? getPhilippineTimeISO(),
         };
 
         return await requestData(
