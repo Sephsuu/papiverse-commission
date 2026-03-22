@@ -70,7 +70,7 @@ export function BranchInventoryPage() {
                 />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
+            {/* <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
                 {[
                     {
                         label: "Current Inventory Value",
@@ -93,7 +93,7 @@ export function BranchInventoryPage() {
                         <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
                     </div>
                 ))}
-            </div>
+            </div> */}
             
             <TableFilter 
                 setSearch={ setSearch }

@@ -68,7 +68,7 @@ export function InventoriesPage() {
         <section className="stack-md animate-fade-in-up overflow-hidden pb-12 max-md:mt-12">
             <AppHeader label="All Inventories" />
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
+            {/* <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
                 {[
                     {
                         label: "Current Inventory Value",
@@ -91,7 +91,7 @@ export function InventoriesPage() {
                         <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
                     </div>
                 ))}
-            </div>
+            </div> */}
 
             <TableFilter 
                 setSearch={ setSearch }
