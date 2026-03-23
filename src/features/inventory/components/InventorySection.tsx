@@ -1,51 +1,59 @@
 "use client"
 
+import { PapiverseLoading, SectionLoading } from "@/components/ui/loader";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/use-auth";
+import { formatToPeso } from "@/lib/formatter";
+import { Inventory } from "@/types/inventory";
+import { Ham, Info, LayoutList, List, PackageX, Snowflake, SquarePen } from "lucide-react";
+import { useState } from "react";
+import { InventoryService } from "@/services/inventory.service";
+import { useSearchFilter } from "@/hooks/use-search-filter";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { TableFilter } from "@/components/shared/TableFilter";
-import { OrderStatusBadge } from "@/components/ui/badge";
-import { PapiverseLoading } from "@/components/ui/loader";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useFetchOne } from "@/hooks/use-fetch-one";
 import { usePagination } from "@/hooks/use-pagination";
-import { useSearchFilter } from "@/hooks/use-search-filter";
-import { formatToPeso } from "@/lib/formatter";
-import { InventoryService } from "@/services/inventory.service";
-import { Inventory } from "@/types/inventory";
-import { useSearchParams } from "next/navigation"
-import { ArrowLeft, Ham, PackageX, Snowflake } from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
 import { TablePagination } from "@/components/shared/TablePagination";
+import { useCrudState } from "@/hooks/use-crud-state";
+import { OrderStatusBadge } from "@/components/ui/badge";
+import useNotifications from "@/hooks/use-notification";
+import { NotificationSheet } from "@/components/shared/NotificationSheet";
+import { useFetchOne } from "@/hooks/use-fetch-one";
+import { ViewInventory } from "./ViewInventory";
+import { ViewItemInventoryLog } from "./ViewItemInventoryLog";
+import { UpdateInventory } from "./UpdateInventory";
+import { Claim } from "@/types/claims";
 
-const pageKey = "branchInventoryPage";
+const pageKey = "inventoryPage";
 const columns = [
     { title: 'SKU ID', style: '' },
     { title: 'Supply Name', style: '' },
     { title: 'Base Stock', style: '' },
     { title: 'Converted Stock', style: '' },
     { title: 'Unit Price', style: 'text-right' },
+    { title: 'Action', style: 'text-center' },
 ]
 const filters = ['All', 'Meat', 'Snow Frost', 'Non Deliverables'];
 
-
-export function BranchInventoryPage() {
-    const searchParam = useSearchParams();
-    const branchId = searchParam.get('id');
-    const branchName = searchParam.get('name');
+export function InventorySection({ claims }: {
+    claims: Claim
+}) {
+    const [reload, setReload] = useState(false);
     const [filter, setFilter] = useState(filters[0]);
 
-    const { data: inventories, loading } = useFetchOne<{
+    const { data: inventories, loading, error } = useFetchOne<{
         total: {
             inventoryCost: number;
             inventoryValue: number;
+            netProfit: number;
         },
         inventories: Inventory[];
     }>(
         InventoryService.getInventoryByBranch,
-        [branchId],
-        [Number(branchId), 0, 1000]
+        [claims.branch.branchId, reload],
+        [claims.branch.branchId, 0, 1000]
     );
     const { search, setSearch, filteredItems } = useSearchFilter(inventories?.inventories, ['name', 'code']);
+    const { filteredNotifications, loading: notifLoading } = useNotifications({ claims, type: "STOCK" })
 
     const filteredData = filteredItems.filter(i => {
         if (filter === 'Meat') return i.category === 'MEAT';
@@ -54,36 +62,32 @@ export function BranchInventoryPage() {
         return true;
     });    
 
-    const { page, setPage, size, setSize, paginated } = usePagination(filteredData, 20, pageKey);
+    const { page, setPage, size, setSize, paginated, totalPages } = usePagination(filteredData, 20, pageKey);
+    const { toView, setView, toUpdate, setUpdate, showNotif, setShowNotif } = useCrudState<Inventory>();
+    const { toView: toViewItem, setView: setViewItem } = useCrudState<Inventory>();
 
-    if (loading || !inventories) return <PapiverseLoading />
-
-    return (
-        <section className="stack-md animate-fade-in-up overflow-hidden max-md:mt-12">
-            <div className="flex-center-y gap-4 w-full">
-                <Link href='/branches'>
-                    <ArrowLeft className="w-7 h-7" />
-                </Link>
-                <AppHeader 
-                    label={`${branchName} Inventory`} 
-                    hidePapiverseLogo
-                />
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
+    if (loading) return <SectionLoading />
+    return(
+        <section className="stack-md">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {[
                     {
                         label: "Current Inventory Value",
-                        value: formatToPeso(inventories.total.inventoryValue ?? 0),
+                        value: formatToPeso(inventories?.total.inventoryValue ?? 0),
                         helper: "Summation of inventory prices",
                     },
                     {
                         label: "Current Inventory Cost",
-                        value: formatToPeso(inventories.total.inventoryCost ?? 0),
+                        value: formatToPeso(inventories?.total.inventoryCost ?? 0),
                         helper: "Summation of inventory cost",
                     },
+                    {
+                        label: "Net Profit",
+                        value: formatToPeso(inventories?.total.netProfit ?? 0),
+                        helper: "Profit summation of each inventory",
+                    },
                 ].map((item) => (
-                    <div key={item.label} className="gap-3 rounded-md border border-slate-300 bg-white p-5 shadow-sm">
+                    <div key={item.label} className="gap-3 p-5 bg-white shadow-sm rounded-md border border-slate-300">
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-darkbrown">
                             {item.label}
                         </p>
@@ -94,7 +98,7 @@ export function BranchInventoryPage() {
                     </div>
                 ))}
             </div>
-            
+
             <TableFilter 
                 setSearch={ setSearch }
                 searchPlaceholder="Search for an inventory"
@@ -104,11 +108,13 @@ export function BranchInventoryPage() {
                 filters={ filters }
                 filter={ filter }
                 setFilter={ setFilter }
+                filteredNotifications={ filteredNotifications }
+                setShowNotif={ setShowNotif }
                 className="mt-2"
             />
 
             <div className="table-wrapper">
-                <div className="thead grid grid-cols-5 max-md:w-250!">
+                <div className="thead grid grid-cols-6 max-md:w-250!">
                     {columns.map((item, _) => (
                         <div key={_} className={`th ${item.style}`}>{ item.title }</div>
                     ))}
@@ -118,7 +124,7 @@ export function BranchInventoryPage() {
                     {paginated.length > 0 ?
                         paginated.map((item, index) => (
                             <div 
-                                className={`tdata grid grid-cols-5 max-md:w-250! 
+                                className={`tdata grid grid-cols-6 max-md:w-250! 
                                     ${item.stockLevel === 'GOOD' 
                                             ? "" 
                                         : item.stockLevel === 'WARNING' 
@@ -179,6 +185,11 @@ export function BranchInventoryPage() {
                                         : <><div>₱</div><div>{formatToPeso(item.unitPrice!).slice(1,)}</div></>
                                     }
                                 </div>
+                                <div className="flex-center-y gap-2 mx-auto">
+                                    <button onClick={ () => setUpdate(item) }><SquarePen className="w-4 h-4 text-darkgreen" /></button>
+                                    <button onClick={() => setView(item) }><Info className="w-4 h-4" /></button>
+                                    <button onClick={() => setViewItem(item) }><LayoutList className="w-4 h-4" /></button>
+                                </div>
                             </div>
                         ))
                         : (<div className="my-2 text-sm text-center col-span-6">There are no existing supplies yet.</div>)
@@ -196,6 +207,36 @@ export function BranchInventoryPage() {
                 filter={ filter }
                 pageKey={ pageKey }
             />
+
+            {toView && (
+                <ViewInventory 
+                    toView={ toView }
+                    setView={ setView }
+                />
+            )}
+
+            {toViewItem && (
+                <ViewItemInventoryLog 
+                    toView={ toViewItem }
+                    setView={ setViewItem }
+                />
+            )}
+
+            {toUpdate && (
+                <UpdateInventory
+                    toUpdate={ toUpdate }
+                    setUpdate={ setUpdate }
+                    setReload={ setReload }
+                />
+            )}
+
+            {showNotif && (
+                <NotificationSheet
+                    notifications={ filteredNotifications }
+                    setOpen={ setShowNotif }
+                />
+            )}
+       
         </section>
     )
 }

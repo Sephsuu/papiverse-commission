@@ -23,6 +23,21 @@ export interface Inventory {
     unitCost?: number;
 }
 
+export interface InventoryBreakdown {
+    inventoryId: number;
+    sku: string;
+    name: string;
+    category: string;
+    unitMeasurement: string;
+    quantity: number;
+    externalPrice: number;
+    unitCost: number;
+    itemValue: number;
+    itemCost: number;
+    itemNetProfit: number;
+    stockLevel: number;
+}
+
 export interface InventoryTransactionSummaryItem {
     name: string;
     sku: string;

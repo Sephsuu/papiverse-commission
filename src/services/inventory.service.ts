@@ -12,6 +12,13 @@ export class InventoryService {
 		);
 	}
 
+	static async getInventoryBranchBreakdown(id: number, page: number, size: number) {
+		return await requestData(
+			`${url}/get-by-branch-breakdown?id=${id}&page=${page}&size=${size}`,
+			"GET",
+		);
+	}
+
 	static async getInventoryAudits(id: number, source: string, month: string, year: string, page: number, size: number) {
 		return await requestData(
 			`${url}/get-audits?branchId=${id}&source=${source}&month=${month}&year=${year}&page=${page}&size=${size}`,
