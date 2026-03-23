@@ -159,7 +159,7 @@ export function InventorySection({ claims }: {
                                     <TooltipTrigger 
                                         className={`td text-start ${item.stockLevel === 'GOOD' ? "text-darkgreen!" : item.stockLevel === 'WARNING' ? "text-darkorange" : item.stockLevel === 'DANGER' ? "text-darkred" : "text-red-950"}`}
                                     >
-                                        <span className="font-semibold mr-1">{ item.quantity?.toFixed(2) }</span> { item.unitMeasurement }
+                                        <span className="font-semibold mr-1">{ item.quantity?.toFixed(3) }</span> { item.unitMeasurement }
                                     </TooltipTrigger>
                                     <TooltipContent className="text-center">
                                         <div>Required Stock</div> 
@@ -177,7 +177,7 @@ export function InventorySection({ claims }: {
                                         : "text-red-950"}`}
                                 >
                                     <span className="font-semibold mr-1">
-                                        { item.convertedQuantity?.toFixed(2) ?? 'N/A' }</span> { item.convertedMeasurement }
+                                        { item.convertedQuantity?.toFixed(3) ?? 'N/A' }</span> { item.convertedMeasurement }
                                 </div>
                                 <div className="td justify-between">
                                     { item.category === 'NONDELIVERABLES' 

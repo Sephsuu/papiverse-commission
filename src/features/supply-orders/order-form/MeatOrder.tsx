@@ -15,11 +15,12 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { useSearchFilter } from "@/hooks/use-search-filter";
+import { parseOptionalDecimal, sanitizeDecimalInput } from "@/lib/decimal-input";
 import { formatToPeso } from "@/lib/formatter";
 import { Supply } from "@/types/supply";
 import { SupplyItem } from "@/types/supplyOrder";
 import { Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const columns = [
     { title: "SKU ID", style: "" },
@@ -54,11 +55,26 @@ export function MeatOrder({
 }: Props) {
     const [open, setOpen] = useState(false);
 
-    const selectedSkus = new Set(
-        selectedItems
-            .filter((i) => i.category === "MEAT")
-            .map((i) => i.sku)
+    const meatItems = useMemo(
+        () => selectedItems.filter((i) => i.category === "MEAT"),
+        [selectedItems]
     );
+    const [quantityInputs, setQuantityInputs] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        setQuantityInputs((prev) => {
+            const next: Record<string, string> = {};
+
+            meatItems.forEach((item) => {
+                if (!item.sku) return;
+                next[item.sku] = prev[item.sku] ?? String(item.quantity ?? "");
+            });
+
+            return next;
+        });
+    }, [meatItems]);
+
+    const selectedSkus = new Set(meatItems.map((i) => i.sku));
 
     const availableSupplies = supplies.filter(
         (s) => !selectedSkus.has(s.sku)
@@ -90,29 +106,31 @@ export function MeatOrder({
                     ))}
                 </div>
 
-                {selectedItems
-                    .filter((i) => i.category === "MEAT")
-                    .map((item, index) => (
+                {meatItems.map((item, index) => (
                         <div className="tdata grid grid-cols-8 max-md:w-250!" key={index}>
                             <div className="td">{item.sku}</div>
 
                             <div className="td p-0!">
                                 <Input
-                                    type="number"
-                                    min="1"
-                                    value={item.quantity || ""}
+                                    type="text"
+                                    inputMode="decimal"
+                                    pattern="[0-9]*([.,][0-9]{0,3})?"
+                                    value={quantityInputs[item.sku!] ?? String(item.quantity ?? "")}
                                     onChange={(e) => {
-                                        const value = e.target.value;
+                                        const value = sanitizeDecimalInput(e.target.value, 3);
+
+                                        setQuantityInputs((prev) => ({
+                                            ...prev,
+                                            [item.sku!]: value,
+                                        }));
+
                                         if (value === "") {
                                             onQuantityChange(item.sku!, 0);
                                             return;
                                         }
-                                        let num = Number(value);
-                                        if (num < 1) {
-                                            num = 1;
-                                        }
-                                        num = Number(String(num));
-                                        onQuantityChange(item.sku!, num);
+
+                                        const parsedValue = parseOptionalDecimal(value);
+                                        onQuantityChange(item.sku!, parsedValue ?? 0);
                                     }}
                                     className="text-[16px] font-semibold w-18 border-0 pl-2 mx-auto"
                                 />

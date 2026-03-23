@@ -37,7 +37,7 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
     const [changedQuantityInput, setChangedQuantityInput] = useState("0");
 
     function handleChangedQuantityChange(value: string) {
-        const sanitizedValue = sanitizeDecimalInput(value);
+        const sanitizedValue = sanitizeDecimalInput(value, 3);
 
         setChangedQuantityInput(sanitizedValue);
         setInventory((prev) => ({
@@ -50,11 +50,15 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
         try{         
             setProcess(true);
             for (const field of inventoryFields) {
+                const value = inventory[field];
+                const isMissingRequiredValue =
+                    value === '' ||
+                    value === null ||
+                    value === undefined ||
+                    (field !== "changedQuantity" && value === 0);
+
                 if (
-                    inventory[field] === '' ||
-                    inventory[field] === null ||
-                    inventory[field] === undefined ||
-                    inventory[field] === 0
+                    isMissingRequiredValue
                 ) {
                     toast.info("Please fill up all fields!");
                     return; 
@@ -163,7 +167,7 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                                     className="w-full border border-none rounded-md max-md:w-full" 
                                     type="text"
                                     inputMode="decimal"
-                                    pattern="[0-9]*[.]?[0-9]{0,2}"
+                                    pattern="[0-9]*[.]?[0-9]{0,3}"
                                     name="changedQuantity"  
                                     value={changedQuantityInput}
                                     onChange={(e) => handleChangedQuantityChange(e.target.value)}

@@ -423,6 +423,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                                 <Button
                                     onClick={ () => setEdit(true) }
                                     variant="secondary"
+                                    className="border border-slate-200 shadow-xs"
                                 >
                                     <SquarePen /> Edit Order
                                 </Button>
@@ -431,6 +432,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                                 <Button
                                     onClick={ () => setUpdateShip(true) }
                                     variant="secondary"
+                                    className="border border-slate-200 shadow-xs"
                                 >
                                     <CalendarSync /> Update Shipment
                                 </Button>

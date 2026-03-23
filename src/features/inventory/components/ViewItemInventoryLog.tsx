@@ -20,6 +20,7 @@ type InventoryItemLog = {
     quantityChanged: number
     dateTime: string;
     unitMeasurement: string;
+    businessEvent: string
 }
 
 type PriceHistoryItem = {
@@ -79,7 +80,7 @@ export function ViewItemInventoryLog({ toView, setView }: {
     if (authLoading || loading) return <ModalLoader />
     return (
         <Dialog open onOpenChange={ (open) => { if (!open) setView(undefined) } }>
-            <DialogContent className="max-h-10/11 w-full max-w-4xl overflow-hidden">
+            <DialogContent className="max-h-10/11 w-full max-w-4xl overflow-y-auto">
                 <ModalTitle label={`Logs for `} spanLabel={toView.name} spanLabelClassName="text-darkorange" />
                 <>
                     <div className="mt-2 flex">
@@ -111,14 +112,15 @@ export function ViewItemInventoryLog({ toView, setView }: {
                 {tab === "LOGS" ? (
                     logs.length > 0 ? (
                         <>
-                            <div className="table-wrapper -mt-4">
-                                <div className="thead grid grid-cols-3">
+                            <div className="table-wrapper -mt-4 overflow-x-auto">
+                                <div className="thead grid grid-cols-4 w-150!">
                                     <div className="th">Quantity</div>
                                     <div className="th">Type</div>
+                                    <div className="th">Source/Event</div>
                                     <div className="th">Date</div>
                                 </div>
                                 {paginated.map((item) => (
-                                    <div className="tdata grid grid-cols-3" key={item.dateTime}>
+                                    <div className="tdata grid grid-cols-4 w-150!" key={item.dateTime}>
                                         <div className="th flex-center-y gap-1">
                                             {item.type === "IN" ? (
                                                 <ArrowBigUp className="w-4 h-4 text-darkgreen" fill="#014421" />
@@ -128,6 +130,10 @@ export function ViewItemInventoryLog({ toView, setView }: {
                                             {item.quantityChanged} {item.unitMeasurement}
                                         </div>
                                         <div className="th">{item.type}</div>
+                                        <div className="th flex-col items-start!">
+                                            <div>{item.source}</div>
+                                            <div className="text-gray text-xs">{item.businessEvent}</div>
+                                        </div>
                                         <div className="th">{formatDateTime(item.dateTime)}</div>
                                     </div>
                                 ))}
