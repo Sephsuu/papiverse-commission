@@ -51,10 +51,17 @@ export function ViewOrderPage({ id }: { id: number }) {
         [id, reload], 
         [id]
     );
-    const { data: inventories, loading: inventoryLoading } = useFetchData(
+    const { data: inventories, loading: inventoryLoading } = useFetchOne<{
+        total: {
+            inventoryCost: number;
+            inventoryValue: number;
+            netProfit: number;
+        },
+        inventories: Inventory[];
+    }>(
         InventoryService.getInventoryByBranch, 
         [claims.branch.branchId, reload], 
-        [claims.branch.branchId]
+        [claims.branch.branchId, 0, 1000]
     )
     const { onProcess, enableSave, handleSubmit } = useSupplyOrderApproval(
         data!, 
@@ -362,7 +369,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                         data?.meatCategory ? (
                             <OrdersCard
                                 orders={data.meatCategory.meatItems}
-                                inventories={inventories}
+                                inventories={inventories?.inventories ?? []}
                                 isFranchisor={isFranchisor}
                             />
                         ) : (
@@ -372,7 +379,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                         data?.snowfrostCategory ? (
                             <OrdersCard
                             orders={data.snowfrostCategory.snowFrostItems}
-                            inventories={inventories}
+                            inventories={inventories?.inventories ?? []}
                             isFranchisor={isFranchisor}
                             />
                         ) : (
