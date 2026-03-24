@@ -29,14 +29,14 @@ export function OrdersCard({ orders, inventories, isFranchisor }: {
                                 </TooltipTrigger>
                                 <TooltipContent>Quantity: { item.quantity }</TooltipContent>
                             </Tooltip>
-                            {isFranchisor && (
+                            {/* {isFranchisor && (
                                 <Tooltip>
                                     <TooltipTrigger>
                                         <Badge className="text-[10px] rounded-full">{ formatCompactNumber(currentStock!) }</Badge>
                                     </TooltipTrigger>
                                     <TooltipContent>Current Stock: { currentStock }</TooltipContent>
                                 </Tooltip>
-                            )}
+                            )} */}
                         </div>
                         
                         <div className="td">{ formatToPeso(item.price) }</div>
