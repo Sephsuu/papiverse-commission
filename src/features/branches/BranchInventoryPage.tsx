@@ -38,6 +38,7 @@ export function BranchInventoryPage() {
         total: {
             inventoryCost: number;
             inventoryValue: number;
+            netProfit: number;
         },
         inventories: Inventory[];
     }>(
@@ -70,7 +71,7 @@ export function BranchInventoryPage() {
                 />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {[
                     {
                         label: "Current Inventory Value",
@@ -81,6 +82,11 @@ export function BranchInventoryPage() {
                         label: "Current Inventory Cost",
                         value: formatToPeso(inventories.total.inventoryCost ?? 0),
                         helper: "Summation of inventory cost",
+                    },
+                    {
+                        label: "Net Profit",
+                        value: formatToPeso(inventories.total.inventoryCost ?? 0),
+                        helper: "Profit summation of inventory",
                     },
                 ].map((item) => (
                     <div key={item.label} className="gap-3 rounded-md border border-slate-300 bg-white p-5 shadow-sm">

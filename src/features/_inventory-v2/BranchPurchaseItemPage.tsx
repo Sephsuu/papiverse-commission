@@ -1,31 +1,39 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { useToday } from "@/hooks/use-today";
 import { format } from "date-fns";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Repeat, ChevronDown, ArrowUpDown, LayoutGrid, Rows3, Columns3, Sparkles } from "lucide-react";
+import { CalendarDays, ChevronDown, Repeat } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SectionLoading } from "@/components/ui/loader";
 import { Input } from "@/components/ui/input";
 import { useFetchOne } from "@/hooks/use-fetch-one";
 import { SupplyOrderService } from "@/services/supplyOrder.service";
-import { useSidebar } from "@/components/ui/sidebar";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { AppSelect } from "@/components/shared/AppSelect";
+import { DatePickerModal } from "./components/DatePickerModal";
 
-type NameItem = { id: any; name?: string | null };
+type NameItem = { id: string | number | null | undefined; name?: string | null };
+type PurchaseBranch = {
+    branchName?: string | null;
+    totalOrder?: number | null;
+    toralOrder?: number | null;
+    total_order?: number | null;
+    toral_order?: number | null;
+};
+type PurchaseSupply = {
+    id?: string | number | null;
+    sku?: string | null;
+    name?: string | null;
+    branches?: PurchaseBranch[] | null;
+};
+type BranchPurchaseMatrix = {
+    items?: PurchaseSupply[] | PurchaseSupply | null;
+};
 
 const SORTS = [
     { key: "alpha_asc", label: "A-Z" },
@@ -38,6 +46,19 @@ type SortKey = (typeof SORTS)[number]["key"];
 const numberFormatter = new Intl.NumberFormat("en-PH", {
     maximumFractionDigits: 2,
 });
+
+function getMatrixCellValue(
+    totalLookup: Map<string, number>,
+    isSwapped: boolean,
+    rowName: string,
+    colName: string
+) {
+    const branchName = isSwapped ? colName : rowName;
+    const supplyName = isSwapped ? rowName : colName;
+    const key = `${String(supplyName).trim()}||${String(branchName).trim()}`;
+
+    return totalLookup.get(key) ?? 0;
+}
 
 function useOnClickOutside(
     refs: Array<React.RefObject<HTMLElement | null>>,
@@ -190,16 +211,22 @@ function MultiSelectPopover({
 }
 
 export function BranchPurchaseItemPage({ className }: { className?: string }) {
-    useToday();
-    useSearchParams();
-    const [date] = useState(() => format(new Date(), "yyyy-MM-dd"));
-    const [byWeek] = useState(false);
+    const { today } = useToday();
+    const [date, setDate] = useState(today);
+    const [byWeek, setByWeek] = useState(false);
+    const [toggleDate, setToggleDate] = useState(false);
     const parsedDate = date ? new Date(date) : null;
     const displayDate = parsedDate
         ? format(parsedDate, "MMMM dd, yyyy")
         : "Select date";
-
-    const { open } = useSidebar();
+    const displayBadge = parsedDate
+        ? byWeek
+            ? "Sun-Sat"
+            : format(parsedDate, "EEEE").toUpperCase()
+        : "DAY";
+    const dateLabel = byWeek && parsedDate
+        ? `${format(parsedDate, "MMM d, yyyy")} - ${format(new Date(parsedDate.getTime() + 6 * 24 * 60 * 60 * 1000), "MMM d, yyyy")}`
+        : displayDate;
 
     const [isSwapped, setIsSwapped] = useState(false);
 
@@ -216,7 +243,7 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
     const [rowSort, setRowSort] = useState<SortKey>("total_desc");
     const [colSort, setColSort] = useState<SortKey>("total_desc");
 
-    const { data: purchaseItems, loading: loadingPurchaseItems } = useFetchOne<any>(
+    const { data: purchaseItems, loading: loadingPurchaseItems } = useFetchOne<BranchPurchaseMatrix>(
         SupplyOrderService.getAllBranchPurchaseItem,
         [byWeek, date],
         [byWeek ? "WEEK" : "CUSTOM_DATE", date, "0"]
@@ -224,7 +251,7 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
 
     const apiSupplies = useMemo(() => {
         const raw = purchaseItems?.items;
-        if (!raw) return [] as any[];
+        if (!raw) return [] as PurchaseSupply[];
         if (Array.isArray(raw)) return raw;
         return [raw];
     }, [purchaseItems]);
@@ -271,7 +298,7 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
 
     const supplyItems: NameItem[] = useMemo(() => {
         return apiSupplies
-            .map((s: any) => ({
+            .map((s) => ({
                 id: s?.sku ?? s?.id ?? s?.name,
                 name: s?.name ?? "",
             }))
@@ -306,14 +333,6 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
 
     const clearSelections = (setter: React.Dispatch<React.SetStateAction<string[]>>) => setter([]);
 
-    const getCellValue = (rowName: string, colName: string) => {
-        const branchName = isSwapped ? colName : rowName;
-        const supplyName = isSwapped ? rowName : colName;
-
-        const key = `${String(supplyName).trim()}||${String(branchName).trim()}`;
-        return totalLookup.get(key) ?? 0;
-    };
-
     const rowTotals = useMemo(() => {
         const map = new Map<string, number>();
 
@@ -325,14 +344,14 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
             for (const c of columnDataBase) {
                 const cn = String(c?.name ?? "").trim();
                 if (!cn) continue;
-                sum += getCellValue(rn, cn);
+                sum += getMatrixCellValue(totalLookup, isSwapped, rn, cn);
             }
 
             map.set(rn, sum);
         }
 
         return map;
-    }, [rowDataBase, columnDataBase, totalLookup, isSwapped]);
+    }, [columnDataBase, isSwapped, rowDataBase, totalLookup]);
 
     const colTotals = useMemo(() => {
         const map = new Map<string, number>();
@@ -345,14 +364,14 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
             for (const r of rowDataBase) {
                 const rn = String(r?.name ?? "").trim();
                 if (!rn) continue;
-                sum += getCellValue(rn, cn);
+                sum += getMatrixCellValue(totalLookup, isSwapped, rn, cn);
             }
 
             map.set(cn, sum);
         }
 
         return map;
-    }, [rowDataBase, columnDataBase, totalLookup, isSwapped]);
+    }, [columnDataBase, isSwapped, rowDataBase, totalLookup]);
 
     const applySort = (items: NameItem[], mode: SortKey, totals: Map<string, number>) => {
         const arr = [...items];
@@ -431,15 +450,6 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
 
     const showTotalsHintRow = rowSort === "total_desc" || rowSort === "total_asc";
     const showTotalsHintCol = colSort === "total_desc" || colSort === "total_asc";
-    const matrixTotal = useMemo(() => {
-        return filteredRowData.reduce((sum, row) => {
-            const rowName = String(row?.name ?? "");
-            return sum + filteredColumnData.reduce((rowSum, col) => {
-                return rowSum + getCellValue(rowName, String(col?.name ?? ""));
-            }, 0);
-        }, 0);
-    }, [filteredColumnData, filteredRowData, isSwapped, totalLookup]);
-    const activeFilterCount = activeRowSelected.length + activeColSelected.length;
 
     return (
         <section className={`stack-md w-full min-w-0 max-w-full overflow-x-hidden pb-12 ${className}`}>
@@ -447,9 +457,24 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
 
             <div className="w-full">
                 <div className="mb-4 flex items-center justify-between gap-3 max-md:flex-col max-md:items-start">
+                    <div
+                        onClick={() => setToggleDate(true)}
+                        className="flex-center-y gap-3 rounded-md border border-slate-300 bg-light px-4 py-2 text-lg font-bold shadow-sm w-fit cursor-pointer max-md:m-1"
+                    >
+                        <CalendarDays className="w-5 h-5" />
+
+                        <div className="scale-x-110 origin-left">
+                            {dateLabel}
+                        </div>
+
+                        <Badge className="bg-darkbrown font-bold ml-2">
+                            {displayBadge}
+                        </Badge>
+                    </div>
+
                     <button
                         type="button"
-                        className="ms-auto inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white"
+                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white max-md:w-full max-md:justify-center"
                         onClick={() => setIsSwapped((prev) => !prev)}
                     >
                         <Repeat className="h-4 w-4 text-darkbrown" />
@@ -570,7 +595,7 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
                     >
                         <div className="th sticky left-0 z-40 bg-[#e2e8f0] border-r"></div>
 
-                        {filteredColumnData.map((item: any, i: number) => {
+                        {filteredColumnData.map((item, i: number) => {
                             const name = String(item?.name ?? "");
                             const t = colTotals.get(name.trim()) ?? 0;
 
@@ -590,7 +615,7 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
                         })}
                     </div>
 
-                    {filteredRowData.map((row: any) => {
+                    {filteredRowData.map((row) => {
                         const rowName = String(row?.name ?? "");
                         const rt = rowTotals.get(rowName.trim()) ?? 0;
 
@@ -615,8 +640,13 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
                                     <TooltipContent className="bg-lightbrown mb-2 font-bold" showArrow={false}>{rowName}</TooltipContent>
                                 </Tooltip>
 
-                                {filteredColumnData.map((col: any) => {
-                                    const v = getCellValue(String(row?.name ?? ""), String(col?.name ?? ""));
+                                {filteredColumnData.map((col) => {
+                                    const v = getMatrixCellValue(
+                                        totalLookup,
+                                        isSwapped,
+                                        String(row?.name ?? ""),
+                                        String(col?.name ?? "")
+                                    );
                                     return (
                                         <div
                                             className={`td border border-slate-200 text-right font-medium ${
@@ -634,7 +664,13 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
                 </div>
             )}
 
-            
+            <DatePickerModal
+                date={date}
+                setDate={setDate}
+                open={toggleDate}
+                setOpen={setToggleDate}
+                setByWeek={setByWeek}
+            />
         </section>
     );
 }

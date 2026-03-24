@@ -163,13 +163,14 @@ export function InventoryBreakdownSection({ claims }: {
                                     </div>
                                 </div>
 
-                                <div className="td flex-col items-start! text-slate-600">
-                                    <div className="font-semibold text-slate-900">
-                                        {formatNumber(item.quantity)} {item.unitMeasurement}
-                                    </div>
-                                    <div className="text-xs text-slate-500">
-                                        Stock level: {formatNumber(item.stockLevel)}
-                                    </div>
+                                <div className="td flex-col items-start!">
+                                    <span 
+                                        className={`font-semibold mr-1
+                                            
+                                        `}>
+                                        { item.quantity?.toFixed(3) }
+                                    </span> 
+                                    { item.unitMeasurement }
                                 </div>
 
                                 <div className="td justify-between">

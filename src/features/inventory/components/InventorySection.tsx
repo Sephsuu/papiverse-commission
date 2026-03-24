@@ -22,13 +22,12 @@ import { ViewInventory } from "./ViewInventory";
 import { ViewItemInventoryLog } from "./ViewItemInventoryLog";
 import { UpdateInventory } from "./UpdateInventory";
 import { Claim } from "@/types/claims";
+import { getCategoryIcon } from "@/hooks/use-helper";
 
 const pageKey = "inventoryPage";
 const columns = [
-    { title: 'SKU ID', style: '' },
-    { title: 'Supply Name', style: '' },
+    { title: 'Supply', style: '' },
     { title: 'Base Stock', style: '' },
-    { title: 'Converted Stock', style: '' },
     { title: 'Unit Price', style: 'text-right' },
     { title: 'Action', style: 'text-center' },
 ]
@@ -114,7 +113,7 @@ export function InventorySection({ claims }: {
             />
 
             <div className="table-wrapper">
-                <div className="thead grid grid-cols-6 max-md:w-250!">
+                <div className="thead grid grid-cols-4 max-md:w-250!">
                     {columns.map((item, _) => (
                         <div key={_} className={`th ${item.style}`}>{ item.title }</div>
                     ))}
@@ -124,7 +123,7 @@ export function InventorySection({ claims }: {
                     {paginated.length > 0 ?
                         paginated.map((item, index) => (
                             <div 
-                                className={`tdata grid grid-cols-6 max-md:w-250! 
+                                className={`tdata grid grid-cols-4 max-md:w-250! 
                                     ${item.stockLevel === 'GOOD' 
                                             ? "" 
                                         : item.stockLevel === 'WARNING' 
@@ -136,24 +135,27 @@ export function InventorySection({ claims }: {
                                 `}
                                 key={ index }
                             >
-                                <div className="td">{ item.sku }</div>
-                                <div className="td flex gap-2">
+                                <div 
+                                    className={`td gap-2`}
+                                    onClick={ () => setView(item) }
+                                >
                                     <Tooltip>
-                                        <TooltipTrigger>
-                                            {item.category === 'MEAT' ? <Ham className="w-4 h-4 text-darkbrown"/> 
-                                            : item.category === 'SNOWFROST' ? <Snowflake className="w-4 h-4 text-blue" />
-                                            : <PackageX className="w-4 h-4 text-slate-400" />
-                                            }
+                                        <TooltipTrigger asChild>
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
+                                                {getCategoryIcon(item.category!)}
+                                            </div>
                                         </TooltipTrigger>
-                                        <TooltipContent>
-                                            { item.category === 'MEAT' 
-                                                ? "MEAT Category" 
-                                            : item.category === 'SNOWFROST' 
-                                                ? "SNOW FROST Category" 
-                                            : "NON DELIVERABLES"}
-                                        </TooltipContent>
+                                        <TooltipContent>{item.category}</TooltipContent>
                                     </Tooltip>
-                                    <div>{ item.name }</div>
+    
+                                    <div className="min-w-0">
+                                        <div className="truncate font-semibold text-slate-900">
+                                            {item.name}
+                                        </div>
+                                        <div className="text-xs text-slate-500">
+                                            {item.sku}
+                                        </div>
+                                    </div>
                                 </div>
                                 <Tooltip>
                                     <TooltipTrigger 
@@ -166,7 +168,7 @@ export function InventorySection({ claims }: {
                                         <div className="text-[16px]">{ item.minStock } { item.unitMeasurement ??  '' }</div>
                                     </TooltipContent>
                                 </Tooltip>
-                                <div 
+                                {/* <div 
                                     className={`td
                                         ${item.stockLevel === 'GOOD' 
                                         ? "text-darkgreen" 
@@ -178,7 +180,7 @@ export function InventorySection({ claims }: {
                                 >
                                     <span className="font-semibold mr-1">
                                         { item.convertedQuantity?.toFixed(3) ?? 'N/A' }</span> { item.convertedMeasurement }
-                                </div>
+                                </div> */}
                                 <div className="td justify-between">
                                     { item.category === 'NONDELIVERABLES' 
                                         ? <OrderStatusBadge className="ms-auto scale-110 bg-slate-200 text-dark!" status="NON DELIVERABLE" /> 

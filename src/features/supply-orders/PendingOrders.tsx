@@ -1,7 +1,7 @@
 "use client"
 
 import { SupplyOrder } from "@/types/supplyOrder"
-import { Download, FileSpreadsheet, MessageSquare, MessageSquareMore, SquareMinus, TableOfContents } from "lucide-react";
+import { CalendarArrowUp, MessageSquare, MessageSquareMore, SquareMinus, TableOfContents, Truck } from "lucide-react";
 import { TableDataTooltip } from "../users/components/TableDataTooltip";
 import { formatDateTime, formatToPeso } from "@/lib/formatter";
 import { OrderStatusBadge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Dispatch, SetStateAction, useState } from "react";
 import { AddRemarks } from "./AddRemarks";
 import Link from "next/link";
 import { Claim } from "@/types/claims";
+import { getCategoryIcon } from "@/hooks/use-helper";
 
 const columns = [
     { title: 'Branch Name' , style: '' },
@@ -58,13 +59,32 @@ export function PendingOrders({ claims, paginated, setReload }: {
                     />
                     <div className="grid grid-cols-5 w-full">
                         <div className="td">{ item.branchName }</div>
-                        <div className="td-wrap">{ formatDateTime(item.orderDate) }</div>
+                        <div className="td flex-col gap-1.5 items-start! justify-center!">
+                            <div className="flex-center-y">
+                                <CalendarArrowUp className="w-4 h-4" /> 
+                                <span className="ml-1.5">{ formatDateTime(item.orderDate) }</span>
+                            </div>
+                            <div className="flex-center-y">
+                                <Truck className="w-3.5 h-3.5 text-slate-500" /> 
+                                <span className="ml-1.5 text-xs text-slate-500">{ formatDateTime(item.expectedDelivery) }</span>
+                            </div>
+                        </div>
                         <div className="td">
                             <OrderStatusBadge className="text-xs!" status={ item.status } />
                         </div>
                         <div className="td flex-col items-start! gap-2">
-                            <div>{ item.meatCategory?.meatOrderId }</div>
-                            <div>{ item.snowfrostCategory?.snowFrostOrderId }</div>
+                            {item.meatCategory?.meatOrderId && (
+                                <div className="flex-center-y gap-2">
+                                    {getCategoryIcon("MEAT")}
+                                    <span>{ item.meatCategory.meatOrderId }</span>
+                                </div>
+                            )}
+                            {item.snowfrostCategory?.snowFrostOrderId && (
+                                <div className="flex-center-y gap-2">
+                                    {getCategoryIcon("SNOWFROST")}
+                                    <span>{ item.snowfrostCategory.snowFrostOrderId }</span>
+                                </div>
+                            )}
                         </div>
                         <div className="td">{ formatToPeso(item.completeOrderTotalAmount) }</div>
                     </div>
