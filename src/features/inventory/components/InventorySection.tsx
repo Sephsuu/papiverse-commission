@@ -127,10 +127,10 @@ export function InventorySection({ claims }: {
                                     ${item.stockLevel === 'GOOD' 
                                             ? "" 
                                         : item.stockLevel === 'WARNING' 
-                                            ? "bg-orange-100!" 
+                                            ? "bg-yellow-200!" 
                                         : item.stockLevel === 'DANGER' 
-                                            ? "bg-red-100!" 
-                                        : "bg-red-200!"
+                                            ? "bg-[#ffee8c]!" 
+                                        : "bg-[#ffde21]!"
                                     }
                                 `}
                                 key={ index }
