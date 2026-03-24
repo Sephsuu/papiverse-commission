@@ -1,9 +1,9 @@
-import { InventoryBreakdownPage } from "@/features/inventory/InventoryBreakdownPage";
+import { InventoryReportBreakdownPage } from "@/features/_finance-v2/InventoryReportBreakdownPage";
 import { requireRole } from "@/lib/auth";
 
 export default async function InventoryBreakdown() {
-    await requireRole(["FRANCHISEE", "FRANCHISOR"]);
+    await requireRole(["FRANCHISOR"]);
     return (
-        <InventoryBreakdownPage />
+        <InventoryReportBreakdownPage />
     )
 }
