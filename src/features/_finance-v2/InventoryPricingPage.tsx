@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useToday } from "@/hooks/use-today";
 import { format } from "date-fns";
-import { DatePickerModal } from "../_inventory-v2/components/DatePickerModal";
+import { DatePickerModal, InventoryReportPeriodMode } from "../_inventory-v2/components/DatePickerModal";
 import {
     ArrowLeft,
     ArrowUpDown,
@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/select";
 import { useSidebar } from "@/components/ui/sidebar";
 import { SupplyOrderService } from "@/services/supplyOrder.service";
-import { DetailedCommissary, Inventory } from "@/types/inventory";
+import { DetailedCommissary } from "@/types/inventory";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { EmptyState } from "@/components/custom/EmptyState";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -80,8 +80,9 @@ export function InventoryPricingPage({ className }: { className?: string }) {
     useIsMobile();
 
     const [reload, setReload] = useState(false);
-    const [byWeek, setByWeek] = useState(false);
     const [date, setDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+    const [endDate, setEndDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+    const [mode, setMode] = useState<InventoryReportPeriodMode>("DAY");
     const [selectedSort, setSelectedSort] = useState(SORTS[0]);
     const [selectedCategory, setSelectedCategory] = useState("all");
     const [selectedStatus, setSelectedStatus] = useState("all");
@@ -91,6 +92,8 @@ export function InventoryPricingPage({ className }: { className?: string }) {
     const columns = display === "PARTIAL" ? partialColumns : fullColumns;
     const selectedDate = searchParams.get("date");
     const parsedDate = selectedDate ? new Date(selectedDate) : null;
+    const parsedEndDate = endDate ? new Date(endDate) : null;
+    const isWeeklyView = mode === "WEEK";
 
     const displayDate = parsedDate ? format(parsedDate, "MMMM dd, yyyy") : "Select date";
 
@@ -98,8 +101,8 @@ export function InventoryPricingPage({ className }: { className?: string }) {
 
     const { data: inventory, loading: loadingInventory } = useFetchData<DetailedCommissary>(
         SupplyOrderService.getDetailedCommissary,
-        [date, byWeek, reload],
-        [byWeek ? "WEEK" : "CUSTOM_DATE", date]
+        [date, endDate, mode, reload],
+        [isWeeklyView ? "WEEK" : "CUSTOM_DATE", date]
     );
 
     const { search, setSearch, filteredItems } = useSearchFilter<DetailedCommissary>(
@@ -151,8 +154,11 @@ export function InventoryPricingPage({ className }: { className?: string }) {
     useEffect(() => {
         if (selectedDate) {
             setDate(selectedDate);
+            setEndDate(selectedDate);
         } else {
-            setDate(format(new Date(), "yyyy-MM-dd"));
+            const today = format(new Date(), "yyyy-MM-dd");
+            setDate(today);
+            setEndDate(today);
         }
     }, [searchParams]);
 
@@ -179,14 +185,14 @@ export function InventoryPricingPage({ className }: { className?: string }) {
                 <CalendarDays />
 
                 <div className="scale-x-110 origin-left">
-                    {byWeek && parsedDate
-                        ? `${format(parsedDate, "MMM d, yyy")} - ${format(new Date(parsedDate.getTime() + 6 * 24 * 60 * 60 * 1000), "MMM d, yyy")}`
+                    {isWeeklyView && parsedDate && parsedEndDate
+                        ? `${format(parsedDate, "MMM d, yyy")} - ${format(parsedEndDate, "MMM d, yyy")}`
                         : displayDate
                     }
                 </div>
 
                 <Badge className="bg-darkbrown font-bold ml-4">
-                    {byWeek ? "Sun-Sat" : displayDay}
+                    {isWeeklyView ? "Sun-Sat" : displayDay}
                 </Badge>
             </div>
 
@@ -401,7 +407,15 @@ export function InventoryPricingPage({ className }: { className?: string }) {
                 pageKey={pageKey}
             />
 
-            <DatePickerModal date={date} setDate={setDate} open={toggleDate} setOpen={setToggleDate} setByWeek={setByWeek} />
+            <DatePickerModal
+                date={date}
+                mode={mode}
+                setDate={setDate}
+                setEndDate={setEndDate}
+                open={toggleDate}
+                setOpen={setToggleDate}
+                setMode={setMode}
+            />
         </section>
     );
 }
