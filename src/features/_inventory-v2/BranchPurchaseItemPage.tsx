@@ -15,7 +15,7 @@ import { SupplyOrderService } from "@/services/supplyOrder.service";
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { AppSelect } from "@/components/shared/AppSelect";
-import { DatePickerModal } from "./components/DatePickerModal";
+import { DatePickerModal, InventoryReportPeriodMode } from "./components/DatePickerModal";
 
 type NameItem = { id: string | number | null | undefined; name?: string | null };
 type PurchaseBranch = {
@@ -213,19 +213,22 @@ function MultiSelectPopover({
 export function BranchPurchaseItemPage({ className }: { className?: string }) {
     const { today } = useToday();
     const [date, setDate] = useState(today);
-    const [byWeek, setByWeek] = useState(false);
+    const [endDate, setEndDate] = useState(today);
+    const [mode, setMode] = useState<InventoryReportPeriodMode>("DAY");
     const [toggleDate, setToggleDate] = useState(false);
     const parsedDate = date ? new Date(date) : null;
+    const parsedEndDate = endDate ? new Date(endDate) : null;
+    const isWeeklyView = mode === "WEEK";
     const displayDate = parsedDate
         ? format(parsedDate, "MMMM dd, yyyy")
         : "Select date";
     const displayBadge = parsedDate
-        ? byWeek
+        ? isWeeklyView
             ? "Sun-Sat"
             : format(parsedDate, "EEEE").toUpperCase()
         : "DAY";
-    const dateLabel = byWeek && parsedDate
-        ? `${format(parsedDate, "MMM d, yyyy")} - ${format(new Date(parsedDate.getTime() + 6 * 24 * 60 * 60 * 1000), "MMM d, yyyy")}`
+    const dateLabel = isWeeklyView && parsedDate && parsedEndDate
+        ? `${format(parsedDate, "MMM d, yyyy")} - ${format(parsedEndDate, "MMM d, yyyy")}`
         : displayDate;
 
     const [isSwapped, setIsSwapped] = useState(false);
@@ -245,8 +248,8 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
 
     const { data: purchaseItems, loading: loadingPurchaseItems } = useFetchOne<BranchPurchaseMatrix>(
         SupplyOrderService.getAllBranchPurchaseItem,
-        [byWeek, date],
-        [byWeek ? "WEEK" : "CUSTOM_DATE", date, "0"]
+        [mode, date, endDate],
+        [isWeeklyView ? "WEEK" : "CUSTOM_DATE", date, "0"]
     );
 
     const apiSupplies = useMemo(() => {
@@ -666,10 +669,12 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
 
             <DatePickerModal
                 date={date}
+                mode={mode}
                 setDate={setDate}
+                setEndDate={setEndDate}
                 open={toggleDate}
                 setOpen={setToggleDate}
-                setByWeek={setByWeek}
+                setMode={setMode}
             />
         </section>
     );
