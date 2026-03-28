@@ -11,7 +11,7 @@ interface AuthContextType {
     isFranchisor: boolean;
 }
 
-const claimsInit = {
+const claimsInit: Claim = {
     branch: {
         branchId: 0,   
         branchName: '',       // default numeric id, adjust as needed
@@ -30,7 +30,7 @@ type AuthProviderProps = React.PropsWithChildren<object>;
 const AuthContext = createContext<AuthContextType>({ claims: claimsInit, loading: true, isFranchisor: false });
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    const [claims, setClaims] = useState(claimsInit);
+    const [claims, setClaims] = useState<Claim>(claimsInit);
     const [loading, setLoading] = useState(true);
 
     const isFranchisor = claims?.roles?.[0] === "FRANCHISOR";
