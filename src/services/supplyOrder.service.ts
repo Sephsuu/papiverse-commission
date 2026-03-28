@@ -8,8 +8,11 @@ const meatUrl = `${BASE_URL}/meat-order`
 const snowUrl = `${BASE_URL}/snow-order`
 
 export class SupplyOrderService {
-    static async getAllSupply() {
-        return await requestData(`${url}/get-all`, "GET");
+    static async getAllSupply(start: string, end: string) {
+        return await requestData(
+            `${url}/get-all?start=${start}&end=${end}`, 
+            "GET"
+        );
     }
 
     static async getSupplyOrderById(id: number) {

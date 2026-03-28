@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useMemo, useState } from "react";
 import { SupplyOrder } from "@/types/supplyOrder";
 import { SupplyOrderService } from "@/services/supplyOrder.service";
 import { AppHeader } from "@/components/shared/AppHeader";
@@ -17,11 +16,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AppTabSwitcher } from "@/components/shared/AppTabSwitcher";
 import { CompletedOrders } from "./CompletedOrders";
 import { BranchService } from "@/services/branch.service";
-import { log } from "node:console";
 import { RejectedOrders } from "./RejectedOrders";
 import useNotifications from "@/hooks/use-notification";
 import { useCrudState } from "@/hooks/use-crud-state";
 import { NotificationSheet } from "@/components/shared/NotificationSheet";
+import { Badge } from "@/components/ui/badge";
+import { CalendarDays } from "lucide-react";
+import { endOfMonth, format, isAfter, startOfMonth } from "date-fns";
+import { SupplyOrdersDatePicker, SupplyOrdersPeriodMode } from "./components/SupplyOrdersDatePicker";
 
 const tabs = ['Pending', 'Completed']
 
@@ -32,27 +34,84 @@ export function SupplyOrdersPage() {
 
     const initialTab = searchParams.get("tab") ?? tabs[0];
     const [tab, setTab] = useState(initialTab);
+    const [toggleDate, setToggleDate] = useState(false);
 
     const { claims, loading: authLoading, isFranchisor } = useAuth();
     const { open, setOpen, showNotif, setShowNotif } = useCrudState();
+    const now = new Date();
+    const today = format(now, "yyyy-MM-dd");
+    const defaultStartDate = format(startOfMonth(now), "yyyy-MM-dd");
+    const currentMonthEnd = endOfMonth(now);
+    const defaultEndDate = format(
+        isAfter(currentMonthEnd, now) ? now : currentMonthEnd,
+        "yyyy-MM-dd"
+    );
+    const [date, setDate] = useState(defaultStartDate);
+    const [endDate, setEndDate] = useState(defaultEndDate);
+    const [periodMode, setPeriodMode] = useState<SupplyOrdersPeriodMode>("MONTH"); 
     const isCommisary = claims.branch.branchId === 1;
-    const fetchAll = useFetchData<SupplyOrder>(SupplyOrderService.getAllSupply, [reload, claims]);
-    const fetchByBranch = useFetchData<SupplyOrder>(SupplyOrderService.getSupplyOrderByBranch, [reload, claims], [claims.branch.branchId]);
+    const fetchAll = useFetchData<SupplyOrder>(
+        SupplyOrderService.getAllSupply, 
+        [reload, claims, date, endDate],
+        [date, endDate]
+    );
+    const fetchByBranch = useFetchData<SupplyOrder>(
+        SupplyOrderService.getSupplyOrderByBranch, 
+        [reload, claims], 
+        [claims.branch.branchId]
+    );
     
     const { data, loading, error } = isCommisary ? fetchAll : fetchByBranch;
     const { filteredNotifications } = useNotifications({ claims, type: "SUPPLY ORDER" });
-    const { search, setSearch, filteredItems } = useSearchFilter(data, ['branchName', 'snowfrostCategory.snowFrostOrderId', 'meatCategory.meatOrderId']);
+    const { setSearch, filteredItems } = useSearchFilter(data, ['branchName', 'snowfrostCategory.snowFrostOrderId', 'meatCategory.meatOrderId']);
     const { data: branches, loading: branhesLoading } = useFetchData(BranchService.getAllBranches);
     
     const filters = ['All Branches', ...(branches?.map(b => b.name) ?? [])];
     const [filter, setFilter] = useState<string>('All Branches');
+    const parsedDate = date ? new Date(date) : null;
+    const parsedEndDate = endDate ? new Date(endDate) : null;
 
-    const filteredData = filteredItems.filter(i => {
-        if (filter === 'All Branches') return true;
-        return i.branchName === filter;
-    });
+    const displayDate = useMemo(() => {
+        if (!parsedDate || !parsedEndDate) return "Select period";
+        if (periodMode === "DAY") return format(parsedDate, "MMMM dd, yyyy");
+        if (periodMode === "WEEK") return `${format(parsedDate, "MMM d, yyyy")} - ${format(parsedEndDate, "MMM d, yyyy")}`;
+        return format(parsedDate, "MMMM yyyy");
+    }, [parsedDate, parsedEndDate, periodMode]);
 
-    const { page, setPage, size, setSize, paginated, totalPages } = usePagination(filteredData, 100);
+    const displayBadge = useMemo(() => {
+        if (!parsedDate) return null;
+        if (periodMode === "DAY") return format(parsedDate, "EEEE").toUpperCase();
+        if (periodMode === "WEEK") return "Sun-Sat";
+        return "MONTH";
+    }, [parsedDate, periodMode]);
+
+    const filteredData = useMemo(() => {
+        return filteredItems.filter((item) => {
+            if (filter === 'All Branches') return true;
+
+            return item.branchName === filter;
+        });
+    }, [filter, filteredItems]);
+
+    const activeTabData = useMemo(() => {
+        if (tab === 'Pending') {
+            return filteredData.filter((item) =>
+                item.status === 'PENDING' ||
+                item.status === 'TO FOLLOW' ||
+                item.status === 'TO_FOLLOW'
+            );
+        }
+
+        if (tab === 'Completed') {
+            return filteredData.filter((item) =>
+                item.status === 'APPROVED' || item.status === 'DELIVERED'
+            );
+        }
+
+        return filteredData.filter((item) => item.status === 'REJECTED');
+    }, [filteredData, tab]);
+
+    const { page, setPage, size, setSize, paginated } = usePagination(activeTabData, 10);
 
     useEffect(() => {
         if (open) {
@@ -71,10 +130,35 @@ export function SupplyOrdersPage() {
     return(
         <section className="stack-md animate-fade-in-up overflow-hidden max-md:mt-12">
             <AppHeader label='Supply Orders' />
-            <AppTabSwitcher
-                tabs={ tabs }
-                selectedTab={ tab }
-                setSelectedTab={ setTab }
+            
+            <div className="flex-center-y justify-between">
+                <AppTabSwitcher
+                    tabs={ tabs }
+                    selectedTab={ tab }
+                    setSelectedTab={ setTab }
+                />
+                <div
+                    onClick={() => setToggleDate(true)}
+                    className="flex-center-y gap-3 rounded-md border border-slate-300 bg-light px-4 py-2 text-lg font-bold shadow-sm w-fit cursor-pointer max-md:m-1"
+                >
+                    <CalendarDays />
+                    <div className="scale-x-110 origin-left">
+                        {displayDate}
+                    </div>
+                    <Badge className={`bg-darkbrown font-bold ml-2 ${periodMode !== "DAY" && "ml-4"}`}>
+                        {displayBadge}
+                    </Badge>
+                </div>
+            </div>
+
+            <SupplyOrdersDatePicker
+                date={date}
+                mode={periodMode}
+                open={toggleDate}
+                setDate={setDate}
+                setEndDate={setEndDate}
+                setMode={setPeriodMode}
+                setOpen={setToggleDate}
             />
 
             <TableFilter
@@ -96,7 +180,7 @@ export function SupplyOrdersPage() {
             {tab === 'Pending' && (
                 <PendingOrders 
                     claims={ claims }
-                    paginated={ paginated.filter(i => i.status === 'PENDING' || i.status === 'TO FOLLOW' || i.status === "TO_FOLLOW") } 
+                    paginated={ paginated } 
                     setReload={ setReload }
                 />
             )}
@@ -104,7 +188,7 @@ export function SupplyOrdersPage() {
             {tab === 'Completed' && (
                 <CompletedOrders 
                     claims={ claims }
-                    paginated={ paginated.filter(i => i.status === 'APPROVED' || i.status === 'DELIVERED') } 
+                    paginated={ paginated } 
                     setReload={ setReload }
                 />
             )}
@@ -112,13 +196,13 @@ export function SupplyOrdersPage() {
             {tab === 'Rejected' && (
                 <RejectedOrders 
                     claims={ claims }
-                    paginated={ paginated.filter(i => i.status === 'REJECTED') } 
+                    paginated={ paginated } 
                     setReload={ setReload }
                 />
             )}
 
             <TablePagination
-                data={ data }
+                data={ activeTabData }
                 paginated={ paginated }
                 size={ size }
                 setPage={ setPage }

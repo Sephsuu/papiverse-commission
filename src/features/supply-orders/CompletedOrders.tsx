@@ -125,7 +125,10 @@ export function CompletedOrders({ claims, paginated, setReload }: {
                                 </div>
                             )}
                         </div>
-                        <div className="td">{ formatToPeso(item.completeOrderTotalAmount) }</div>
+                        <div className="td justify-between">
+                            <div>₱</div>
+                            <span>{ formatToPeso(item.completeOrderTotalAmount).slice(1,) }</span>
+                        </div>
                     </div>
                 </div>
             ))}

@@ -15,11 +15,11 @@ import { CreateExpense } from "./components/CreateExpense";
 import { UpdateExpense } from "./components/UpdateExpense";
 import { DeleteExpense } from "./components/DeleteExpense";
 import { useToday } from "@/hooks/use-today";
-import { endOfWeek, format, startOfWeek } from "date-fns";
+import { endOfMonth, endOfWeek, format, isAfter, startOfMonth, startOfWeek } from "date-fns";
 import { CalendarDays, SquarePen, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { DatePickerModal } from "../_inventory-v2/components/DatePickerModal";
 import { capitalizeWords, formatDateTime, formatDateToWords, formatToPeso } from "@/lib/formatter";
+import { ExpenseDateDialog, ExpensePeriodMode } from "./components/ExpenseDateDialog";
 
 const pageKey = "expensesPage";
 const columns = [
@@ -48,24 +48,37 @@ export function ExpensesPage() {
     const { loading: authLoading } = useAuth();
     const { today } = useToday();
     const [date, setDate] = useState(today);
-    const [byWeek, setByWeek] = useState(false);
-    const [startDate, setStartDate] = useState(today);
+    const [mode, setMode] = useState<ExpensePeriodMode>("MONTH");
+    const [startDate, setStartDate] = useState(format(startOfMonth(parseDateOnly(today)), "yyyy-MM-dd"));
     const [endDate, setEndDate] = useState(today);
     const [toggleDate, setToggleDate] = useState(false);
 
     useEffect(() => {
         if (!date) return;
 
-        if (byWeek) {
-            const selectedDate = parseDateOnly(date);
-            setStartDate(format(startOfWeek(selectedDate, { weekStartsOn: 0 }), "yyyy-MM-dd"));
-            setEndDate(format(endOfWeek(selectedDate, { weekStartsOn: 0 }), "yyyy-MM-dd"));
+        const selectedDate = parseDateOnly(date);
+        const todayDate = parseDateOnly(today);
+
+        if (mode === "DAY") {
+            setStartDate(date);
+            setEndDate(date);
             return;
         }
 
-        setStartDate(date);
-        setEndDate(date);
-    }, [byWeek, date]);
+        if (mode === "WEEK") {
+            const weekEndDate = endOfWeek(selectedDate, { weekStartsOn: 0 });
+            setStartDate(format(startOfWeek(selectedDate, { weekStartsOn: 0 }), "yyyy-MM-dd"));
+            setEndDate(format(isAfter(weekEndDate, todayDate) ? todayDate : weekEndDate, "yyyy-MM-dd"));
+            return;
+        }
+
+        if (mode === "MONTH") {
+            const monthEndDate = endOfMonth(selectedDate);
+            setStartDate(format(startOfMonth(selectedDate), "yyyy-MM-dd"));
+            setEndDate(format(isAfter(monthEndDate, todayDate) ? todayDate : monthEndDate, "yyyy-MM-dd"));
+            return;
+        }
+    }, [date, mode, today]);
 
     const { data, loading } = useFetchData<Expense>(
         ExpenseService.getExpensesByDate, 
@@ -82,13 +95,17 @@ export function ExpensesPage() {
     const parsedStartDate = startDate ? parseDateOnly(startDate) : null;
     const parsedEndDate = endDate ? parseDateOnly(endDate) : null;
     const displayDate = parsedStartDate
-        ? byWeek && parsedEndDate
+        ? mode === "WEEK" && parsedEndDate
             ? `${format(parsedStartDate, "MMM d, yyyy")} - ${format(parsedEndDate, "MMM d, yyyy")}`
+            : mode === "MONTH"
+                ? format(parsedStartDate, "MMMM yyyy")
             : format(parsedStartDate, "MMMM dd, yyyy")
         : "Select date";
     const displayBadge = parsedStartDate
-        ? byWeek
+        ? mode === "WEEK"
             ? "SUN-SAT"
+            : mode === "MONTH"
+                ? "MONTHLY"
             : format(parsedStartDate, "EEEE").toUpperCase()
         : "PERIOD";
 
@@ -114,8 +131,10 @@ export function ExpensesPage() {
                 <div className="text-xl font-semibold">
                     Expenditures for 
                     <span className="text-darkbrown ml-1.5">
-                        {byWeek
+                        {mode === "WEEK"
                             ? `${formatDateToWords(startDate)} - ${formatDateToWords(endDate)}`
+                            : mode === "MONTH"
+                                ? format(parsedStartDate!, "MMMM yyyy")
                             : formatDateToWords(startDate)}
                     </span>
                 </div>
@@ -236,12 +255,13 @@ export function ExpensesPage() {
                 />
             )}
 
-            <DatePickerModal
+            <ExpenseDateDialog
                 date={date}
-                setDate={setDate}
+                mode={mode}
                 open={toggleDate}
+                setDate={setDate}
+                setMode={setMode}
                 setOpen={setToggleDate}
-                setByWeek={setByWeek}
             />
 
         </section>

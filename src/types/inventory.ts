@@ -21,6 +21,7 @@ export interface Inventory {
     source?: string;
     unitType?: string;
     unitCost?: number;
+    effectiveDate?: string;
 }
 
 export interface InventoryBreakdown {

@@ -108,6 +108,7 @@ export class InventoryService {
 				type: inventory.type,
 				unitType: inventory.unitType,
 				source: 'INPUT',
+				effectiveDate: inventory.effectiveDate,
 				unitCost: inventory.unitCost,
 			}
 		);

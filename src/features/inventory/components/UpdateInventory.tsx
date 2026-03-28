@@ -1,13 +1,18 @@
 import { AppSelect } from "@/components/shared/AppSelect";
-import { UpdateButton } from "@/components/ui/button";
+import { Button, UpdateButton } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ModalLoader } from "@/components/ui/loader";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/use-auth";
 import { parseOptionalDecimal, sanitizeDecimalInput } from "@/lib/decimal-input";
 import { formatToPeso } from "@/lib/formatter";
+import { cn } from "@/lib/utils";
 import { InventoryService } from "@/services/inventory.service";
 import { Inventory, inventoryFields } from "@/types/inventory";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import Image from "next/image";
 import React, { useState } from "react";
 import { toast } from "sonner";
@@ -23,9 +28,11 @@ interface Props {
 
 export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
     const { loading: authLoading, isFranchisor } = useAuth();
+    const initialEffectiveDate = toUpdate.effectiveDate ?? format(new Date(), "yyyy-MM-dd");
 
     const [onProcess, setProcess] = useState(false);
     const [tab, setTab] = useState<(typeof tabs)[number]>(tabs[0]);
+    const [effectiveDateOpen, setEffectiveDateOpen] = useState(false);
     const [inventory, setInventory] = useState<Inventory>({
         ...toUpdate,
         changedQuantity: 0,
@@ -33,6 +40,7 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
         unitType: 'BASE',
         source: 'INPUT',
         unitCost: toUpdate.unitCost,
+        effectiveDate: initialEffectiveDate,
     });
     const [changedQuantityInput, setChangedQuantityInput] = useState("0");
 
@@ -77,6 +85,7 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                 ...inventory,
                 type: inventory.type,
                 source: "INPUT",
+                effectiveDate: inventory.effectiveDate,
                 unitCost:
                     tab === "PRODUCTION INPUT" && inventory.type === "IN"
                         ? inventory.unitCost
@@ -199,7 +208,50 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                                 })) }
                             />   
                         </div>
-                        {tab === "PRODUCTION INPUT" && inventory.type === "IN" && (
+                        <div className="flex flex-col gap-1">
+                            <div>Effective Date</div>
+                            <Popover open={effectiveDateOpen} onOpenChange={setEffectiveDateOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className={cn(
+                                            "w-full justify-start border border-gray text-left font-normal",
+                                            !inventory.effectiveDate && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="h-4 w-4" />
+                                        {inventory.effectiveDate
+                                            ? format(new Date(inventory.effectiveDate), "PPP")
+                                            : <span>Select effective date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={
+                                            inventory.effectiveDate
+                                                ? new Date(inventory.effectiveDate)
+                                                : undefined
+                                        }
+                                        onSelect={(date) => {
+                                            if (!date) return;
+
+                                            setInventory((prev) => ({
+                                                ...prev,
+                                                effectiveDate: format(date, "yyyy-MM-dd"),
+                                            }));
+                                            setEffectiveDateOpen(false);
+                                        }}
+                                        className="rounded-md border shadow-sm"
+                                        captionLayout="dropdown"
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    </div>
+                    {tab === "PRODUCTION INPUT" && inventory.type === "IN" && (
+                        <div className="grid grid-cols-2 gap-2">
                             <div className="flex flex-col gap-1">
                                 <div>Unit Cost</div>
                                 <Input
@@ -208,8 +260,8 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                                     disabled
                                 />
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                     
                     <div className="flex justify-end gap-4">
                         <DialogClose className="text-sm">Close</DialogClose>

@@ -2,14 +2,12 @@ import { BellRing, Download, Funnel, Plus, Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Button } from "../ui/button";
 import { Dispatch, SetStateAction } from "react";
-import { addBusinessDays } from "date-fns";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "../ui/badge";
 import { NotificationResponse } from "@/types/notification";
 
 const pages = [10, 20, 30, 40, 50, 100]
 
-export function TableFilter({ setSearch, searchPlaceholder, setOpen, buttonLabel, size, setSize, removeAdd, filters, filter,  setFilter, removeFilter, filteredNotifications, setShowNotif, pageKey, className }: {
+export function TableFilter({ setSearch, searchPlaceholder, setOpen, buttonLabel, size, setSize, removeAdd, filters, filter,  setFilter, removeFilter, filteredNotifications, setShowNotif, pageKey, className, filterClassname }: {
     setSearch: (i: string) => void;
     searchPlaceholder: string;
     size: number;
@@ -25,6 +23,7 @@ export function TableFilter({ setSearch, searchPlaceholder, setOpen, buttonLabel
     setShowNotif?: Dispatch<SetStateAction<boolean>>;
     pageKey?: string
     className?: string;
+    filterClassname?: string;
 }) {
     return (
         <div className={`flex items-center max-md:flex-col max-md:gap-2 ${className}`}>
@@ -44,7 +43,7 @@ export function TableFilter({ setSearch, searchPlaceholder, setOpen, buttonLabel
                     <SelectTrigger className="hidden bg-light shadow-xs max-md:flex">
                         <SelectValue placeholder="20" />
                     </SelectTrigger>
-                    <SelectContent className="!w-fit">
+                    <SelectContent className="w-fit!">
                         {pages.map((item, i) => (
                             <SelectItem value={ String(item) } key={i}>{ item }</SelectItem>
                         ))}
@@ -61,7 +60,7 @@ export function TableFilter({ setSearch, searchPlaceholder, setOpen, buttonLabel
                         <SelectTrigger className="bg-light shadow-xs">
                             <SelectValue placeholder="20" />
                         </SelectTrigger>
-                        <SelectContent className="!w-fit">
+                        <SelectContent className="w-fit!">
                             {pages.map((item, i) => (
                                 <SelectItem value={ String(item) } key={i}>{ item }</SelectItem>
                             ))}

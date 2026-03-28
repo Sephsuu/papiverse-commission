@@ -193,8 +193,9 @@ export function InventoryBreakdownSection({ claims }: {
                                     <div>{formatToPeso(item.itemCost).slice(1,)}</div>
                                 </div>
 
-                                <div className={`td justify-end font-semibold ${item.itemNetProfit < 0 ? "text-darkred" : "text-darkgreen"}`}>
-                                    {formatProfit(item.itemNetProfit)}
+                                <div className={`td justify-between font-semibold ${item.itemNetProfit < 0 ? "text-darkred" : "text-darkgreen"}`}>
+                                    <div>₱</div>
+                                    {formatProfit(item.itemNetProfit).slice(1,)}
                                 </div>
                             </div>
                         ))

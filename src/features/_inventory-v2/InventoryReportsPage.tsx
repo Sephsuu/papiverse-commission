@@ -13,8 +13,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarDays, Ham, PackageX, Snowflake } from "lucide-react";
 import Link from "next/link";
-import { DatePickerModal } from "./components/DatePickerModal";
-import { addDays, format } from "date-fns";
+import { DatePickerModal, InventoryReportPeriodMode } from "./components/DatePickerModal";
+import { format } from "date-fns";
 
 const columns = [
     {title: 'Product', style: ''},
@@ -27,23 +27,31 @@ const columns = [
 export function InventoryReportsPage() {
     const { today } = useToday();
     const [date, setDate] = useState(today);
+    const [endDate, setEndDate] = useState(today);
     const [toggleDate, setToggleDate] = useState(false);
-    const [byWeek, setByWeek] = useState(false);
+    const [periodMode, setPeriodMode] = useState<InventoryReportPeriodMode>("DAY");
     const requiredCategories = ["MEAT", "SNOWFROST"];
 
     const startDate = date;
-    const endDate = useMemo(() => {
-        if (!byWeek) return date;
-        return format(addDays(new Date(date), 6), "yyyy-MM-dd");
-    }, [byWeek, date]);
-
     const parsedDate = date ? new Date(date) : null;
-    const displayDate = parsedDate
-        ? format(parsedDate, "MMMM dd, yyyy")
-        : "Select date";
-    const displayDay = parsedDate
-        ? format(parsedDate, "EEEE").toUpperCase()
-        : null;
+    const parsedEndDate = endDate ? new Date(endDate) : null;
+    const displayDate = useMemo(() => {
+        if (!parsedDate || !parsedEndDate) return "Select period";
+
+        if (periodMode === "DAY") return format(parsedDate, "MMMM dd, yyyy");
+        if (periodMode === "WEEK") return `${format(parsedDate, "MMM d, yyyy")} - ${format(parsedEndDate, "MMM d, yyyy")}`;
+        if (periodMode === "MONTH") return format(parsedDate, "MMMM yyyy");
+
+        const quarterNumber = Math.floor(parsedDate.getMonth() / 3) + 1;
+        return `Q${quarterNumber} ${format(parsedDate, "yyyy")}`;
+    }, [parsedDate, parsedEndDate, periodMode]);
+    const displayBadge = useMemo(() => {
+        if (!parsedDate) return null;
+        if (periodMode === "DAY") return format(parsedDate, "EEEE").toUpperCase();
+        if (periodMode === "WEEK") return "Sun-Sat";
+        if (periodMode === "MONTH") return "MONTH";
+        return "QUARTER";
+    }, [parsedDate, periodMode]);
 
     const { data: report, loading: loadingReport } = useFetchOne(
         InventoryService.getCommissaryFinanceReport,
@@ -98,14 +106,11 @@ export function InventoryReportsPage() {
                         <CalendarDays />
 
                         <div className="scale-x-110 origin-left">
-                            {byWeek && parsedDate
-                                ? `${format(parsedDate, "MMM d, yyy")} - ${format(addDays(parsedDate, 6), "MMM d, yyy")}`
-                                : displayDate
-                            }
+                            {displayDate}
                         </div>
 
-                        <Badge className={`bg-darkbrown font-bold ml-2 ${byWeek && "ml-4"}`}>
-                            {byWeek ? "Sun-Sat" : displayDay}
+                        <Badge className={`bg-darkbrown font-bold ml-2 ${periodMode !== "DAY" && "ml-4"}`}>
+                            {displayBadge}
                         </Badge>
                     </div>
 
@@ -114,10 +119,12 @@ export function InventoryReportsPage() {
 
             <DatePickerModal
                 date={date}
+                mode={periodMode}
                 setDate={setDate}
+                setEndDate={setEndDate}
                 open={toggleDate}
                 setOpen={setToggleDate}
-                setByWeek={setByWeek}
+                setMode={setPeriodMode}
             />
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -157,7 +164,7 @@ export function InventoryReportsPage() {
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-darkbrown">
                             {item.label}
                         </p>
-                        <p className="mt-3 text-2xl font-semibold text-slate-900">
+                        <p className={`mt-3 text-2xl font-semibold ${item.label === "Profit" && report.overall.profit < 0 ? "text-darkred" : "text-slate-900"}`}>
                             {item.value}
                         </p>
                         <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
@@ -217,7 +224,7 @@ export function InventoryReportsPage() {
                                     <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
                                         Profit
                                     </p>
-                                    <p className="mt-2 text-green-700 text-lg font-bold scale-x-110 origin-left">
+                                    <p className={`mt-2 text-lg font-bold scale-x-110 origin-left ${category.profit < 0 ? "text-darkred" : "text-green-700"}`}>
                                         {formatToPeso(category.profit)}
                                     </p>
                                 </div>
@@ -294,7 +301,7 @@ export function InventoryReportsPage() {
                                         {formatToPeso(item.sales)}
                                     </div>
 
-                                    <div className="td text-darkgreen font-semibold scale-x-110 origin-left">
+                                    <div className={`td font-semibold scale-x-110 origin-left ${item.profit < 0 ? "text-darkred" : "text-darkgreen"}`}>
                                         {formatToPeso(item.profit)}
                                     </div>
                                 </div>

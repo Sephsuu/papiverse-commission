@@ -72,7 +72,7 @@ export function PendingOrders({ claims, paginated, setReload }: {
                         <div className="td">
                             <OrderStatusBadge className="text-xs!" status={ item.status } />
                         </div>
-                        <div className="td flex-col items-start! gap-2">
+                        <div className="td flex-col items-start! justify-center! gap-2">
                             {item.meatCategory?.meatOrderId && (
                                 <div className="flex-center-y gap-2">
                                     {getCategoryIcon("MEAT")}
@@ -86,7 +86,10 @@ export function PendingOrders({ claims, paginated, setReload }: {
                                 </div>
                             )}
                         </div>
-                        <div className="td">{ formatToPeso(item.completeOrderTotalAmount) }</div>
+                        <div className="td justify-between">
+                            <div>₱</div>
+                            <span>{ formatToPeso(item.completeOrderTotalAmount).slice(1,) }</span>
+                        </div>
                     </div>
                 </div>
             ))}

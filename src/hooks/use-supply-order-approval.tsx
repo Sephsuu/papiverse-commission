@@ -29,6 +29,7 @@ export function useSupplyOrderApproval(
   async function handleSubmit(
     meatApproved: boolean,
     snowApproved: boolean,
+    effectiveDate?: string,
     isRejected = false
   ) {
     try {
@@ -78,12 +79,13 @@ export function useSupplyOrderApproval(
           type: "OUT",
           source: "ORDER",
           orderId,
+          effectiveDate,
         });
       }
 
       toast.success(`Updated status to ${status}`);
     } catch (error: any) {
-        if (status === "APPROVED") return
+      if (status === "APPROVED") return
       toast.error(error?.message || String(error));
     } finally {
       setProcess(false);

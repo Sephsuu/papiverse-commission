@@ -20,6 +20,7 @@ interface GenericSelectProps {
   className?: string
   hideIcon?: boolean;
   triggerClassName?: string;
+  labelClassName?: string;
 }
 
 export function AppSelect({
@@ -31,12 +32,12 @@ export function AppSelect({
     onChange,
     className,
     hideIcon = false,
-    triggerClassName
-
+    triggerClassName,
+    labelClassName,
 }: GenericSelectProps) {
   return (
         <div className={`flex flex-col gap-1 ${className ?? ""}`}>
-            {label && <span className="text-sm font-medium text-gray-700">{label}</span>}
+            {label && <span className={`text-sm font-medium text-gray-700 ${labelClassName}`}>{label}</span>}
 
             <Select value={value} onValueChange={onChange}>
                 <SelectTrigger 

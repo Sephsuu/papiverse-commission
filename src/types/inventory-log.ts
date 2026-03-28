@@ -21,5 +21,7 @@ export interface InventoryLog {
     order?: {
         id: number;
         orderDestination: string;
+        meatOrderId?: string | null;
+        snowOrderId?: string | null;
     } | null
 }

@@ -3,6 +3,7 @@
 import { AuthService } from '@/services/auth.service';
 import { Claim } from '@/types/claims';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { jwtDecode } from 'jwt-decode';
 
 interface AuthContextType {
     claims: Claim;
@@ -34,17 +35,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const isFranchisor = claims?.roles?.[0] === "FRANCHISOR";
 
+    function getClaimsFromLocalToken(): Claim | null {
+        if (typeof window === "undefined") return null;
+
+        const token = localStorage.getItem("token");
+        if (!token) return null;
+
+        try {
+            const decoded = jwtDecode<Claim>(token);
+            return decoded?.userId ? decoded : null;
+        } catch {
+            return null;
+        }
+    }
+
     useEffect(() => {
         const fetchClaims = async () => {
             try {
                 const response = await AuthService.getCookie();
                 if (!response || !response.userId) {
-                    setClaims(claimsInit);
+                    const fallbackClaims = getClaimsFromLocalToken();
+                    setClaims(fallbackClaims ?? claimsInit);
                 } else {
                     setClaims(response);
                 }
             } catch (error) {
-                setClaims(claimsInit);
+                const fallbackClaims = getClaimsFromLocalToken();
+                setClaims(fallbackClaims ?? claimsInit);
             } finally {
                 setLoading(false);
             }

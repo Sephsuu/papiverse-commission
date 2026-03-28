@@ -1,11 +1,24 @@
 import { ModalTitle } from "@/components/shared/ModalTitle";
 import { UpdateButton } from "@/components/ui/button";
+import {
+    Command,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSearchFilter } from "@/hooks/use-search-filter";
 import { handleChange } from "@/lib/form-handle";
 import { SupplyService } from "@/services/supply.service";
 import { Supply, supplyFields } from "@/types/supply";
+import { ChevronDownIcon } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
 
@@ -16,12 +29,25 @@ interface Props {
     toUpdate: Supply;
     setUpdate: React.Dispatch<React.SetStateAction<Supply | undefined>>;
     setReload: React.Dispatch<React.SetStateAction<boolean>>;
+    supplies: Supply[];
 }
 
-export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
+export function UpdateSupply({ toUpdate, setUpdate, setReload, supplies }: Props) {
     const [onProcess, setProcess] = useState(false);
+    const [inventorySourceOpen, setInventorySourceOpen] = useState(false);
 
-    const [supply, setSupply] = useState<Supply>(toUpdate);
+    const [supply, setSupply] = useState<Supply>({
+        ...toUpdate,
+        stockFactor:
+            toUpdate.inventorySourceSku && (toUpdate.stockFactor === null || toUpdate.stockFactor === undefined)
+                ? 1
+                : toUpdate.stockFactor,
+    });
+    const { search, setSearch, filteredItems } = useSearchFilter(supplies, ["name", "sku"]);
+
+    const selectedInventorySource = supplies.find(
+        (item) => item.sku === supply.inventorySourceSku
+    );
 
     async function handleSubmit() {
         try{         
@@ -58,7 +84,7 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
     }
     return(
         <Dialog open onOpenChange={ (open) => { if (!open) setUpdate(undefined) } }>
-            <DialogContent className="h-9/10 overflow-y-auto">
+            <DialogContent className="max-h-9/10 overflow-y-auto">
                 <ModalTitle label="Update" spanLabel={ toUpdate.name }/>
                 <form 
                     className="flex flex-col gap-4"
@@ -118,7 +144,8 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                                     value={ supply.unitMeasurement }
                                     onValueChange={ (value) => setSupply(prev => ({
                                         ...prev,
-                                        unitMeasurement: value
+                                        unitMeasurement: value,
+                                        convertedMeasurement: value
                                     })) }
                                 >
                                     <SelectTrigger className="w-full border-0">
@@ -133,31 +160,20 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                             </div>
                         </div>
                         <div className="flex flex-col gap-1 col-span-2">
-                            <div>Converted Measurement</div>
+                            <div>Converted Quantity</div>
                             <div className="flex border border-gray rounded-md max-md:w-full">
-                                <Input    
-                                    className="w-full border-0" 
+                                <Input
+                                    className="w-full border-0"
                                     type="number"
-                                    name ="convertedQuantity"  
+                                    name ="convertedQuantity"
                                     value={supply.convertedQuantity ?? 0}
                                     onChange={ e => handleChange(e, setSupply)}
-                                />  
-                                <Select
-                                    value={ supply.convertedMeasurement }
-                                    onValueChange={ (value) => setSupply(prev => ({
-                                        ...prev,
-                                        convertedMeasurement: value
-                                    })) }
-                                >
-                                    <SelectTrigger className="w-full border-0">
-                                        <SelectValue placeholder="Select Unit" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {units.map((item, index) => (
-                                            <SelectItem value={ item } key={ index }>{ item }</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                />
+                                <Input
+                                    className="w-full border-0"
+                                    value={ supply.unitMeasurement }
+                                    readOnly
+                                />
                             </div>
                         </div>
                         {/* <div className="flex flex-col gap-1">
@@ -237,8 +253,92 @@ export function UpdateSupply({ toUpdate, setUpdate, setReload }: Props) {
                             />
                         </div>
                     </div>
+                    <div className="flex flex-col gap-1">
+                        <div>Inventory Source</div>
+                        <Popover
+                            open={inventorySourceOpen}
+                            onOpenChange={(isOpen) => {
+                                setInventorySourceOpen(isOpen);
+
+                                if (!isOpen) {
+                                    setSearch("");
+                                }
+                            }}
+                        >
+                            <PopoverTrigger asChild>
+                                <button
+                                    type="button"
+                                    className={`flex w-full items-center justify-between rounded-md border border-gray px-3 py-1.5 text-left text-sm ${
+                                        selectedInventorySource ? "text-foreground" : "text-muted-foreground"
+                                    }`}
+                                >
+                                    <span className="truncate">
+                                        {selectedInventorySource
+                                            ? `${selectedInventorySource.sku} - ${selectedInventorySource.name}`
+                                            : "Select Source"}
+                                    </span>
+                                    <ChevronDownIcon className="size-4 shrink-0 opacity-50" />
+                                </button>
+                            </PopoverTrigger>
+
+                            <PopoverContent
+                                className="w-[var(--radix-popover-trigger-width)] p-0"
+                                side="bottom"
+                                align="center"
+                                sideOffset={8}
+                                onOpenAutoFocus={(e) => e.preventDefault()}
+                            >
+                                <Command>
+                                    <CommandInput
+                                        placeholder="Search for a supply"
+                                        value={search}
+                                        onValueChange={setSearch}
+                                        autoFocus={false}
+                                    />
+                                    <CommandList>
+                                        {filteredItems.length === 0 && (
+                                            <div className="p-2 text-sm text-muted-foreground">
+                                                No items available for &quot;{search}&quot;
+                                            </div>
+                                        )}
+
+                                        {filteredItems.map((item) => (
+                                            <CommandItem
+                                                key={item.id}
+                                                onSelect={() => {
+                                                    setSupply((prev) => ({
+                                                        ...prev,
+                                                        inventorySourceSku: item.sku ?? null,
+                                                        stockFactor: prev.stockFactor ?? 1,
+                                                    }));
+                                                    setSearch("");
+                                                    setInventorySourceOpen(false);
+                                                }}
+                                            >
+                                                {item.sku} - {item.name}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                     </div>
-                    <div className="flex justify-end gap-4">
+                    <div className="flex flex-col gap-1">
+                        <div>Stock Factor</div>
+                        <Input
+                            type="number"
+                            min="0"
+                            step="0.001"
+                            inputMode="decimal"
+                            className="w-full border border-gray rounded-md max-md:w-full"
+                            name="stockFactor"
+                            value={supply.stockFactor ?? ""}
+                            onChange={e => handleChange(e, setSupply)}
+                            disabled={!supply.inventorySourceSku}
+                        />
+                    </div>
+                    </div>
+                    <div className="flex justify-end gap-4 mt-4">
                         <DialogClose className="text-sm">Close</DialogClose>
                         <UpdateButton 
                             type="submit"

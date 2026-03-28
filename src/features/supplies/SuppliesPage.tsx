@@ -3,7 +3,7 @@
 import { PapiverseLoading } from "@/components/ui/loader";
 import { formatToPeso } from "@/lib/formatter";
 import { Supply } from "@/types/supply";
-import { Ham, Info, PackageX, Snowflake, SquarePen, Trash2, Truck } from "lucide-react";
+import { ArrowUpFromDot, Info, SquarePen, Trash2, Weight } from "lucide-react";
 import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSearchFilter } from "@/hooks/use-search-filter";
@@ -114,6 +114,14 @@ export function SuppliesPage() {
                                         <div className="text-xs text-slate-500">
                                             {item.sku}
                                         </div>
+                                        {item.inventorySourceSku && (
+                                            <div className="mt-1.5 flex-center-y text-[11px] text-slate-400 truncate">
+                                                <ArrowUpFromDot className="w-3 h-3 mr-1" />
+                                                {`${item.inventorySourceSku}`}
+                                                <Weight className="w-3 h-3 mr-1 ml-2" />
+                                                {item.stockFactor !== null ? `${Number(item.stockFactor).toFixed(3)}` : ""}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="td flex gap-2">{ `${item.unitQuantity?.toFixed(2)} ${item.unitMeasurement}` }</div>
@@ -198,6 +206,7 @@ export function SuppliesPage() {
                 <CreateSupply 
                     setOpen={ setOpen }
                     setReload={ setReload }
+                    supplies={ data }
                 />
             )}
 
@@ -213,6 +222,7 @@ export function SuppliesPage() {
                     toUpdate={ toUpdate }
                     setUpdate={ setUpdate }
                     setReload={ setReload }
+                    supplies={ data }
                 />
             )}
 

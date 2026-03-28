@@ -49,6 +49,7 @@ export function AppSidebar() {
         await AuthService.deleteCookie();
         toast.success("Logging out. Please wait patiently.", { duration: Infinity });
         localStorage.removeItem('token');
+        sessionStorage.clear();
         window.location.href = '/auth'
     }
     

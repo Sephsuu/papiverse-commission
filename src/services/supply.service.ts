@@ -20,6 +20,13 @@ export class SupplyService {
     );
   }
 
+  static async getSupplyPriceHistory(code: string) {
+    return await requestData(
+      `${url}/get-price-history-by-code?code=${code}`,
+      'GET'
+    )
+  }
+
   static async getDeliverableSupplies(page: number, size: number) {
     return await requestData(
         `${url}/get-deliverables?page=${page}&size=${size}`,
@@ -30,9 +37,14 @@ export class SupplyService {
   static async addSupply(supply: Partial<Supply>) {
     const payload = {
         ...supply,
+        inventorySourceSku: supply.inventorySourceSku,
         name: capitalizeWords(supply.name!),
         minStock: Number(supply.minStock),
-        convertedQuantity: Number(supply.convertedQuantity),
+        convertedQuantity: Number(supply.unitQuantity), // [NOTICE]
+        convertedMeasurement: supply.unitMeasurement, // [NOTICE]
+        stockFactor: supply.stockFactor === null || supply.stockFactor === undefined
+          ? null
+          : Number(supply.stockFactor),
         unitQuantity: Number(supply.unitQuantity),
         unitPriceInternal: Number(supply.unitPriceExternal), // [NOTICE]
         unitPriceExternal: Number(supply.unitPriceExternal),
@@ -49,10 +61,16 @@ export class SupplyService {
   static async updateSupply(supply: Supply) {
     const payload = {
         ...supply,
+        inventorySourceSku: supply.inventorySourceSku,
         name: capitalizeWords(supply.name!),
         category: supply.isDeliverables ? supply.category : 'NONDELIVERABLES',
+        stockFactor: supply.stockFactor === null || supply.stockFactor === undefined
+          ? null
+          : Number(supply.stockFactor),
         unitQuantity: Number(supply.unitQuantity),
         unitCost: Number(supply.unitCost),
+        convertedMeasurement: supply.unitMeasurement,
+        convertedQuantity: Number(supply.unitQuantity),
         unitPriceInternal: supply.isDeliverables ? Number(supply.unitPriceExternal) : 0, // [NOTICE]
         unitPriceExternal: supply.isDeliverables ? Number(supply.unitPriceExternal) : 0,
     };

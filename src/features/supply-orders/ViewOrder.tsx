@@ -141,25 +141,6 @@ export function ViewOrderPage({ id }: { id: number }) {
             toast.error(String(error))
         } finally { setProcessExpDel(false) }
     }
-    console.log('view order', [
-        ...(data?.meatCategory?.meatItems ?? []).map((item) => ({
-            sku: item.rawMaterialCode,
-            quantity: item.quantity,
-            name: item.rawMaterialName,
-            unitMeasurement: item.unitMeasurement,
-            unitPrice: item.price,
-            category: "MEAT"
-        })),
-        ...(data?.snowfrostCategory?.snowFrostItems ?? []).map((item) => ({
-            sku: item.rawMaterialCode,
-            quantity: item.quantity,
-            name: item.rawMaterialName,
-            unitMeasurement: item.unitMeasurement,
-            unitPrice: item.price,
-            category: "SNOWFROST"
-        })),
-    ]);
-    
 
     if (loading || authLoading || inventoryLoading) return <PapiverseLoading /> 
     if (toEdit) return <EditOrderForm   
