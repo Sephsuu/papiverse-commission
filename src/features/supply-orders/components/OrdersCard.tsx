@@ -11,10 +11,11 @@ const CURRENT_STOCK_VISIBILITY_KEY = "orders-card-current-stock-visible";
 
 export function OrdersCard({ orders, inventories, isFranchisor }: {
     orders: {
-        rawMaterialCode: string;
-        rawMaterialName: string;
+        rawMaterialCode?: string;
+        rawMaterialName?: string;
         quantity: number;
         price: number;
+        isOther?: boolean;
     } [];
     inventories: Inventory[];
     isFranchisor: boolean;
@@ -42,12 +43,14 @@ export function OrdersCard({ orders, inventories, isFranchisor }: {
                 </button>
             )}
             {orders.map((item, i) => {
-                const currentStock = inventories.find(i => i.sku === item.rawMaterialCode)?.quantity;
+                const currentStock = item.rawMaterialCode && item.rawMaterialCode !== "OTHER"
+                    ? inventories.find(i => i.sku === item.rawMaterialCode)?.quantity
+                    : undefined;
                 return (
                     <div className="tdata grid grid-cols-[60px_1fr_1fr_100px_1fr_1fr]" key={i}>
                         <div className="td text-center">{ i + 1 }</div>
-                        <div className="td">{ item.rawMaterialCode }</div>
-                        <div className="td">{ item.rawMaterialName }</div>
+                        <div className="td">{ item.rawMaterialCode ?? "-" }</div>
+                        <div className="td">{ item.rawMaterialName ?? "-" }</div>
                         <div className="td flex-center-y gap-2">
                             <Tooltip>
                                 <TooltipTrigger>

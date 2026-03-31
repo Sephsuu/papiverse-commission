@@ -26,6 +26,15 @@ import { endOfMonth, format, isAfter, startOfMonth } from "date-fns";
 import { SupplyOrdersDatePicker, SupplyOrdersPeriodMode } from "./components/SupplyOrdersDatePicker";
 
 const tabs = ['Pending', 'Completed']
+type OrderShortageSummary = {
+    name: string;
+    unitMeasurement: string;
+    requiredQuantity: number;
+    availableQuantity: number;
+    shortageQuantity: number;
+    expectedDateAvailableQuantity?: number;
+    expectedDateShortageQuantity?: number;
+};
 
 export function SupplyOrdersPage() {
     const searchParams = useSearchParams();
@@ -39,7 +48,6 @@ export function SupplyOrdersPage() {
     const { claims, loading: authLoading, isFranchisor } = useAuth();
     const { open, setOpen, showNotif, setShowNotif } = useCrudState();
     const now = new Date();
-    const today = format(now, "yyyy-MM-dd");
     const defaultStartDate = format(startOfMonth(now), "yyyy-MM-dd");
     const currentMonthEnd = endOfMonth(now);
     const defaultEndDate = format(
@@ -53,15 +61,19 @@ export function SupplyOrdersPage() {
     const fetchAll = useFetchData<SupplyOrder>(
         SupplyOrderService.getAllSupply, 
         [reload, claims, date, endDate],
-        [date, endDate]
+        [date, endDate, 'commissary'],
+        0, 1000,
+        isFranchisor
     );
     const fetchByBranch = useFetchData<SupplyOrder>(
         SupplyOrderService.getSupplyOrderByBranch, 
         [reload, claims], 
-        [claims.branch.branchId]
+        [claims.branch.branchId],
+        0, 1000,
+        !isFranchisor
     );
     
-    const { data, loading, error } = isCommisary ? fetchAll : fetchByBranch;
+    const { data, loading } = isCommisary ? fetchAll : fetchByBranch;
     const { filteredNotifications } = useNotifications({ claims, type: "SUPPLY ORDER" });
     const { setSearch, filteredItems } = useSearchFilter(data, ['branchName', 'snowfrostCategory.snowFrostOrderId', 'meatCategory.meatOrderId']);
     const { data: branches, loading: branhesLoading } = useFetchData(BranchService.getAllBranches);
@@ -110,6 +122,33 @@ export function SupplyOrdersPage() {
 
         return filteredData.filter((item) => item.status === 'REJECTED');
     }, [filteredData, tab]);
+
+    const orderShortages = useMemo(() => {
+        return activeTabData.reduce<Record<number, { count: number; summary: OrderShortageSummary[] }>>((acc, order) => {
+            if (tab !== "Pending" || !order.orderId) return acc;
+
+            const shortages = (order.lowStocks ?? []).map((item) => ({
+                name: item.rawMaterialName,
+                unitMeasurement: item.unitMeasurement,
+                requiredQuantity: item.requiredQuantity,
+                availableQuantity: item.availableQuantity,
+                shortageQuantity: item.shortageQuantity,
+                expectedDateAvailableQuantity: item.expectedDateAvailableQuantity,
+                expectedDateShortageQuantity: item.expectedDateShortageQuantity,
+            }));
+
+            if (shortages.length === 0) return acc;
+
+            acc[order.orderId] = {
+                count: shortages.length,
+                summary: shortages,
+            };
+
+            return acc;
+        }, {});
+    }, [activeTabData, tab]);
+
+    const shortageOrderCount = Object.keys(orderShortages).length;
 
     const { page, setPage, size, setSize, paginated } = usePagination(activeTabData, 10);
 
@@ -177,11 +216,18 @@ export function SupplyOrdersPage() {
                 setShowNotif={ setShowNotif }
             />
 
+            {tab === "Pending" && shortageOrderCount > 0 && (
+                <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-sm">
+                    <span className="font-semibold">{shortageOrderCount}</span> pending {shortageOrderCount === 1 ? "order has" : "orders have"} insufficient stock from the fetched order payload.
+                </div>
+            )}
+
             {tab === 'Pending' && (
                 <PendingOrders 
                     claims={ claims }
                     paginated={ paginated } 
                     setReload={ setReload }
+                    orderShortages={ orderShortages }
                 />
             )}
 

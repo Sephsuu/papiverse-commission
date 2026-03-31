@@ -29,6 +29,8 @@ interface Props {
 export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
     const { loading: authLoading, isFranchisor } = useAuth();
     const initialEffectiveDate = toUpdate.effectiveDate ?? format(new Date(), "yyyy-MM-dd");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const [onProcess, setProcess] = useState(false);
     const [tab, setTab] = useState<(typeof tabs)[number]>(tabs[0]);
@@ -84,10 +86,10 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
             const payload: Inventory = {
                 ...inventory,
                 type: inventory.type,
-                source: "INPUT",
+                source: tab === "PRODUCTION INPUT" ? "PRODUCTION" : "INPUT",
                 effectiveDate: inventory.effectiveDate,
                 unitCost:
-                    tab === "PRODUCTION INPUT" && inventory.type === "IN"
+                    tab === "PRODUCTION INPUT"
                         ? inventory.unitCost
                         : undefined,
             };
@@ -234,6 +236,7 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                                                 ? new Date(inventory.effectiveDate)
                                                 : undefined
                                         }
+                                        disabled={(date) => date > today}
                                         onSelect={(date) => {
                                             if (!date) return;
 
@@ -250,7 +253,7 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                             </Popover>
                         </div>
                     </div>
-                    {tab === "PRODUCTION INPUT" && inventory.type === "IN" && (
+                    {tab === "PRODUCTION INPUT" && (
                         <div className="grid grid-cols-2 gap-2">
                             <div className="flex flex-col gap-1">
                                 <div>Unit Cost</div>

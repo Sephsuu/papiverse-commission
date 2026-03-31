@@ -18,7 +18,7 @@ import { useSearchFilter } from "@/hooks/use-search-filter";
 import { parseOptionalDecimal, sanitizeDecimalInput } from "@/lib/decimal-input";
 import { formatToPeso } from "@/lib/formatter";
 import { Supply } from "@/types/supply";
-import { SupplyItem } from "@/types/supplyOrder";
+import { OTHER_ITEM_KEY, SupplyItem } from "@/types/supplyOrder";
 import { Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -37,8 +37,11 @@ interface Props {
     selectedItems: SupplyItem[];
     setActiveForm: (i: string) => void;
     onSelect: (sku: string) => void;
-    onQuantityChange: (sku: string, quantity: number) => void;
-    onRemove: (sku: string) => void;
+    onAddCustomItem: (category: string) => void;
+    getItemCategory: (item: SupplyItem) => string | undefined;
+    onQuantityChange: (itemKey: string, quantity: number) => void;
+    onItemChange: (itemKey: string, patch: Partial<SupplyItem>) => void;
+    onRemove: (itemKey: string) => void;
     toEdit?: boolean;
     className?: string;
 }
@@ -48,33 +51,56 @@ export function MeatOrder({
     selectedItems,
     setActiveForm,
     onSelect,
+    onAddCustomItem,
+    getItemCategory,
     onQuantityChange,
+    onItemChange,
     onRemove,
     toEdit,
     className,
 }: Props) {
     const [open, setOpen] = useState(false);
 
+    function getItemKey(item: SupplyItem) {
+        return item.sku ?? item[OTHER_ITEM_KEY] ?? "";
+    }
+
     const meatItems = useMemo(
-        () => selectedItems.filter((i) => i.category === "MEAT"),
-        [selectedItems]
+        () => selectedItems.filter((i) => getItemCategory(i) === "MEAT"),
+        [getItemCategory, selectedItems]
     );
     const [quantityInputs, setQuantityInputs] = useState<Record<string, string>>({});
+    const [unitPriceInputs, setUnitPriceInputs] = useState<Record<string, string>>({});
 
     useEffect(() => {
         setQuantityInputs((prev) => {
             const next: Record<string, string> = {};
 
             meatItems.forEach((item) => {
-                if (!item.sku) return;
-                next[item.sku] = prev[item.sku] ?? String(item.quantity ?? "");
+                const itemKey = getItemKey(item);
+                if (!itemKey) return;
+                next[itemKey] = prev[itemKey] ?? String(item.quantity ?? "");
             });
 
             return next;
         });
     }, [meatItems]);
 
-    const selectedSkus = new Set(meatItems.map((i) => i.sku));
+    useEffect(() => {
+        setUnitPriceInputs((prev) => {
+            const next: Record<string, string> = {};
+
+            meatItems.forEach((item) => {
+                const itemKey = getItemKey(item);
+                if (!itemKey) return;
+                next[itemKey] = prev[itemKey] ?? String(item.unitPrice ?? "");
+            });
+
+            return next;
+        });
+    }, [meatItems]);
+
+    const selectedSkus = new Set(meatItems.map((i) => i.sku).filter(Boolean));
 
     const availableSupplies = supplies.filter(
         (s) => !selectedSkus.has(s.sku)
@@ -86,6 +112,11 @@ export function MeatOrder({
     const handleSubmit = () => {
         setActiveForm("snow");
     };
+
+    useEffect(() => {
+        console.log(selectedItems);
+        
+    }, [selectedItems])
 
     return (
         <section
@@ -106,42 +137,78 @@ export function MeatOrder({
                     ))}
                 </div>
 
-                {meatItems.map((item, index) => (
-                        <div className="tdata grid grid-cols-8 max-md:w-250!" key={index}>
-                            <div className="td">{item.sku}</div>
+                {meatItems.map((item) => {
+                    const itemKey = getItemKey(item);
+
+                    return (
+                        <div className="tdata grid grid-cols-8 max-md:w-250!" key={itemKey}>
+                            <div className="td">{item.isOther ? "OTHER" : item.sku}</div>
 
                             <div className="td p-0!">
                                 <Input
                                     type="text"
                                     inputMode="decimal"
                                     pattern="[0-9]*([.,][0-9]{0,3})?"
-                                    value={quantityInputs[item.sku!] ?? String(item.quantity ?? "")}
+                                    value={quantityInputs[itemKey] ?? String(item.quantity ?? "")}
                                     onChange={(e) => {
                                         const value = sanitizeDecimalInput(e.target.value, 3);
 
                                         setQuantityInputs((prev) => ({
                                             ...prev,
-                                            [item.sku!]: value,
+                                            [itemKey]: value,
                                         }));
 
                                         if (value === "") {
-                                            onQuantityChange(item.sku!, 0);
+                                            onQuantityChange(itemKey, 0);
                                             return;
                                         }
 
                                         const parsedValue = parseOptionalDecimal(value);
-                                        onQuantityChange(item.sku!, parsedValue ?? 0);
+                                        onQuantityChange(itemKey, parsedValue ?? 0);
                                     }}
                                     className="text-[16px] font-semibold w-18 border-0 pl-2 mx-auto"
                                 />
                             </div>
 
-                            <div className="td col-span-2">{item.name}</div>
-                            <div className="td">
-                                {item.unitQuantity} {item.unitMeasurement}
+                            <div className="td col-span-2">
+                                {item.isOther ? (
+                                    <Input
+                                        value={item.name ?? ""}
+                                        onChange={(e) => onItemChange(itemKey, { name: e.target.value })}
+                                        placeholder="Other item name"
+                                        className="border border-slate-200"
+                                    />
+                                ) : (
+                                    item.name
+                                )}
                             </div>
                             <div className="td">
-                                {formatToPeso(item.unitPrice!)}
+                                {item.isOther ? "-" : `${item.unitQuantity ?? ""} ${item.unitMeasurement ?? ""}`}
+                            </div>
+                            <div className="td">
+                                {item.isOther ? (
+                                    <div className="relative">
+                                        <div className="absolute top-2 left-2">₱</div>
+                                        <Input
+                                            type="text"
+                                            inputMode="decimal"
+                                            pattern="[0-9]*([.,][0-9]{0,3})?"
+                                            value={unitPriceInputs[itemKey] ?? String(item.unitPrice ?? "")}
+                                            onChange={(e) => {
+                                                const value = sanitizeDecimalInput(e.target.value, 3);
+                                                setUnitPriceInputs((prev) => ({
+                                                    ...prev,
+                                                    [itemKey]: value,
+                                                }));
+                                                onItemChange(itemKey, { unitPrice: parseOptionalDecimal(value) ?? 0 });
+                                            }}
+                                            placeholder="0"
+                                            className="border border-slate-200 pl-4.5"
+                                        />
+                                    </div>
+                                ) : (
+                                    formatToPeso(item.unitPrice!)
+                                )}
                             </div>
                             <div className="td">
                                 {formatToPeso(item.unitPrice! * item.quantity!)}
@@ -152,70 +219,82 @@ export function MeatOrder({
                                     type="button"
                                     variant="secondary"
                                     size="sm"
-                                    onClick={() => onRemove(item.sku!)}
+                                    onClick={() => onRemove(itemKey)}
                                     className="h-fit! py-1 my-auto"
                                 >
                                     <Trash2 className="text-darkred" />
                                 </Button>
                             </div>
                         </div>
-                    ))}
+                    );
+                })}
 
                 <div className="tdata grid grid-cols-8">
-                    <Popover 
-                        open={open}
-                        onOpenChange={(isOpen) => {
-                            setOpen(isOpen);
+                    <div className="col-span-8 flex items-center gap-3 py-2 pl-2">
+                        <Popover 
+                            open={open}
+                            onOpenChange={(isOpen) => {
+                                setOpen(isOpen);
 
-                            if (!isOpen) {
-                                setSearch("");
-                            }
-                        }}
-                    >
-                        <PopoverTrigger asChild>
-                            <button className="p-2 border rounded-md mx-auto">
-                                Select Item
-                            </button>
-                        </PopoverTrigger>
-
-                        <PopoverContent 
-                            className="w-72 p-0 ml-48"
-                            side="bottom"
-                            align="center"
-                            sideOffset={8}
-                            avoidCollisions={false}
-                            onOpenAutoFocus={(e) => e.preventDefault()} 
+                                if (!isOpen) {
+                                    setSearch("");
+                                }
+                            }}
                         >
-                            <Command>
-                                <CommandInput
-                                    placeholder="Search for a supply"
-                                    value={search}
-                                    onValueChange={setSearch}
-                                    autoFocus={false}
-                                />
-                                <CommandList>
-                                    {filteredSupplies.length === 0 && (
-                                        <div className="p-2 text-sm text-muted-foreground">
-                                            No items available for &quot;{search}&quot;
-                                        </div>
-                                    )}
+                            <PopoverTrigger asChild>
+                                <button className="rounded-md border border-slate-300 p-2 shadowm-sm">
+                                    Select Item
+                                </button>
+                            </PopoverTrigger>
 
-                                    {filteredSupplies.map((item) => (
-                                        <CommandItem
-                                            key={item.sku}
-                                            onSelect={() => {
-                                                onSelect(item.sku!);
-                                                setSearch("");
-                                                setOpen(false);
-                                            }}
-                                        >
-                                            {item.sku} - {item.name}
-                                        </CommandItem>
-                                    ))}
-                                </CommandList>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
+                            <PopoverContent 
+                                className="w-72 p-0 ml-48"
+                                side="bottom"
+                                align="center"
+                                sideOffset={8}
+                                avoidCollisions={false}
+                                onOpenAutoFocus={(e) => e.preventDefault()} 
+                            >
+                                <Command>
+                                    <CommandInput
+                                        placeholder="Search for a supply"
+                                        value={search}
+                                        onValueChange={setSearch}
+                                        autoFocus={false}
+                                    />
+                                    <CommandList>
+                                        {filteredSupplies.length === 0 && (
+                                            <div className="p-2 text-sm text-muted-foreground">
+                                                No items available for &quot;{search}&quot;
+                                            </div>
+                                        )}
+
+                                        {filteredSupplies.map((item) => (
+                                            <CommandItem
+                                                key={item.sku}
+                                                onSelect={() => {
+                                                    onSelect(item.sku!);
+                                                    setSearch("");
+                                                    setOpen(false);
+                                                }}
+                                            >
+                                                {item.sku} - {item.name}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => onAddCustomItem("MEAT")}
+                            className="h-full rounded-md border border-slate-300 p-2 shadowm-sm bg-light"
+                        >
+                            Add Custom Item
+                        </Button>
+                    </div>
                 </div>
             </div>
 

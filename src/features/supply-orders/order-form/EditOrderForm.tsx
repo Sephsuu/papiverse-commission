@@ -49,6 +49,9 @@ export function EditOrderForm({ setEdit, toEditItems, orderId, meatId, snowId, s
         selectedItems,
         setSelectedItems,
         handleSelect,
+        handleAddCustomItem,
+        getItemCategory,
+        handleItemChange,
         handleQuantityChange,
         handleRemove
     } = useSupplySelection(claims, data);
@@ -82,8 +85,8 @@ export function EditOrderForm({ setEdit, toEditItems, orderId, meatId, snowId, s
         try {
             setProcess(true);
 
-            const meatOrder = selectedItems.filter(o => o.category === "MEAT");
-            const snowOrder = selectedItems.filter(o => o.category === "SNOWFROST");
+            const meatOrder = selectedItems.filter(o => getItemCategory(o) === "MEAT");
+            const snowOrder = selectedItems.filter(o => getItemCategory(o) === "SNOWFROST");
             const shipmentChanged = intShip !== internalShipment || delType !== initialDelType;
             const deliveryDateChanged = expDel !== initialExpDel;
 
@@ -94,6 +97,21 @@ export function EditOrderForm({ setEdit, toEditItems, orderId, meatId, snowId, s
 
             if (!intShip && delType.trim() === "") {
                 toast.warning("Please select delivery type.");
+                return;
+            }
+
+            const invalidCustomItem = selectedItems.find((item) =>
+                item.isOther && (
+                    !item.name?.trim() ||
+                    !item.quantity ||
+                    item.quantity <= 0 ||
+                    !item.unitPrice ||
+                    item.unitPrice <= 0
+                )
+            );
+
+            if (invalidCustomItem) {
+                toast.warning("Please complete all custom item details before updating the order.");
                 return;
             }
 
@@ -254,7 +272,10 @@ export function EditOrderForm({ setEdit, toEditItems, orderId, meatId, snowId, s
                     selectedItems={selectedItems}
                     setActiveForm={setTab}
                     onSelect={handleSelect}
+                    onAddCustomItem={handleAddCustomItem}
+                    getItemCategory={getItemCategory}
                     onQuantityChange={handleQuantityChange}
+                    onItemChange={handleItemChange}
                     onRemove={handleRemove}
                     toEdit={true}
                     // className={ meatApproved ? "!hidden" : "" }
@@ -267,7 +288,10 @@ export function EditOrderForm({ setEdit, toEditItems, orderId, meatId, snowId, s
                     selectedItems={selectedItems}
                     setActiveForm={setTab}
                     onSelect={handleSelect}
+                    onAddCustomItem={handleAddCustomItem}
+                    getItemCategory={getItemCategory}
                     onQuantityChange={handleQuantityChange}
+                    onItemChange={handleItemChange}
                     onRemove={handleRemove}
                     toEdit={true}
                     // className={ snowApproved ? "!hidden" : "" }

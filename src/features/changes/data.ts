@@ -8,6 +8,34 @@ export type ChangeEntry = {
 
 export const changes: ChangeEntry[] = [
     {
+        id: "supply-orders-franchisor-badges-and-shortage-tooltip",
+        title: "Supply orders franchisor badges.",
+        date: "2026-04-01",
+        area: "Supply Orders",
+        summary: "Sa SUPPLY ORDERS pending page po, yung SHORT at READY badges ay visible na lang po for FRANCHISOR. Kapag FRANCHISEE naman po, STATUS badge lang po ang makikita. Meron na rin pong indicator upon viewing ng supply orders kapag may shortage na item ang isang PO. Kapag hinover po yung short indicator ng PO, lalabas po yung SHORTAGE ON STOCK TODAY at SHORTAGE FOR EXPECTED DELIVERY per item.",
+    },
+    {
+        id: "supply-orders-custom-other-items",
+        title: "Custom other items in PO.",
+        date: "2026-04-01",
+        area: "Supply Orders",
+        summary: "Yung mga custom OTHER ITEMS na ina-add habang nag o-order under MEAT at SNOW, sinama na rin po namin sa PO. Note lang din po na yung OTHER ITEMS na ito ay nasa PO lang po at hindi po sila included sa SALES.",
+    },
+    {
+        id: "supply-orders-po-number-by-expected-delivery",
+        title: "PO number auto-adjust by delivery date.",
+        date: "2026-04-01",
+        area: "Supply Orders",
+        summary: "Sa PO po, kapag nagseset ng EXPECTED DELIVERY, automatic na pong nag-aadjust yung PO NUMBER based sa expected delivery date na na-specify.",
+    },
+    {
+        id: "inventory-transaction-summary-sorting-and-date-guard",
+        title: "Transaction summary sorting.",
+        date: "2026-04-01",
+        area: "Inventory",
+        summary: "Sa TRANSACTION SUMMARY page po, meron na pong sorting option tulad ng nasa INVENTORY REPORT BREAKDOWN. Pwede na po mag-sort by ALPHABETICAL, TOTAL IN, at TOTAL OUT. Sa UPDATE INVENTORY naman po, disabled na rin po ngayon yung future dates sa EFFECTIVE DATE picker.",
+    },
+    {
         id: "inventory-effective-date",
         title: "Inventory effective date.",
         date: "2026-03-26",

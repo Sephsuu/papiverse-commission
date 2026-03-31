@@ -7,10 +7,28 @@ const url = `${BASE_URL}/supply-order`;
 const meatUrl = `${BASE_URL}/meat-order`
 const snowUrl = `${BASE_URL}/snow-order`
 
+function mapCategoryItems(items: SupplyItem[]) {
+    return items.map((item) => {
+        if (item.isOther) {
+            return {
+                isOther: true,
+                name: item.name,
+                quantity: Number(item.quantity) || 0,
+                unitPrice: Number(item.unitPrice) || 0,
+            };
+        }
+
+        return {
+            sku: item.sku,
+            quantity: Number(item.quantity) || 0,
+        };
+    });
+}
+
 export class SupplyOrderService {
-    static async getAllSupply(start: string, end: string) {
+    static async getAllSupply(start: string, end: string, type: string) {
         return await requestData(
-            `${url}/get-all?start=${start}&end=${end}`, 
+            `${url}/get-all?start=${start}&end=${end}&type=${type}`, 
             "GET"
         );
     }
@@ -50,21 +68,27 @@ export class SupplyOrderService {
         );
     }
 
-    static async createMeatOrder(meat: object) {
+    static async createMeatOrder(meat: { id: string; branchId: number; categoryItems: SupplyItem[] }) {
         return await requestData(
             `${meatUrl}/create`,
             'POST',
             undefined,
-            meat
+            {
+                ...meat,
+                categoryItems: mapCategoryItems(meat.categoryItems),
+            }
         )
     }
 
-    static async createSnowOrder(snow: object) {
+    static async createSnowOrder(snow: { id: string; branchId: number; categoryItems: SupplyItem[] }) {
         return await requestData(
             `${snowUrl}/create`,
             'POST',
             undefined,
-            snow
+            {
+                ...snow,
+                categoryItems: mapCategoryItems(snow.categoryItems),
+            }
         )
     }
 
@@ -181,7 +205,7 @@ export class SupplyOrderService {
     static async updateMeatOrder(meatOrder: SupplyItem[], id: string) {
         const payload = {
             id: id,
-            categoryItems: meatOrder,
+            categoryItems: mapCategoryItems(meatOrder),
         };
 
         return await requestData(
@@ -195,7 +219,7 @@ export class SupplyOrderService {
     static async updateSnowOrder(snowOrder: SupplyItem[], id: string) {
         const payload = {
             id: id,
-            categoryItems: snowOrder,
+            categoryItems: mapCategoryItems(snowOrder),
         };
 
         return await requestData(

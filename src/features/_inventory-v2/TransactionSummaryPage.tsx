@@ -1,7 +1,8 @@
 "use client"
 
+import { AppSelect } from "@/components/shared/AppSelect";
 import { AppHeader } from "@/components/shared/AppHeader";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CalendarDays, LayoutList, TrendingDown, TrendingUp } from "lucide-react";
 import { formatDateToWords } from "@/lib/formatter";
 import { useFetchOne } from "@/hooks/use-fetch-one";
@@ -29,6 +30,12 @@ const columns = [
 ]
 
 const filters = ['All', 'Meat', 'Snow Frost'];
+const sorts = [
+    { label: "Alphabetical", value: "name_asc" },
+    { label: "By Total In", value: "total_in_desc" },
+    { label: "By Total Out", value: "total_out_desc" },
+] as const;
+type SortKey = (typeof sorts)[number]["value"];
 
 export function TransactionSummaryPage() {
     const { today } = useToday();
@@ -37,6 +44,7 @@ export function TransactionSummaryPage() {
     const [selectedItem, setSelectedItem] = useState<InventoryTransactionSummaryItem | undefined>();
     const [toggleDate, setToggleDate] = useState(false);
     const [filter, setFilter] = useState(filters[0]);
+    const [sort, setSort] = useState<SortKey>("name_asc");
 
     const parsedDate = selectedDate ? new Date(selectedDate) : null;
     const displayDate = parsedDate
@@ -57,31 +65,38 @@ export function TransactionSummaryPage() {
         ["name", "sku"]
     );
 
-    const filteredData = filteredItems.filter(i => {
-        if (filter === 'Meat') return i.category === 'MEAT';
-        if (filter === 'Snow Frost') return i.category === 'SNOWFROST';
-        return true;
-    });  
+    const filteredData = useMemo(() => {
+        return filteredItems.filter(i => {
+            if (filter === 'Meat') return i.category === 'MEAT';
+            if (filter === 'Snow Frost') return i.category === 'SNOWFROST';
+            return true;
+        });
+    }, [filter, filteredItems]);
 
-    const { size, setSize, page, setPage, paginated } = usePagination(filteredData, 20);
+    const sortedData = useMemo(() => {
+        const items = [...filteredData];
+
+        if (sort === "name_asc") {
+            items.sort((a, b) => a.name.localeCompare(b.name));
+            return items;
+        }
+
+        if (sort === "total_in_desc") {
+            items.sort((a, b) => b.totalIn - a.totalIn);
+            return items;
+        }
+
+        items.sort((a, b) => b.totalOut - a.totalOut);
+        return items;
+    }, [filteredData, sort]);
+
+    const { size, setSize, page, setPage, paginated } = usePagination(sortedData, 20);
 
     if (loadingTransactions || !transactions) return <PapiverseLoading />
 
     return (
         <section className="stack-md animate-fade-in-up overflow-hidden max-md:mt-12">
             <AppHeader label="Inventory Transaction Summary" />
-
-            <TableFilter
-                setSearch={ setSearch }
-                searchPlaceholder="Search for a supply"
-                buttonLabel="Add a user"
-                size={ size }
-                setSize={ setSize }
-                filters={filters}
-                filter={filter}
-                setFilter={setFilter}
-                removeAdd
-            />
 
             <div className="flex-center-y justify-between">
                 <div className="text-xl font-semibold">
@@ -101,6 +116,27 @@ export function TransactionSummaryPage() {
                         {displayBadge}
                     </Badge>
                 </div>
+            </div>
+
+            <div className="flex-center-y gap-2">
+                <TableFilter
+                    className="w-full"
+                    setSearch={ setSearch }
+                    searchPlaceholder="Search for a supply"
+                    buttonLabel="Add a user"
+                    size={ size }
+                    setSize={ setSize }
+                    filters={filters}
+                    filter={filter}
+                    setFilter={setFilter}
+                    removeAdd
+                />
+                <AppSelect
+                    triggerClassName="bg-light shadow-xs border-input"
+                    items={[...sorts]}
+                    value={sort}
+                    onChange={(value) => setSort(value as SortKey)}
+                />
             </div>
 
             <div className="table-wrapper">
@@ -186,7 +222,7 @@ export function TransactionSummaryPage() {
             </div>
 
             <TablePagination 
-                data={transactions!.summary}
+                data={sortedData}
                 paginated={paginated}
                 page={page}
                 setPage={setPage}

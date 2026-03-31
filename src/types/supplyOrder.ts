@@ -1,24 +1,54 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+export const OTHER_ITEM_KEY: unique symbol = Symbol("otherItemKey");
+export const OTHER_ITEM_CATEGORY: unique symbol = Symbol("otherItemCategory");
+
+export interface LowStockItem {
+    rawMaterialId: number;
+    rawMaterialCode: string;
+    rawMaterialName: string;
+    unitMeasurement: string;
+    requiredQuantity: number;
+    availableQuantity: number;
+    shortageQuantity: number;
+    expectedDeliveryDate?: string;
+    expectedDateAvailableQuantity?: number;
+    expectedDateShortageQuantity?: number;
+}
+
+export interface OtherCategoryItem {
+    itemName: string;
+    quantity: number;
+    sourceCategory: string;
+    totalPrice: number;
+    unitPrice: number;
+}
+
 export interface SupplyOrder {
     orderId?: number;
     branchName: string;
+    branchId?: number;
     orderDate: string;
     status: string;
     remarks: string;
     deliveryFee: number;
+    deliveryType: string;
     completeOrderTotalAmount: number;
+    internalShipment: boolean;
+    expectedDelivery: string;
+    message?: string | null;
 
     meatCategory?: {
         meatOrderId: string;
         isApproved: boolean;
         categoryTotal: number;
         meatItems: {
-            rawMaterialCode: string;
-            rawMaterialName: string;
-            unitMeasurement: string;
+            rawMaterialCode?: string;
+            rawMaterialName?: string;
+            unitMeasurement?: string;
             quantity: number;
             price: number;
+            isOther?: boolean;
         } []
     }
 
@@ -27,12 +57,18 @@ export interface SupplyOrder {
         isApproved: boolean;
         categoryTotal: number;
         snowFrostItems: {
-            rawMaterialCode: string;
-            rawMaterialName: string;
-            unitMeasurement: string;
+            rawMaterialCode?: string;
+            rawMaterialName?: string;
+            unitMeasurement?: string;
             quantity: number;
             price: number;
+            isOther?: boolean;
         } []
+    }
+
+    othersCategory?: {
+        othersItems: OtherCategoryItem[];
+        othersTotal: number;
     }
 
     order?: {
@@ -40,23 +76,22 @@ export interface SupplyOrder {
         orderDestination: string;
     }
 
-    internalShipment: boolean;
-    expectedDelivery: string;
-    deliveryType: string
+    lowStocks?: LowStockItem[];
 }
 
 export interface SupplyItem {
-    id?: number;
     category?: string;        
     sku?: string;          
     name?: string;           
+    isOther?: boolean;
     quantity?: any;        
     unitMeasurement?: string; 
     convertedMeasurement?: string;
     unitPrice?: number;
     unitQuantity?: number;
-    type?: string;
     forTakeOut?: boolean;
+    [OTHER_ITEM_KEY]?: string;
+    [OTHER_ITEM_CATEGORY]?: string;
 }
 
 export interface CompleteOrder {

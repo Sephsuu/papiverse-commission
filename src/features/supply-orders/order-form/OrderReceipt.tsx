@@ -14,7 +14,7 @@ import { SupplyOrderService } from "@/services/supplyOrder.service";
 
 import { Claim } from "@/types/claims";
 import { Delivery } from "@/types/delivery";
-import { SupplyItem } from "@/types/supplyOrder";
+import { OTHER_ITEM_CATEGORY, SupplyItem } from "@/types/supplyOrder";
 import { Ham, Snowflake, SquarePen } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -26,6 +26,13 @@ import { AppSelect } from "@/components/shared/AppSelect";
 
 type DeliveryType = "" | "DELIVERY" | "LALAMOVE" | "PICKUP";
 const tabs = ['Meat Commissary', 'Snowfrost Commissary']
+
+function getItemCategory(item: SupplyItem) {
+    if (item.category) return item.category;
+    if (item.isOther && item[OTHER_ITEM_CATEGORY]) return item[OTHER_ITEM_CATEGORY];
+
+    return undefined;
+}
 
 export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
     claims: Claim;
@@ -49,13 +56,13 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
     );
 
     const meatReceipt =
-        selectedItems.filter((s) => s.category === "MEAT").length > 0
-            ? selectedItems.filter((s) => s.category === "MEAT")
+        selectedItems.filter((s) => getItemCategory(s) === "MEAT").length > 0
+            ? selectedItems.filter((s) => getItemCategory(s) === "MEAT")
             : null;
 
     const snowFrostReceipt =
-        selectedItems.filter((s) => s.category === "SNOWFROST").length > 0
-            ? selectedItems.filter((s) => s.category === "SNOWFROST")
+        selectedItems.filter((s) => getItemCategory(s) === "SNOWFROST").length > 0
+            ? selectedItems.filter((s) => getItemCategory(s) === "SNOWFROST")
             : null;
 
 
@@ -82,12 +89,27 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
                 return toast.warning("Delivery fee is unavailable for your branch.")
             }
 
+            const invalidCustomItem = selectedItems.find((item) =>
+                item.isOther && (
+                    !item.name?.trim() ||
+                    !item.quantity ||
+                    item.quantity <= 0 ||
+                    !item.unitPrice ||
+                    item.unitPrice <= 0
+                )
+            );
+
+            if (invalidCustomItem) {
+                return toast.warning("Please complete all custom item details before submitting the order.");
+            }
+
             let meatFinal: { id: string } | null = null;
             let snowFinal: { id: string } | null = null;
 
             if (meatReceipt && meatReceipt.length > 0) {
                 const meatOrder = {
                     id: "",
+                    expectedDelivery: expDel,
                     branchId: claims.branch.branchId,
                     categoryItems: meatReceipt,
                 };
@@ -97,6 +119,7 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
             if (snowFrostReceipt && snowFrostReceipt.length > 0) {
                 const snowOrder = {
                     id: "",
+                    expectedDelivery: expDel,
                     branchId: claims.branch.branchId,
                     categoryItems: snowFrostReceipt,
                 };
@@ -297,7 +320,7 @@ function Orders({ claims, tab, orders, delivery, deliveryLoading, meatTotal, sno
                             <div className="td mx-auto">{ index + 1 }</div>
                             <div className="td">{ supply.name }</div>
                             <div className="td text-center">{ supply.quantity }</div>
-                            <div className="td">{ supply.unitMeasurement }</div>
+                            <div className="td">{ supply.isOther ? "-" : supply.unitMeasurement }</div>
                             <div className="td">{ formatToPeso(supply.unitPrice!) }</div>
                             <div className="td">{ formatToPeso(supply.unitPrice! * supply.quantity!) }</div>
                         </div>  

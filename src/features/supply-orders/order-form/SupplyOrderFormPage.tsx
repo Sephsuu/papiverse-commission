@@ -16,7 +16,16 @@ export function SupplyOrderFormPage() {
     const { claims, loading: authLoading } = useAuth();
     const { data, loading, error } = useFetchData<Supply>(SupplyService.getDeliverableSupplies);
     
-    const { supplies, selectedItems, handleSelect, handleQuantityChange, handleRemove } = useSupplySelection(claims, data);
+    const {
+        supplies,
+        selectedItems,
+        handleSelect,
+        handleAddCustomItem,
+        getItemCategory,
+        handleItemChange,
+        handleQuantityChange,
+        handleRemove,
+    } = useSupplySelection(claims, data);
     
     const [tab, setTab] = useState('meat');
     
@@ -26,7 +35,10 @@ export function SupplyOrderFormPage() {
         selectedItems={ selectedItems }
         setActiveForm={ setTab }
         onSelect={ handleSelect }
+        onAddCustomItem={ handleAddCustomItem }
+        getItemCategory={ getItemCategory }
         onQuantityChange={ handleQuantityChange }
+        onItemChange={ handleItemChange }
         onRemove={ handleRemove }
     />
 
@@ -35,7 +47,10 @@ export function SupplyOrderFormPage() {
         selectedItems={ selectedItems }
         setActiveForm={ setTab }
         onSelect={ handleSelect }
+        onAddCustomItem={ handleAddCustomItem }
+        getItemCategory={ getItemCategory }
         onQuantityChange={ handleQuantityChange }
+        onItemChange={ handleItemChange }
         onRemove={ handleRemove }
     />
 

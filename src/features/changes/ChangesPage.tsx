@@ -1,9 +1,11 @@
 "use client";
 
 import { AppHeader } from "@/components/shared/AppHeader";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useMemo, useState } from "react";
 import { changes } from "./data";
+import { BadgeCheck } from "lucide-react";
 
 export function ChangesPage() {
     const tabs = useMemo(
@@ -55,9 +57,17 @@ export function ChangesPage() {
                                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                                     Change {index + 1}
                                 </div>
-                                <h2 className="mt-1 text-lg font-semibold text-darkbrown">
-                                    {change.title}
-                                </h2>
+                                <div className="mt-1 flex flex-wrap items-center gap-2">
+                                    <h2 className="text-lg font-semibold text-darkbrown">
+                                        {change.title}
+                                    </h2>
+                                    {changes.findIndex((item) => item.id === change.id) < 4 && (
+                                        <Badge className="rounded-full border border-green-200 bg-green-50 px-3 py-1 text-[10px] font-bold tracking-[0.18em] text-darkgreen shadow-sm">
+                                            <BadgeCheck className="h-3 w-3 text-darkgreen" />
+                                            NEW
+                                        </Badge>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="text-right">

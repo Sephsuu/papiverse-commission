@@ -16,7 +16,7 @@ import { formatCompactNumber, formatDateToWords, formatToPeso } from "@/lib/form
 import { InventoryService } from "@/services/inventory.service";
 import { SupplyOrderService } from "@/services/supplyOrder.service"
 import { Inventory } from "@/types/inventory";
-import { SupplyOrder } from "@/types/supplyOrder"
+import { OTHER_ITEM_CATEGORY, OTHER_ITEM_KEY, SupplyOrder } from "@/types/supplyOrder"
 import { ArrowLeft, CalendarSync, Ham, MoveRight, ShoppingCart, Snowflake, SquarePen, Truck } from "lucide-react";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
@@ -41,6 +41,9 @@ const columns = [
     { title: 'Unit Price', style: '' },
     { title: 'Total Amount', style: '' },
 ]
+
+const mapOtherCategory = (sourceCategory: string) =>
+    sourceCategory === "MEAT" ? "MEAT" : "SNOWFROST";
 
 export function ViewOrderPage({ id }: { id: number }) {
     const [reload, setReload] = useState(false);
@@ -109,6 +112,34 @@ export function ViewOrderPage({ id }: { id: number }) {
 
     const hasSnowfrost = Boolean(data?.snowfrostCategory);
     const hasMeat = Boolean(data?.meatCategory);
+    const meatOtherItems = (data?.othersCategory?.othersItems ?? []).filter(
+        (item) => mapOtherCategory(item.sourceCategory) === "MEAT"
+    );
+    const snowOtherItems = (data?.othersCategory?.othersItems ?? []).filter(
+        (item) => mapOtherCategory(item.sourceCategory) === "SNOWFROST"
+    );
+    const meatOrderRows = [
+        ...(data?.meatCategory?.meatItems ?? []),
+        ...meatOtherItems.map((item) => ({
+            rawMaterialCode: "OTHER",
+            rawMaterialName: item.itemName,
+            unitMeasurement: "",
+            quantity: item.quantity,
+            price: item.unitPrice,
+            isOther: true,
+        })),
+    ];
+    const snowOrderRows = [
+        ...(data?.snowfrostCategory?.snowFrostItems ?? []),
+        ...snowOtherItems.map((item) => ({
+            rawMaterialCode: "OTHER",
+            rawMaterialName: item.itemName,
+            unitMeasurement: "",
+            quantity: item.quantity,
+            price: item.unitPrice,
+            isOther: true,
+        })),
+    ];
 
     const hasMissingCategory = !hasSnowfrost || !hasMeat;
 
@@ -152,22 +183,48 @@ export function ViewOrderPage({ id }: { id: number }) {
         deliveryType={data?.deliveryType ?? ""}
         expectedDelivery={data?.expectedDelivery ?? ""}
         toEditItems={[
-            ...(data?.meatCategory?.meatItems ?? []).map((item) => ({
+            ...(data?.meatCategory?.meatItems ?? []).map((item, index) => ({
                 sku: item.rawMaterialCode,
                 quantity: item.quantity,
                 name: item.rawMaterialName,
                 unitMeasurement: item.unitMeasurement,
                 unitPrice: item.price,
-                category: "MEAT"
+                category: item.rawMaterialCode ? "MEAT" : undefined,
+                isOther: item.isOther || !item.rawMaterialCode,
+                [OTHER_ITEM_KEY]: item.rawMaterialCode ? undefined : `edit-meat-${index}`,
+                [OTHER_ITEM_CATEGORY]: item.rawMaterialCode ? undefined : "MEAT",
             })),
-            ...(data?.snowfrostCategory?.snowFrostItems ?? []).map((item) => ({
+            ...(data?.othersCategory?.othersItems ?? [])
+                .filter((item) => mapOtherCategory(item.sourceCategory) === "MEAT")
+                .map((item, index) => ({
+                    name: item.itemName,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    isOther: true,
+                    [OTHER_ITEM_KEY]: `edit-other-meat-${index}`,
+                    [OTHER_ITEM_CATEGORY]: "MEAT",
+                })),
+            ...(data?.snowfrostCategory?.snowFrostItems ?? []).map((item, index) => ({
                 sku: item.rawMaterialCode,
                 quantity: item.quantity,
                 name: item.rawMaterialName,
                 unitMeasurement: item.unitMeasurement,
                 unitPrice: item.price,
-                category: "SNOWFROST"
+                category: item.rawMaterialCode ? "SNOWFROST" : undefined,
+                isOther: item.isOther || !item.rawMaterialCode,
+                [OTHER_ITEM_KEY]: item.rawMaterialCode ? undefined : `edit-snow-${index}`,
+                [OTHER_ITEM_CATEGORY]: item.rawMaterialCode ? undefined : "SNOWFROST",
             })),
+            ...(data?.othersCategory?.othersItems ?? [])
+                .filter((item) => mapOtherCategory(item.sourceCategory) === "SNOWFROST")
+                .map((item, index) => ({
+                    name: item.itemName,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    isOther: true,
+                    [OTHER_ITEM_KEY]: `edit-other-snow-${index}`,
+                    [OTHER_ITEM_CATEGORY]: "SNOWFROST",
+                })),
         ]}
         setReload={setReload}
     />
@@ -347,9 +404,9 @@ export function ViewOrderPage({ id }: { id: number }) {
                         ))}
                     </div>
                     {tab === tabs[0] ? (
-                        data?.meatCategory ? (
+                        meatOrderRows.length > 0 ? (
                             <OrdersCard
-                                orders={data.meatCategory.meatItems}
+                                orders={meatOrderRows}
                                 inventories={inventories?.inventories ?? []}
                                 isFranchisor={isFranchisor}
                             />
@@ -357,9 +414,9 @@ export function ViewOrderPage({ id }: { id: number }) {
                             <EmptyState message="No meat items in this order" />
                         )
                         ) : (
-                        data?.snowfrostCategory ? (
+                        snowOrderRows.length > 0 ? (
                             <OrdersCard
-                            orders={data.snowfrostCategory.snowFrostItems}
+                            orders={snowOrderRows}
                             inventories={inventories?.inventories ?? []}
                             isFranchisor={isFranchisor}
                             />
@@ -373,6 +430,9 @@ export function ViewOrderPage({ id }: { id: number }) {
                 </div>
                 <div className="text-gray text-sm text-end mx-4 mt-2">
                     Snowfrost Order <span className="font-semibold text-dark">+ { data?.snowfrostCategory ?formatToPeso(data!.snowfrostCategory!.categoryTotal) : formatToPeso(0) }</span>
+                </div>
+                <div className="text-gray text-sm text-end mx-4 mt-2">
+                    Other Items <span className="font-semibold text-dark">+ { data?.othersCategory ? formatToPeso(data.othersCategory.othersTotal) : formatToPeso(0) }</span>
                 </div>
                 <div className="text-gray text-sm text-end mx-4 mt-2">
                     Delivery Fee 
