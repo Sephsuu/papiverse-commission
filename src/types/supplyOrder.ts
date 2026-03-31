@@ -80,6 +80,7 @@ export interface SupplyOrder {
 }
 
 export interface SupplyItem {
+    id?: number;
     category?: string;        
     sku?: string;          
     name?: string;           
@@ -89,6 +90,7 @@ export interface SupplyItem {
     convertedMeasurement?: string;
     unitPrice?: number;
     unitQuantity?: number;
+    type?: string;
     forTakeOut?: boolean;
     [OTHER_ITEM_KEY]?: string;
     [OTHER_ITEM_CATEGORY]?: string;
