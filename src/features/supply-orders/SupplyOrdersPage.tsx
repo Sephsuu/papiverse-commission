@@ -22,7 +22,7 @@ import { useCrudState } from "@/hooks/use-crud-state";
 import { NotificationSheet } from "@/components/shared/NotificationSheet";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays } from "lucide-react";
-import { endOfMonth, format, isAfter, startOfMonth } from "date-fns";
+import { endOfMonth, format, startOfMonth } from "date-fns";
 import { SupplyOrdersDatePicker, SupplyOrdersPeriodMode } from "./components/SupplyOrdersDatePicker";
 
 const tabs = ['Pending', 'Completed']
@@ -49,11 +49,7 @@ export function SupplyOrdersPage() {
     const { open, setOpen, showNotif, setShowNotif } = useCrudState();
     const now = new Date();
     const defaultStartDate = format(startOfMonth(now), "yyyy-MM-dd");
-    const currentMonthEnd = endOfMonth(now);
-    const defaultEndDate = format(
-        isAfter(currentMonthEnd, now) ? now : currentMonthEnd,
-        "yyyy-MM-dd"
-    );
+    const defaultEndDate = format(endOfMonth(now), "yyyy-MM-dd");
     const [date, setDate] = useState(defaultStartDate);
     const [endDate, setEndDate] = useState(defaultEndDate);
     const [periodMode, setPeriodMode] = useState<SupplyOrdersPeriodMode>("MONTH"); 

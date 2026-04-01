@@ -66,8 +66,8 @@ export function SupplyOrdersDatePicker({
         }
 
         const start = startOfMonth(periodAnchor);
-        const rawEnd = endOfMonth(periodAnchor);
-        return { start, end: isAfter(rawEnd, today) ? today : rawEnd };
+        const end = endOfMonth(periodAnchor);
+        return { start, end };
     }, [periodAnchor, periodMode, today]);
 
     const rangeLabel = useMemo(() => {
