@@ -8,6 +8,7 @@ export function useSupplySelection(claims: Claim, supplyItems: Supply[]) {
     const [selectedItems, setSelectedItems] = useState<SupplyItem[]>([]);
 
     function getItemKey(item: SupplyItem) {
+        if (item.isOther) return item[OTHER_ITEM_KEY] ?? item.sku ?? "";
         return item.sku ?? item[OTHER_ITEM_KEY] ?? "";
     }
 
@@ -31,7 +32,7 @@ export function useSupplySelection(claims: Claim, supplyItems: Supply[]) {
     }, [supplyItems, claims.branch.isInternal]);
 
     const handleSelect = async (sku: string) => {
-        if (!selectedItems.find((item: SupplyItem) => item.sku === sku)) {
+        if (!selectedItems.find((item: SupplyItem) => !item.isOther && item.sku === sku)) {
             const selectedItem = supplies.find((item) => item.sku === sku);
             if (selectedItem) {
                 setSelectedItems((prev) => [
@@ -59,6 +60,7 @@ export function useSupplySelection(claims: Claim, supplyItems: Supply[]) {
             {
                 isOther: true,
                 name: "",
+                customItemType: "OTHER",
                 quantity: 1,
                 unitPrice: 0,
                 [OTHER_ITEM_KEY]: customKey,

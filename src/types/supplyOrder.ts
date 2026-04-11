@@ -2,6 +2,7 @@
 
 export const OTHER_ITEM_KEY: unique symbol = Symbol("otherItemKey");
 export const OTHER_ITEM_CATEGORY: unique symbol = Symbol("otherItemCategory");
+export type CustomItemType = "OTHER" | "REPLACEMENT" | "LACKING";
 
 export interface LowStockItem {
     rawMaterialId: number;
@@ -18,6 +19,7 @@ export interface LowStockItem {
 
 export interface OtherCategoryItem {
     itemName: string;
+    rawMaterialCode?: string;
     quantity: number;
     sourceCategory: string;
     totalPrice: number;
@@ -85,6 +87,7 @@ export interface SupplyItem {
     sku?: string;          
     name?: string;           
     isOther?: boolean;
+    customItemType?: CustomItemType;
     quantity?: any;        
     unitMeasurement?: string; 
     convertedMeasurement?: string;

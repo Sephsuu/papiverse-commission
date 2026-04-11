@@ -1,6 +1,7 @@
 "use client";
 
 import { AppHeader } from "@/components/shared/AppHeader";
+import { AppSelect } from "@/components/shared/AppSelect";
 import { Button } from "@/components/ui/button";
 import {
     Command,
@@ -18,7 +19,7 @@ import { useSearchFilter } from "@/hooks/use-search-filter";
 import { parseOptionalDecimal, sanitizeDecimalInput } from "@/lib/decimal-input";
 import { formatToPeso } from "@/lib/formatter";
 import { Supply } from "@/types/supply";
-import { OTHER_ITEM_KEY, SupplyItem } from "@/types/supplyOrder";
+import { CustomItemType, OTHER_ITEM_KEY, SupplyItem } from "@/types/supplyOrder";
 import { Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -60,9 +61,27 @@ export function MeatOrder({
     className,
 }: Props) {
     const [open, setOpen] = useState(false);
+    const customItemTypeOptions: { label: string; value: CustomItemType }[] = [
+        { label: "OTHER", value: "OTHER" },
+        { label: "REPLACEMENT", value: "REPLACEMENT" },
+        { label: "LACKING", value: "LACKING" },
+    ];
 
     function getItemKey(item: SupplyItem) {
+        if (item.isOther) return item[OTHER_ITEM_KEY] ?? item.sku ?? "";
         return item.sku ?? item[OTHER_ITEM_KEY] ?? "";
+    }
+
+    function getGeneratedCustomName(type: CustomItemType, supplyName?: string) {
+        if (!supplyName) return "";
+        const prefix = type === "LACKING" ? "Lacking" : "Replacement";
+        return `${prefix} ${supplyName}`;
+    }
+
+    function getResolvedCustomItemType(item: SupplyItem): CustomItemType {
+        if (item.name?.toUpperCase().startsWith("LACKING")) return "LACKING";
+        if (item.name?.toUpperCase().startsWith("REPLACEMENT")) return "REPLACEMENT";
+        return item.customItemType ?? "OTHER";
     }
 
     const meatItems = useMemo(
@@ -100,7 +119,7 @@ export function MeatOrder({
         });
     }, [meatItems]);
 
-    const selectedSkus = new Set(meatItems.map((i) => i.sku).filter(Boolean));
+    const selectedSkus = new Set(meatItems.filter((i) => !i.isOther).map((i) => i.sku).filter(Boolean));
 
     const availableSupplies = supplies.filter(
         (s) => !selectedSkus.has(s.sku)
@@ -109,14 +128,12 @@ export function MeatOrder({
     const { search, setSearch, filteredItems: filteredSupplies } =
         useSearchFilter(availableSupplies, ["name", "sku"]);
 
+    const { filteredItems: filteredParentSupplies } =
+        useSearchFilter(supplies, ["name", "sku"]);
+
     const handleSubmit = () => {
         setActiveForm("snow");
     };
-
-    useEffect(() => {
-        console.log(selectedItems);
-        
-    }, [selectedItems])
 
     return (
         <section
@@ -139,10 +156,41 @@ export function MeatOrder({
 
                 {meatItems.map((item) => {
                     const itemKey = getItemKey(item);
+                    const resolvedCustomItemType = getResolvedCustomItemType(item);
 
                     return (
                         <div className="tdata grid grid-cols-8 max-md:w-250!" key={itemKey}>
-                            <div className="td">{item.isOther ? "OTHER" : item.sku}</div>
+                            <div className="td">
+                                {item.isOther ? (
+                                    <AppSelect
+                                        items={customItemTypeOptions}
+                                        value={resolvedCustomItemType}
+                                        onChange={(value) => {
+                                            const nextType = value as CustomItemType;
+                                            onItemChange(itemKey, nextType === "OTHER"
+                                                ? {
+                                                    customItemType: "OTHER",
+                                                    sku: undefined,
+                                                    name: "",
+                                                    unitMeasurement: undefined,
+                                                    unitQuantity: undefined,
+                                                    unitPrice: 0,
+                                                }
+                                                : {
+                                                    customItemType: nextType,
+                                                    sku: undefined,
+                                                    name: "",
+                                                    unitMeasurement: undefined,
+                                                    unitQuantity: undefined,
+                                                    unitPrice: 0,
+                                                }
+                                            );
+                                        }}
+                                        triggerClassName="border-0 px-2 bg-white"
+                                        className="w-full"
+                                        hideIcon
+                                    />
+                                ) : item.sku}</div>
 
                             <div className="td p-0!">
                                 <Input
@@ -172,40 +220,80 @@ export function MeatOrder({
 
                             <div className="td col-span-2">
                                 {item.isOther ? (
-                                    <Input
-                                        value={item.name ?? ""}
-                                        onChange={(e) => onItemChange(itemKey, { name: e.target.value })}
-                                        placeholder="Other item name"
-                                        className="border border-slate-200"
-                                    />
+                                    resolvedCustomItemType === "OTHER" ? (
+                                        <Input
+                                            value={item.name ?? ""}
+                                            onChange={(e) => onItemChange(itemKey, { name: e.target.value })}
+                                            placeholder="Other item name"
+                                            className="border border-slate-200"
+                                        />
+                                    ) : (
+                                        <AppSelect
+                                            items={filteredParentSupplies.map((supply) => ({
+                                                label: `${resolvedCustomItemType === "LACKING" ? "Lacking" : "Replacement"} ${supply.name}`,
+                                                value: supply.sku ?? "",
+                                            }))}
+                                            value={item.sku ?? ""}
+                                            onChange={(value) => {
+                                                const selectedSupply = supplies.find((supply) => supply.sku === value);
+                                                if (!selectedSupply) return;
+
+                                                onItemChange(itemKey, {
+                                                    sku: selectedSupply.sku,
+                                                    name: getGeneratedCustomName(resolvedCustomItemType, selectedSupply.name),
+                                                    unitMeasurement: selectedSupply.unitMeasurement,
+                                                    unitQuantity: selectedSupply.unitQuantity,
+                                                    unitPrice: 0,
+                                                });
+                                            }}
+                                            placeholder="Select parent inventory"
+                                            triggerClassName="border-0 px-2 bg-white"
+                                            className="w-full"
+                                        />
+                                    )
                                 ) : (
                                     item.name
                                 )}
                             </div>
                             <div className="td">
-                                {item.isOther ? "-" : `${item.unitQuantity ?? ""} ${item.unitMeasurement ?? ""}`}
+                                {item.isOther
+                                    ? resolvedCustomItemType === "OTHER"
+                                        ? "-"
+                                        : item.unitMeasurement ?? ""
+                                    : `${item.unitQuantity ?? ""} ${item.unitMeasurement ?? ""}`}
                             </div>
                             <div className="td">
                                 {item.isOther ? (
-                                    <div className="relative">
-                                        <div className="absolute top-2 left-2">₱</div>
-                                        <Input
-                                            type="text"
-                                            inputMode="decimal"
-                                            pattern="[0-9]*([.,][0-9]{0,3})?"
-                                            value={unitPriceInputs[itemKey] ?? String(item.unitPrice ?? "")}
-                                            onChange={(e) => {
-                                                const value = sanitizeDecimalInput(e.target.value, 3);
-                                                setUnitPriceInputs((prev) => ({
-                                                    ...prev,
-                                                    [itemKey]: value,
-                                                }));
-                                                onItemChange(itemKey, { unitPrice: parseOptionalDecimal(value) ?? 0 });
-                                            }}
-                                            placeholder="0"
-                                            className="border border-slate-200 pl-4.5"
-                                        />
-                                    </div>
+                                    resolvedCustomItemType === "OTHER" ? (
+                                        <div className="relative">
+                                            <div className="absolute top-2 left-2">₱</div>
+                                            <Input
+                                                type="text"
+                                                inputMode="decimal"
+                                                pattern="[0-9]*([.,][0-9]{0,3})?"
+                                                value={unitPriceInputs[itemKey] ?? String(item.unitPrice ?? "")}
+                                                onChange={(e) => {
+                                                    const value = sanitizeDecimalInput(e.target.value, 3);
+                                                    setUnitPriceInputs((prev) => ({
+                                                        ...prev,
+                                                        [itemKey]: value,
+                                                    }));
+                                                    onItemChange(itemKey, { unitPrice: parseOptionalDecimal(value) ?? 0 });
+                                                }}
+                                                placeholder="0"
+                                                className="border border-slate-200 pl-4.5"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="relative">
+                                            <div className="absolute top-2 left-2">₱</div>
+                                            <Input
+                                                value="0"
+                                                disabled
+                                                className="pl-4.5 border border-slate-200 bg-slate-100"
+                                            />
+                                        </div>
+                                    )
                                 ) : (
                                     formatToPeso(item.unitPrice!)
                                 )}

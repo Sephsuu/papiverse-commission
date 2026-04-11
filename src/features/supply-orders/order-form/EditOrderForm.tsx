@@ -102,11 +102,13 @@ export function EditOrderForm({ setEdit, toEditItems, orderId, meatId, snowId, s
 
             const invalidCustomItem = selectedItems.find((item) =>
                 item.isOther && (
-                    !item.name?.trim() ||
                     !item.quantity ||
                     item.quantity <= 0 ||
-                    !item.unitPrice ||
-                    item.unitPrice <= 0
+                    (
+                        (item.customItemType ?? "OTHER") === "OTHER"
+                            ? (!item.name?.trim() || !item.unitPrice || item.unitPrice <= 0)
+                            : !item.sku
+                    )
                 )
             );
 

@@ -10,6 +10,17 @@ const snowUrl = `${BASE_URL}/snow-order`
 function mapCategoryItems(items: SupplyItem[]) {
     return items.map((item) => {
         if (item.isOther) {
+            if (item.customItemType && item.customItemType !== "OTHER") {
+                return {
+                    isOther: true,
+                    name: item.name,
+                    excludeFormSales: true,
+                    sku: item.sku,
+                    quantity: Number(item.quantity) || 0,
+                    unitPrice: 0,
+                };
+            }
+
             return {
                 isOther: true,
                 name: item.name,

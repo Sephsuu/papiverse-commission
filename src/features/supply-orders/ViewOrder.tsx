@@ -16,7 +16,7 @@ import { formatCompactNumber, formatDateToWords, formatToPeso } from "@/lib/form
 import { InventoryService } from "@/services/inventory.service";
 import { SupplyOrderService } from "@/services/supplyOrder.service"
 import { Inventory } from "@/types/inventory";
-import { OTHER_ITEM_CATEGORY, OTHER_ITEM_KEY, SupplyOrder } from "@/types/supplyOrder"
+import { CustomItemType, OTHER_ITEM_CATEGORY, OTHER_ITEM_KEY, SupplyOrder } from "@/types/supplyOrder"
 import { ArrowLeft, CalendarSync, Ham, MoveRight, ShoppingCart, Snowflake, SquarePen, Truck } from "lucide-react";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
@@ -44,6 +44,43 @@ const columns = [
 
 const mapOtherCategory = (sourceCategory: string) =>
     sourceCategory === "MEAT" ? "MEAT" : "SNOWFROST";
+
+const getCustomItemType = (name?: string, hasParentSku?: boolean): CustomItemType => {
+    if (!hasParentSku) return "OTHER";
+    if (name?.toUpperCase().startsWith("LACKING")) return "LACKING";
+    return "REPLACEMENT";
+};
+
+const mapEditableCategoryItem = (
+    item: {
+        rawMaterialCode?: string;
+        rawMaterialName?: string;
+        unitMeasurement?: string;
+        quantity: number;
+        price: number;
+        isOther?: boolean;
+    },
+    category: "MEAT" | "SNOWFROST",
+    key: string,
+) => {
+    const isCustomItem = item.isOther || !item.rawMaterialCode;
+    const customItemType = isCustomItem
+        ? getCustomItemType(item.rawMaterialName, Boolean(item.rawMaterialCode))
+        : undefined;
+
+    return {
+        sku: item.rawMaterialCode,
+        quantity: item.quantity,
+        name: item.rawMaterialName,
+        unitMeasurement: item.unitMeasurement,
+        unitPrice: item.price,
+        category,
+        isOther: isCustomItem,
+        customItemType,
+        [OTHER_ITEM_KEY]: isCustomItem ? key : undefined,
+        [OTHER_ITEM_CATEGORY]: isCustomItem ? category : undefined,
+    };
+};
 
 export function ViewOrderPage({ id }: { id: number }) {
     const [reload, setReload] = useState(false);
@@ -183,45 +220,35 @@ export function ViewOrderPage({ id }: { id: number }) {
         deliveryType={data?.deliveryType ?? ""}
         expectedDelivery={data?.expectedDelivery ?? ""}
         toEditItems={[
-            ...(data?.meatCategory?.meatItems ?? []).map((item, index) => ({
-                sku: item.rawMaterialCode,
-                quantity: item.quantity,
-                name: item.rawMaterialName,
-                unitMeasurement: item.unitMeasurement,
-                unitPrice: item.price,
-                category: item.rawMaterialCode ? "MEAT" : undefined,
-                isOther: item.isOther || !item.rawMaterialCode,
-                [OTHER_ITEM_KEY]: item.rawMaterialCode ? undefined : `edit-meat-${index}`,
-                [OTHER_ITEM_CATEGORY]: item.rawMaterialCode ? undefined : "MEAT",
-            })),
+            ...(data?.meatCategory?.meatItems ?? []).map((item, index) =>
+                mapEditableCategoryItem(item, "MEAT", `edit-meat-${index}`)
+            ),
             ...(data?.othersCategory?.othersItems ?? [])
                 .filter((item) => mapOtherCategory(item.sourceCategory) === "MEAT")
                 .map((item, index) => ({
+                    sku: item.rawMaterialCode,
                     name: item.itemName,
                     quantity: item.quantity,
                     unitPrice: item.unitPrice,
+                    category: "MEAT" as const,
                     isOther: true,
+                    customItemType: getCustomItemType(item.itemName, Boolean(item.rawMaterialCode)),
                     [OTHER_ITEM_KEY]: `edit-other-meat-${index}`,
                     [OTHER_ITEM_CATEGORY]: "MEAT",
                 })),
-            ...(data?.snowfrostCategory?.snowFrostItems ?? []).map((item, index) => ({
-                sku: item.rawMaterialCode,
-                quantity: item.quantity,
-                name: item.rawMaterialName,
-                unitMeasurement: item.unitMeasurement,
-                unitPrice: item.price,
-                category: item.rawMaterialCode ? "SNOWFROST" : undefined,
-                isOther: item.isOther || !item.rawMaterialCode,
-                [OTHER_ITEM_KEY]: item.rawMaterialCode ? undefined : `edit-snow-${index}`,
-                [OTHER_ITEM_CATEGORY]: item.rawMaterialCode ? undefined : "SNOWFROST",
-            })),
+            ...(data?.snowfrostCategory?.snowFrostItems ?? []).map((item, index) =>
+                mapEditableCategoryItem(item, "SNOWFROST", `edit-snow-${index}`)
+            ),
             ...(data?.othersCategory?.othersItems ?? [])
                 .filter((item) => mapOtherCategory(item.sourceCategory) === "SNOWFROST")
                 .map((item, index) => ({
+                    sku: item.rawMaterialCode,
                     name: item.itemName,
                     quantity: item.quantity,
                     unitPrice: item.unitPrice,
+                    category: "SNOWFROST" as const,
                     isOther: true,
+                    customItemType: getCustomItemType(item.itemName, Boolean(item.rawMaterialCode)),
                     [OTHER_ITEM_KEY]: `edit-other-snow-${index}`,
                     [OTHER_ITEM_CATEGORY]: "SNOWFROST",
                 })),

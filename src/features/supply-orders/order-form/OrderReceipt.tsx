@@ -91,11 +91,13 @@ export function OrderReceipt({ claims, setActiveForm, selectedItems }: {
 
             const invalidCustomItem = selectedItems.find((item) =>
                 item.isOther && (
-                    !item.name?.trim() ||
                     !item.quantity ||
                     item.quantity <= 0 ||
-                    !item.unitPrice ||
-                    item.unitPrice <= 0
+                    (
+                        (item.customItemType ?? "OTHER") === "OTHER"
+                            ? (!item.name?.trim() || !item.unitPrice || item.unitPrice <= 0)
+                            : !item.sku
+                    )
                 )
             );
 
