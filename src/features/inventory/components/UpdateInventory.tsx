@@ -74,14 +74,14 @@ export function UpdateInventory({ toUpdate, setUpdate, setReload }: Props) {
                     return; 
                 }
             }
-            if (
-                tab === "PRODUCTION INPUT" &&
-                inventory.type === "IN" &&
-                (!inventory.unitCost || inventory.unitCost <= 0)
-            ) {
-                toast.info("Please provide a valid unit cost for production input!");
-                return;
-            }
+            // if (
+            //     tab === "PRODUCTION INPUT" &&
+            //     inventory.type === "IN" &&
+            //     (!inventory.unitCost || inventory.unitCost <= 0)
+            // ) {
+            //     toast.info("Please provide a valid unit cost for production input!");
+            //     return;
+            // }
 
             const payload: Inventory = {
                 ...inventory,
