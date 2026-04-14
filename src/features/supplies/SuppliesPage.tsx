@@ -162,7 +162,7 @@ export function SuppliesPage() {
                                             </> }
                                     </div>
                                     <div className="td justify-between">
-                                        {item.unitCost 
+                                        {item.unitCost !== null
                                             ? <>
                                                 <div>₱</div>
                                                 <div>{formatToPeso(item.unitCost).slice(1,)}</div>
