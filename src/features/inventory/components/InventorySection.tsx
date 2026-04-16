@@ -33,8 +33,9 @@ const columns = [
 ]
 const filters = ['All', 'Meat', 'Snow Frost', 'Non Deliverables'];
 
-export function InventorySection({ claims }: {
+export function InventorySection({ claims, rawMaterialType = "PRODUCT" }: {
     claims: Claim
+    rawMaterialType?: string
 }) {
     const [reload, setReload] = useState(false);
     const [filter, setFilter] = useState(filters[0]);
@@ -48,10 +49,10 @@ export function InventorySection({ claims }: {
         inventories: Inventory[];
     }>(
         InventoryService.getInventoryByBranch,
-        [claims.branch.branchId, reload],
-        [claims.branch.branchId, 0, 1000]
+        [claims.branch.branchId, reload, rawMaterialType],
+        [claims.branch.branchId, 0, 1000, rawMaterialType]
     );
-    const { search, setSearch, filteredItems } = useSearchFilter(inventories?.inventories, ['name', 'code']);
+    const { search, setSearch, filteredItems } = useSearchFilter(inventories?.inventories ?? [], ['name', 'code']);
     const { filteredNotifications, loading: notifLoading } = useNotifications({ claims, type: "STOCK" })
 
     const filteredData = filteredItems.filter(i => {

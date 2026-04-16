@@ -13,6 +13,13 @@ export class SupplyService {
     );
   }
 
+  static async getAllRawMaterials(page: number, size: number) {
+    return await requestData(
+        `${url}/get-all?page=${page}&size=${size}&type=RAW_MATERIAL`,
+        "GET"
+    );
+  }
+
   static async getSupplyByCode(code: string) {
     return await requestData(
         `${url}/get-by-code?code=${code}`,

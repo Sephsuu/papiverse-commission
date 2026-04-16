@@ -1,4 +1,4 @@
-import { BookMarked, ChartNoAxesCombined, CircleQuestionMark, Container, Ham, HandCoins, LucideIcon, Megaphone, MessageCircleMore, MessageCircleQuestionMark, Store, UserRound, UsersRound, Wallet } from "lucide-react";
+import { BookMarked, ChartNoAxesCombined, CircleQuestionMark, Container, Ham, HandCoins, Logs, LucideIcon, Megaphone, MessageCircleMore, MessageCircleQuestionMark, Store, UserRound, UsersRound, Wallet } from "lucide-react";
 import { hrtime } from "process";
 
 export interface PapiverseRoute {
@@ -34,11 +34,9 @@ export const adminRoute = [
         title: 'Inventory', 
         icon: Container,
         children: [
-            { title: 'Inventories', href: '/inventory/inventories' },
+            { title: 'Supplies Inventory', href: '/inventory/inventories' },
+            { title: 'Raw Materials Inventory', href: '/inventory/raw-materials' },
             { title: 'Supply Orders', href: '/inventory/supply-orders' },
-            { title: 'Inventory Logs', href: '/inventory/logs' },
-            { title: 'Transaction Summary', href: '/inventory/transaction-summary' },
-            { title: 'Branch Purchase Item', href: '/inventory/branch-purchase-item' },
         ]
     },
     { 
@@ -46,8 +44,21 @@ export const adminRoute = [
         icon: HandCoins,
         children: [
             { title: 'Expenses', href: '/finance/expenses' },
-            { title: 'Inventory Reports', href: '/finance/inventory-reports' },
-            { title: 'Inventory Breakdown', href: '/finance/inventory-breakdown' },
+            { title: 'Supply Reports', href: '/finance/supply-reports' },
+            { title: 'Supply Breakdown', href: '/finance/supply-breakdown' },
+            { title: 'Raw Material Reports', href: '/finance/raw-material-reports' },
+            { title: 'Raw Material Breakdown', href: '/finance/raw-material-breakdown' },
+        ]
+    },
+    { 
+        title: 'Logs', 
+        icon: Logs,
+        children: [
+            { title: 'Supply Logs', href: '/logs/supplies' },
+            { title: 'Supply Transactions', href: '/logs/supply-transactions' },
+            { title: 'Raw Material Logs', href: '/logs/raw-materials' },
+            { title: 'Raw Material Transactions', href: '/logs/raw-material-transactions' },
+            { title: 'Branch Purchase Item', href: '/inventory/branch-purchase-item' },
         ]
     },
     // { 
@@ -70,7 +81,8 @@ export const adminRoute = [
         title: 'Catalog', 
         icon: BookMarked,
         children: [
-            { title: 'Supplies', href: '/supplies' },
+            { title: 'Supplies', href: '/catalog/supplies' },
+            { title: 'Raw Materials', href: '/catalog/raw-materials' },
             // { title: 'Products', href: '/products' },
             // { title: 'Employee Positions', href: '/employees/positions' },
         ]
@@ -130,7 +142,8 @@ export const franchiseeRoute = [
         title: 'Catalog', 
         icon: BookMarked,
         children: [
-            { title: 'Supplies', href: '/supplies' },
+            { title: 'Supplies', href: '/catalog/supplies' },
+            { title: 'Raw Materials', href: '/catalog/raw-materials' },
             // { title: 'Products', href: '/products' },
         ]
     },

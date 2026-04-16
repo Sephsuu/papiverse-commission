@@ -5,23 +5,23 @@ import { Inventory } from "@/types/inventory";
 const url = `${BASE_URL}/inventory`;
 
 export class InventoryService {
-	static async getInventoryByBranch(id: number, page: number, size: number) {
+	static async getInventoryByBranch(id: number, page: number, size: number, rawMaterialType?: string) {
 		return await requestData(
-			`${url}/get-by-branch?id=${id}&page=${page}&size=${size}`,
+			`${url}/get-by-branch?id=${id}&page=${page}&size=${size}&rawMaterialType=${rawMaterialType ?? 'PRODUCT'}`,
 			"GET"
 		);
 	}
 
-	static async getInventoryBranchBreakdown(id: number, page: number, size: number) {
+	static async getInventoryBranchBreakdown(id: number, page: number, size: number, rawMaterialType?: string) {
 		return await requestData(
-			`${url}/get-by-branch-breakdown?id=${id}&page=${page}&size=${size}`,
+			`${url}/get-by-branch-breakdown?id=${id}&page=${page}&size=${size}&rawMaterialType=${rawMaterialType ?? 'PRODUCT'}`,
 			"GET",
 		);
 	}
 
-	static async getInventoryAudits(id: number, source: string, month: string, year: string, page: number, size: number) {
+	static async getInventoryAudits(id: number, source: string, month: string, year: string, rawMaterialType: string, page?: number, size?: number) {
 		return await requestData(
-			`${url}/get-audits?branchId=${id}&source=${source}&month=${month}&year=${year}&page=${page}&size=${size}`,
+			`${url}/get-audits?branchId=${id}&source=${source}&month=${month}&year=${year}&page=${page}&size=${size}&rawMaterialType=${rawMaterialType ?? 'PRODUCT'}`,
 			"GET"
 		);
 	}
@@ -33,9 +33,9 @@ export class InventoryService {
 		);
 	}
 
-	static async getTransactionSummary(id: number, date: string) {
+	static async getTransactionSummary(id: number, date: string, rawMaterialType: string) {
 		return await requestData(
-			`${url}/get-transaction-summary?id=${id}&start=${date}&end=${date}`,
+			`${url}/get-transaction-summary?id=${id}&start=${date}&end=${date}&rawMaterialType=${rawMaterialType ?? 'PRODUCT'}`,
 			"GET",
 		);
 	}
@@ -67,6 +67,20 @@ export class InventoryService {
 	static async getCommissaryFinanceBreakdown(id: number, startDate: string, endDate: string) {
 		return await requestData(
 			`${url}/get-commissary-finance-breakdown?id=${id}&start=${startDate}&end=${endDate}`,
+			"GET",
+		);
+	}
+
+	static async getRawMaterialFinanceReport(id: number, startDate: string, endDate: string) {
+		return await requestData(
+			`${url}/get-commissary-raw-material-finance-report?id=${id}&start=${startDate}&end=${endDate}`,
+			"GET",
+		);
+	}
+
+	static async getRawMaterialFinanceBreakdown(id: number, startDate: string, endDate: string) {
+		return await requestData(
+			`${url}/get-commissary-raw-material-finance-breakdown?id=${id}&start=${startDate}&end=${endDate}`,
 			"GET",
 		);
 	}

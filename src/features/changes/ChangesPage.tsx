@@ -3,6 +3,7 @@
 import { AppHeader } from "@/components/shared/AppHeader";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { changes } from "./data";
 import { BadgeCheck } from "lucide-react";
@@ -80,6 +81,40 @@ export function ChangesPage() {
                         <p className="mt-2 text-sm text-slate-600">
                             {change.summary}
                         </p>
+
+                        {change.beforeImage && change.afterImage && (
+                            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                                    <div className="border-b border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                        {change.beforeLabel ?? "Before"}
+                                    </div>
+                                    <div className="p-3">
+                                        <Image
+                                            src={change.beforeImage}
+                                            alt={`${change.title} before update`}
+                                            width={480}
+                                            height={930}
+                                            className="h-auto w-full rounded-lg border border-slate-200 object-cover"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                                    <div className="border-b border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                        {change.afterLabel ?? "After"}
+                                    </div>
+                                    <div className="p-3">
+                                        <Image
+                                            src={change.afterImage}
+                                            alt={`${change.title} after update`}
+                                            width={410}
+                                            height={1260}
+                                            className="h-auto w-full rounded-lg border border-slate-200 object-cover"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </article>
                 ))}
             </div>

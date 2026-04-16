@@ -1,7 +1,6 @@
-"use client"
-
-import { ErrorPage } from "@/components/custom/ErrorPage";
-import { getCategoryIcon } from "@/hooks/use-helper";
+import { TableFilter } from "@/components/shared/TableFilter";
+import { TablePagination } from "@/components/shared/TablePagination";
+import { SectionLoading } from "@/components/ui/loader";
 import { useFetchOne } from "@/hooks/use-fetch-one";
 import { usePagination } from "@/hooks/use-pagination";
 import { useSearchFilter } from "@/hooks/use-search-filter";
@@ -9,45 +8,22 @@ import { formatToPeso } from "@/lib/formatter";
 import { InventoryService } from "@/services/inventory.service";
 import { Claim } from "@/types/claims";
 import { InventoryBreakdown } from "@/types/inventory";
-import { TableFilter } from "@/components/shared/TableFilter";
-import { TablePagination } from "@/components/shared/TablePagination";
-import { SectionLoading } from "@/components/ui/loader";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useMemo, useState } from "react";
-
-const pageKey = "inventoryBreakdownPage";
-const filters = ["All", "Meat", "Snow Frost", "Non Deliverables"];
-const columns = [
-    { title: "Supply", style: "col-span-2" },
-    { title: "Quantity", style: "" },
-    { title: "Price", style: "text-right" },
-    { title: "Unit Cost", style: "text-right" },
-    { title: "Item Value", style: "text-right" },
-    { title: "Item Cost", style: "text-right" },
-    { title: "Net Profit", style: "text-right" },
-];
-
-const numberFormatter = new Intl.NumberFormat("en-PH", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-});
 
 function formatProfit(value: number) {
     return value < 0 ? `-${formatToPeso(Math.abs(value))}` : formatToPeso(value);
 }
 
-function getCategoryLabel(category: string) {
-    if (category === "MEAT") return "MEAT Category";
-    if (category === "SNOWFROST") return "SNOW FROST Category";
-    return "NON DELIVERABLES";
-}
+const pageKey = "inventoryBreakdownPage";
+const columns = [
+    { title: "Raw Material", style: "" },
+    { title: "Quantity", style: "" },
+    { title: "Unit Cost", style: "text-right" },
+    { title: "Item Value", style: "text-right" },
+];
 
-export function InventoryBreakdownSection({ claims, rawMaterialType = "PRODUCT" }: {
+export function RawMaterialBreakdownSection({ claims }: {
     claims: Claim
-    rawMaterialType?: string
 }) {
-    const [filter, setFilter] = useState(filters[0]);
-
     const { data: breakdown, loading: loadingBreakdown, error } = useFetchOne<{
         total: {
             inventoryValue: number;
@@ -57,8 +33,8 @@ export function InventoryBreakdownSection({ claims, rawMaterialType = "PRODUCT" 
         items: InventoryBreakdown[];
     }>(
         InventoryService.getInventoryBranchBreakdown,
-        [claims.branch.branchId, rawMaterialType],
-        [claims.branch.branchId, 0, 1000, rawMaterialType]
+        [claims.branch.branchId],
+        [claims.branch.branchId, 0, 1000, 'RAW_MATERIAL']
     );
 
     const { search, setSearch, filteredItems } = useSearchFilter(
@@ -66,40 +42,28 @@ export function InventoryBreakdownSection({ claims, rawMaterialType = "PRODUCT" 
         ["name", "sku"]
     );
 
-    const filteredData = useMemo(() => {
-        return filteredItems.filter((item) => {
-            if (filter === "Meat") return item.category === "MEAT";
-            if (filter === "Snow Frost") return item.category === "SNOWFROST";
-            if (filter === "Non Deliverables") return item.category === "NONDELIVERABLES";
-            return true;
-        });
-    }, [filter, filteredItems]);
-
-    const { page, setPage, size, setSize, paginated } = usePagination(filteredData, 20, pageKey);
+    const { page, setPage, size, setSize, paginated } = usePagination(filteredItems, 20, pageKey);
 
     if (loadingBreakdown) return <SectionLoading />
-    if (error) return <ErrorPage error={error} className="-mt-12" />
-    if (!breakdown) return <ErrorPage error="Inventory breakdown page is unavailable" className="-mt-12" />
-
     return (
         <>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {[
                     {
-                        label: "Current Inventory Value",
-                        value: formatToPeso(breakdown.total.inventoryValue ?? 0),
+                        label: "Current Raw Materials Value",
+                        value: formatToPeso(breakdown?.total.inventoryValue ?? 0),
                         helper: "Summation of inventory prices",
                     },
                     {
-                        label: "Current Inventory Cost",
-                        value: formatToPeso(breakdown.total.inventoryCost ?? 0),
+                        label: "Current Raw Materials Cost",
+                        value: formatToPeso(breakdown?.total.inventoryCost ?? 0),
                         helper: "Summation of inventory cost",
                     },
                     {
                         label: "Net Profit",
-                        value: formatProfit(breakdown.total.netProfit ?? 0),
+                        value: formatProfit(breakdown?.total.netProfit ?? 0),
                         helper: "Profit summation of each inventory",
-                        isNegative: (breakdown.total.netProfit ?? 0) < 0,
+                        isNegative: (breakdown?.total.netProfit ?? 0) < 0,
                     },
                 ].map((item) => (
                     <div key={item.label} className="gap-3 rounded-md border border-slate-300 bg-white p-5 shadow-sm">
@@ -120,13 +84,10 @@ export function InventoryBreakdownSection({ claims, rawMaterialType = "PRODUCT" 
                 size={size}
                 setSize={setSize}
                 removeAdd
-                filters={filters}
-                filter={filter}
-                setFilter={setFilter}
             />
 
             <div className="table-wrapper">
-                <div className="thead grid grid-cols-8 max-md:w-7xl!">
+                <div className="thead grid grid-cols-4 max-md:w-7xl!">
                     {columns.map((item) => (
                         <div key={item.title} className={`th ${item.style}`}>
                             {item.title}
@@ -134,20 +95,11 @@ export function InventoryBreakdownSection({ claims, rawMaterialType = "PRODUCT" 
                     ))}
                 </div>
 
-                <div className="animate-fade-in-up" key={`${page}-${filter}`}>
+                <div className="animate-fade-in-up" key={`${page}`}>
                     {paginated.length > 0 ? (
                         paginated.map((item) => (
-                            <div className="tdata grid grid-cols-8 max-md:w-7xl!" key={item.inventoryId}>
-                                <div className="td col-span-2 gap-2">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
-                                                {getCategoryIcon(item.category)}
-                                            </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent>{getCategoryLabel(item.category)}</TooltipContent>
-                                    </Tooltip>
-
+                            <div className="tdata grid grid-cols-4 max-md:w-7xl!" key={item.inventoryId}>
+                                <div className="td gap-2">
                                     <div className="min-w-0">
                                         <div className="truncate font-semibold text-slate-900">
                                             {item.name}
@@ -170,11 +122,6 @@ export function InventoryBreakdownSection({ claims, rawMaterialType = "PRODUCT" 
 
                                 <div className="td justify-between">
                                     <div>₱</div>
-                                    <div>{formatToPeso(item.externalPrice).slice(1,)}</div>
-                                </div>
-
-                                <div className="td justify-between">
-                                    <div>₱</div>
                                     <div>{formatToPeso(item.unitCost).slice(1,)}</div>
                                 </div>
 
@@ -183,15 +130,10 @@ export function InventoryBreakdownSection({ claims, rawMaterialType = "PRODUCT" 
                                     <div>{formatToPeso(item.itemValue).slice(1,)}</div>
                                 </div>
 
-                                <div className="td justify-between">
-                                    <div>₱</div>
-                                    <div>{formatToPeso(item.itemCost).slice(1,)}</div>
-                                </div>
-
-                                <div className={`td justify-between font-semibold ${item.itemNetProfit < 0 ? "text-darkred" : "text-darkgreen"}`}>
+                                {/* <div className={`td justify-between font-semibold ${item.itemNetProfit < 0 ? "text-darkred" : "text-darkgreen"}`}>
                                     <div>₱</div>
                                     {formatProfit(item.itemNetProfit).slice(1,)}
-                                </div>
+                                </div> */}
                             </div>
                         ))
                     ) : (
@@ -200,18 +142,17 @@ export function InventoryBreakdownSection({ claims, rawMaterialType = "PRODUCT" 
                 </div>
             </div>
 
-            {filteredData.length > 0 && (
+            {paginated.length > 0 && (
                 <TablePagination
-                    data={filteredData}
+                    data={breakdown?.items ?? []}
                     paginated={paginated}
                     page={page}
                     size={size}
                     setPage={setPage}
                     search={search}
-                    filter={filter}
                     pageKey={pageKey}
                 />
             )}
         </>
-    );
+    )
 }

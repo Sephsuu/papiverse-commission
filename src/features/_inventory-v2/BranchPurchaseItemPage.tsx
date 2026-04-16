@@ -15,7 +15,7 @@ import { SupplyOrderService } from "@/services/supplyOrder.service";
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { AppSelect } from "@/components/shared/AppSelect";
-import { DatePickerModal, InventoryReportPeriodMode } from "./components/DatePickerModal";
+import { DatePickerModal, InventoryReportPeriodMode } from "../_finance-v2/components/DatePickerModal";
 
 type NameItem = { id: string | number | null | undefined; name?: string | null };
 type PurchaseBranch = {

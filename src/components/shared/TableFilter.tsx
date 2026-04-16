@@ -7,7 +7,7 @@ import { NotificationResponse } from "@/types/notification";
 
 const pages = [10, 20, 30, 40, 50, 100]
 
-export function TableFilter({ setSearch, searchPlaceholder, setOpen, buttonLabel, size, setSize, removeAdd, filters, filter,  setFilter, removeFilter, filteredNotifications, setShowNotif, pageKey, className, filterClassname }: {
+export function TableFilter({ setSearch, searchPlaceholder, setOpen, buttonLabel, size, setSize, removeAdd, filters, filter,  setFilter, removeFilter, filteredNotifications, setShowNotif, pageKey, className, filterClassname, search }: {
     setSearch: (i: string) => void;
     searchPlaceholder: string;
     size: number;
@@ -24,6 +24,7 @@ export function TableFilter({ setSearch, searchPlaceholder, setOpen, buttonLabel
     pageKey?: string
     className?: string;
     filterClassname?: string;
+    search?: string
 }) {
     return (
         <div className={`flex items-center max-md:flex-col max-md:gap-2 ${className}`}>
@@ -31,6 +32,7 @@ export function TableFilter({ setSearch, searchPlaceholder, setOpen, buttonLabel
                 <div className="relative w-100 max-md:w-full">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray" />
                     <input
+                        value={search}
                         className="w-full rounded-md bg-light py-1 pl-9 pr-3 shadow-xs border border-slate-200"
                         placeholder={ searchPlaceholder }
                         onChange={ e => setSearch(e.target.value) }

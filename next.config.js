@@ -1,5 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: ['https://r0kpvj1t-3000.asse.devtunnels.ms'],
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['https://r0kpvj1t-3000.asse.devtunnels.ms'],
+    },
+  },
   images: {
     remotePatterns: [
       {
