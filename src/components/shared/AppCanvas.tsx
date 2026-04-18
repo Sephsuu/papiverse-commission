@@ -6,13 +6,16 @@ import { AppSidebar } from "./AppSidebar"
 import { useAuth } from "@/hooks/use-auth"
 import { MainLoader } from "../ui/loader"
 import Link from "next/link"
-import { changes } from "@/features/changes/data"
 import { X } from "lucide-react"
 
 export function AppCanvas({ children }: { children: React.ReactNode }) {
     const pathName = usePathname()
     const { claims, loading } = useAuth();
-    const isAuth = pathName === "/auth" || pathName === "/unauthorized" || claims.roles.length === 0
+    const isStandaloneAuthPage =
+        pathName === "/auth" ||
+        pathName === "/auth/kp-product" ||
+        pathName === "/unauthorized";
+    const isAuth = isStandaloneAuthPage || claims.roles.length === 0
     const dismissKey = `changes-banner-dismissed-06-26-2026`;
     const [isDismissed, setIsDismissed] = useState(false);
 

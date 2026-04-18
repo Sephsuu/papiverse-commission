@@ -41,7 +41,12 @@ export function AppSidebar() {
     });
     const [show, setShow] = useState(false);
     
-    if (pathName === "/auth" || pathName === "/unauthorized" || pathName === "/inquiries/form") return null;
+    if (
+        pathName === "/auth" ||
+        pathName === "/auth/kp-product" ||
+        pathName === "/unauthorized" ||
+        pathName === "/inquiries/form"
+    ) return null;
     if (loading) return <SidebarLoading />;
     if (!claims?.roles?.length) return null;
 
