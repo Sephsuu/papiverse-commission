@@ -1,15 +1,22 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+export const runtime = "edge";
+
 export function middleware(request: NextRequest) {
   const host = request.headers.get("host") || "";
   const pathname = request.nextUrl.pathname;
 
-  const isAuthHost =
-    host.includes("authenticity.krispypapi.com")
+  console.log("MIDDLEWARE HIT:", host, pathname);
 
-  if (isAuthHost && pathname === "/") {
-    return NextResponse.redirect(new URL("/auth/kp-product", request.url));
+  if (
+    (host === "authenticity.krispypapi.com" ||
+      host.startsWith("authenticity.krispypapi.com:")) &&
+    pathname === "/"
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/kp-product";
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
