@@ -38,6 +38,7 @@ export function TransactionDatePickerModal({
                     <Calendar
                         mode="single"
                         selected={selectedDate}
+                        defaultMonth={selectedDate ?? today}
                         onSelect={handleSelect}
                         disabled={(value) => isAfter(value, today)}
                         className="w-full grid"
