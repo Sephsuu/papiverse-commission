@@ -1,13 +1,23 @@
 import type { Metadata } from "next";
+import { Figtree, Nunito } from "next/font/google";
 import "./globals.css";
 import "@/styles/styles.css";
 import "@/styles/table.css";
 import "@/styles/animation.css"
 import { AuthProvider } from "@/hooks/use-auth";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/shared/AppSidebar";
 import { AppCanvas } from "@/components/shared/AppCanvas";
 import { Toaster } from "@/components/ui/toaster";
+
+const figtree = Figtree({
+  subsets: ["latin"],
+  variable: "--font-figtree",
+});
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  variable: "--font-nunito",
+});
 
 
 export const metadata: Metadata = {
@@ -22,11 +32,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
+      {/* <head>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
-      </head>
+      </head> */}
       <body
-        className={`antialiased`}
+        className={`${figtree.variable} ${nunito.variable} antialiased`}
       >
         <AuthProvider>
           <SidebarProvider className="bg-slate-100 max-w-[2560px] mx-auto">

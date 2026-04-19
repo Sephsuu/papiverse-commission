@@ -14,25 +14,26 @@ import { InquiryFormPage } from "../inquiries/InquiryFormPage";
 export function Homepage() {
 	useRevealOnScroll();
 	return(
-		// <section>
-		// 	<HeroSection />
-		// 	<CurvedLoop 
-		// 		marqueeText="Pagkaing Pang-masa • Masarap ang Lasa • Binabalik-balikan •"
-		// 		speed={2}
-		// 		curveAmount={100}
-		// 		direction="right"
-		// 		interactive
-		// 		className=""
-		// 	/>
-		// 	<VisionSection />
-		// 	<MissionSection />
-		// 	{/* <SucsessStorySection /> */}
-		// 	<TestimonialSection />
-		// 	<InquiryFormPage />
+		<section className="relative">
+			<CurvedLoop 
+				marqueeText="Pagkaing Pang-masa • Masarap ang Lasa • Binabalik-balikan •"
+				speed={2}
+				curveAmount={100}
+				direction="right"
+				interactive
+				className="pb-50! top-0"
+			/>
+			<HeroSection />
+			
+			{/* <VisionSection />
+			<MissionSection />
+			<SucsessStorySection />
+			<TestimonialSection />
+			<InquiryFormPage /> */}
 
-		// </section>
-		<section className="flex-center h-screen">
-			<div className="font-black text-9xl max-md:text-8xl text-center">We're Coming Soon</div>
 		</section>
+		// <section className="flex-center h-screen">
+		// 	<div className="font-black text-9xl max-md:text-8xl text-center">We're Coming Soon</div>
+		// </section>
 	);
 }
