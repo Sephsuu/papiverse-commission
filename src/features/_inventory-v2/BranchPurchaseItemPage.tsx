@@ -458,16 +458,29 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
                             )}
 
                             <div className="mt-4">
-                                <TablePagination
-                                    data={isSupplyTab ? displayItems : displayBranches}
-                                    page={isSupplyTab ? itemPage : branchPage}
-                                    size={isSupplyTab ? itemSize : branchSize}
-                                    setPage={isSupplyTab ? setItemPage : setBranchPage}
-                                    paginated={isSupplyTab ? paginatedItems : paginatedBranches}
-                                    search={isSupplyTab ? search : branchSearch}
-                                    filter={isSupplyTab ? itemViewMode : "all"}
-                                    pageKey={isSupplyTab ? `${pageKey}-items` : `${pageKey}-branches`}
-                                />
+                                {isSupplyTab ? (
+                                    <TablePagination<NormalizedItem>
+                                        data={displayItems}
+                                        page={itemPage}
+                                        size={itemSize}
+                                        setPage={setItemPage}
+                                        paginated={paginatedItems}
+                                        search={search}
+                                        filter={itemViewMode}
+                                        pageKey={`${pageKey}-items`}
+                                    />
+                                ) : (
+                                    <TablePagination<NormalizedBranchRow>
+                                        data={displayBranches}
+                                        page={branchPage}
+                                        size={branchSize}
+                                        setPage={setBranchPage}
+                                        paginated={paginatedBranches}
+                                        search={branchSearch}
+                                        filter="all"
+                                        pageKey={`${pageKey}-branches`}
+                                    />
+                                )}
                             </div>
                         </>
                     )}
