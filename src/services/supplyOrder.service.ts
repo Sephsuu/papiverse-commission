@@ -79,6 +79,13 @@ export class SupplyOrderService {
         );
     }
 
+    static async getBranchProfitRanking(startDate: string, endDate: string) {
+        return await requestData(
+            `${url}/view-profit-rankings?start=${startDate}&end=${endDate}`,
+            "GET",
+        );
+    }
+
     static async getPOProfit(orderId: number) {
         return await requestData(
             `${url}/view-profit?id=${orderId}`,

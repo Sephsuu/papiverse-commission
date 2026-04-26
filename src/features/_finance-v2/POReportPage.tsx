@@ -37,6 +37,8 @@ type OrderProfitResponse = {
     meatCategory?: ProfitCategory | null;
     snowCategory?: ProfitCategory | null;
     overallProfit: number;
+    overallCapital: number;
+    overallSales: number;
 };
 
 type CategoryTab = "MEAT" | "SNOWFROST";
@@ -44,8 +46,8 @@ type CategoryTab = "MEAT" | "SNOWFROST";
 const columns = [
     { title: "Raw Material", style: "" },
     { title: "Qty", style: "" },
-    { title: "Revenue", style: "" },
-    { title: "Cost", style: "" },
+    { title: "Capital", style: "" },
+    { title: "Sales", style: "" },
     { title: "Profit", style: "" },
 ];
 
@@ -94,6 +96,16 @@ export function POReportPage() {
             : activeCategory?.snowItems ?? [];
     const summaryCards = poProfit
         ? [
+            {
+                label: "Overall Capital",
+                value: formatToPeso(poProfit.overallCapital),
+                helper: "Combined category capital",
+            },
+            {
+                label: "Overall Sales",
+                value: formatToPeso(poProfit.overallSales),
+                helper: "Combined category sales",
+            },
             {
                 label: "Overall Profit",
                 value: formatToPeso(poProfit.overallProfit),
@@ -192,11 +204,11 @@ export function POReportPage() {
                                             </div>
                                             <div className="td justify-between text-slate-700">
                                                 <span>₱</span>
-                                                <span>{formatToPeso(item.revenue).slice(1)}</span>
+                                                <span>{formatToPeso(item.cost).slice(1)}</span>
                                             </div>
                                             <div className="td justify-between text-slate-700">
                                                 <span>₱</span>
-                                                <span>{formatToPeso(item.cost).slice(1)}</span>
+                                                <span>{formatToPeso(item.revenue).slice(1)}</span>
                                             </div>
                                             <div className="td justify-between font-semibold text-slate-900">
                                                 <span>₱</span>

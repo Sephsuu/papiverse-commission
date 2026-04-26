@@ -12,7 +12,7 @@ import { BranchService } from "@/services/branch.service";
 import { SupplyOrderService } from "@/services/supplyOrder.service";
 import { Branch } from "@/types/branch";
 import { format } from "date-fns";
-import { CalendarDays, Store } from "lucide-react";
+import { ArrowLeft, CalendarDays, Store } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { InventoryReportPeriodMode } from "./components/DatePickerModal";
 import { BranchPODatePickerModal } from "./components/BranchPODatePickerModal";
@@ -46,6 +46,8 @@ type OrderProfitBreakdown = {
     meatCategory?: ProfitCategory | null;
     snowCategory?: ProfitCategory | null;
     overallProfit: number;
+    overallCapital: number;
+    overallSales: number;
 };
 
 type BranchProfitResponse = {
@@ -55,6 +57,8 @@ type BranchProfitResponse = {
     matchedOrderIds: number[];
     perOrderProfitBreakdown: OrderProfitBreakdown[];
     overallProfit: number;
+    overallCapital: number;
+    overallSales: number;
     meatProfit: number;
     snowProfit: number;
 };
@@ -65,6 +69,8 @@ const columns = [
     { title: "PO ID", style: "" },
     { title: "Items", style: "" },
     { title: "Category Profit", style: "" },
+    { title: "Overall Capital", style: "" },
+    { title: "Overall Sales", style: "" },
     { title: "Overall Profit", style: "" },
 ];
 
@@ -74,8 +80,8 @@ export function BranchPOReportPage() {
     const searchParams = useSearchParams();
     const { today } = useToday();
     const initialBranch = searchParams.get("branch") ?? "";
-    const initialStartDate = searchParams.get("startDate") ?? today;
-    const initialEndDate = searchParams.get("endDate") ?? today;
+    const initialStartDate = searchParams.get("startDate") ?? searchParams.get("start") ?? today;
+    const initialEndDate = searchParams.get("endDate") ?? searchParams.get("end") ?? today;
 
     const [selectedBranch, setSelectedBranch] = useState<string>(initialBranch);
     const [date, setDate] = useState(initialStartDate);
@@ -158,12 +164,6 @@ export function BranchPOReportPage() {
                 valueClassName: "text-slate-900",
             },
             {
-                label: "Overall Profit",
-                value: formatToPeso(branchProfit.overallProfit),
-                helper: `Profit data from ${formatDateToWords(branchProfit.startDate)} to ${formatDateToWords(branchProfit.endDate)}`,
-                valueClassName: branchProfit.overallProfit < 0 ? "text-darkred" : "text-darkgreen",
-            },
-            {
                 label: "Meat Profit",
                 value: formatToPeso(branchProfit.meatProfit),
                 helper: "Total MEAT category profit",
@@ -175,15 +175,40 @@ export function BranchPOReportPage() {
                 helper: "Total SNOWFROST category profit",
                 valueClassName: "text-slate-900",
             },
+            {
+                label: "Overall Capital",
+                value: formatToPeso(branchProfit.overallCapital),
+                helper: "Total combined capital",
+                valueClassName: "text-slate-900",
+            },
+            {
+                label: "Overall Sales",
+                value: formatToPeso(branchProfit.overallSales),
+                helper: "Total combined sales",
+                valueClassName: "text-slate-900",
+            },
+            {
+                label: "Overall Profit",
+                value: formatToPeso(branchProfit.overallProfit),
+                helper: `Profit data from ${formatDateToWords(branchProfit.startDate)} to ${formatDateToWords(branchProfit.endDate)}`,
+                valueClassName: branchProfit.overallProfit < 0 ? "text-darkred" : "text-darkgreen",
+            },
         ];
     }, [branchProfit, selectedBranchName]);
 
     if (loadingBranchProfit || loadingBranches) return <PapiverseLoading />
     return (
         <section className="stack-md">
-            <AppHeader
-                label="Branch Purchase Order Report"
-            />
+            <div className="flex-center-y gap-4">
+                <ArrowLeft 
+                    className="cursor-pointer"
+                    onClick={() => history.back()}
+                />
+                <AppHeader
+                    label="Branch Purchase Order Report"
+                    className="w-full"
+                />
+            </div>
 
             <div
                 onClick={() => setToggleDate(true)}
@@ -225,7 +250,7 @@ export function BranchPOReportPage() {
 
             {selectedBranch && branchProfit && (
                 <>
-                    <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                    <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                         {summaryCards.map((card) => (
                             <div key={card.label} className="gap-3 p-5 bg-white shadow-sm rounded-md border border-slate-300">
                                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-darkbrown">{card.label}</p>
@@ -248,7 +273,7 @@ export function BranchPOReportPage() {
                         </div>
 
                         <div className="table-wrapper">
-                            <div className="thead grid grid-cols-4">
+                            <div className="thead grid grid-cols-6">
                                 {columns.map((item, index) => (
                                     <div className="th" key={index}>{item.title}</div>
                                 ))}
@@ -280,7 +305,7 @@ export function BranchPOReportPage() {
                                         ].filter(Boolean) as { category: "MEAT" | "SNOWFROST"; value: number }[];
 
                                         return (
-                                            <div key={order.orderId} className="tdata grid grid-cols-4">
+                                            <div key={order.orderId} className="tdata grid grid-cols-6">
                                                 <div className="td text-slate-700 font-medium">
                                                     <div className="flex flex-col gap-1">
                                                         {poRows.length === 0 ? (
@@ -337,6 +362,16 @@ export function BranchPOReportPage() {
                                                             ))
                                                         )}
                                                     </div>
+                                                </div>
+
+                                                <div className="td justify-between">
+                                                    <div>₱</div>
+                                                    <div>{formatToPeso(order.overallCapital).slice(1)}</div>
+                                                </div>
+
+                                                <div className="td justify-between">
+                                                    <div>₱</div>
+                                                    <div>{formatToPeso(order.overallSales).slice(1)}</div>
                                                 </div>
 
                                                 <div className={`td justify-between font-semibold ${order.overallProfit < 0 ? "text-darkred" : "text-darkgreen"}`}>

@@ -12,6 +12,13 @@ export type ChangeEntry = {
 
 export const changes: ChangeEntry[] = [
     {
+        id: "finance-branch-profit-ranking-dashboard",
+        title: "Branch profit ranking dashboard added.",
+        date: "2026-04-26",
+        area: "Finance",
+        summary: "Nadagdag na po ang BRANCH PROFIT RANKING dashboard sa Finance. May date-period picker, summary cards, branch profit chart, at ranked table gamit ang branch profit ranking API para mas mabilis ang monitoring ng overall/meat/snow profits per branch.",
+    },
+    {
         id: "finance-supply-profit-computation-aligned-to-monitoring-excel",
         title: "Supply report and breakdown computation updated.",
         date: "2026-04-26",
