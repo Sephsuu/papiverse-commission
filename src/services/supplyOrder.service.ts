@@ -72,10 +72,24 @@ export class SupplyOrderService {
         );
     }
 
-    static async getAllBranchPurchaseItem(filter: string, date: string) {
+    static async getAllBranchPurchaseItem(startDate: string, endDate: string) {
         return await requestData(
-            `${url}/view-detailed?filter=${filter}&date=${date}`,
+            `${url}/view-detailed?start=${startDate}&end=${endDate}`,
             "GET"
+        );
+    }
+
+    static async getPOProfit(orderId: number) {
+        return await requestData(
+            `${url}/view-profit?id=${orderId}`,
+            "GET",
+        );
+    }
+
+    static async getBranchesProfit(branchId: number, startDate: string, endDate: string) {
+        return await requestData(
+            `${url}/view-profit-branches?branchId=${branchId}&start=${startDate}&end=${endDate}`,
+            "GET",
         );
     }
 

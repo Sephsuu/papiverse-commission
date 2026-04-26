@@ -199,11 +199,14 @@ export function formatCompactNumber(value: number | string): string {
     }).format(value);
 }
 
-const numberFormatter = new Intl.NumberFormat("en-PH", {
-    maximumFractionDigits: 0,
-});
-
 export function formatNumber(value: number) {
-    return numberFormatter.format(value);
-}
+    if (!Number.isFinite(value)) return "0";
 
+    const decimalPart = value.toString().split(".")[1] ?? "";
+    const fractionDigits = Math.min(decimalPart.length, 20);
+
+    return new Intl.NumberFormat("en-PH", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: fractionDigits,
+    }).format(value);
+}

@@ -57,16 +57,16 @@ export class InventoryService {
 		);
 	}
 
-	static async getCommissaryFinanceReport(id: number, startDate: string, endDate: string) {
+	static async getSupplyFinanceReport(id: number, startDate: string, endDate: string) {
 		return await requestData(
-			`${url}/get-commissary-finance-report?id=${id}&start=${startDate}&end=${endDate}`,
+			`${url}/get-commissary-finance-report-try?id=${id}&start=${startDate}&end=${endDate}`,
 			"GET",
 		);
 	}
 
-	static async getCommissaryFinanceBreakdown(id: number, startDate: string, endDate: string) {
+	static async getSupplyFinanceBreakdown(id: number, startDate: string, endDate: string, category: string) {
 		return await requestData(
-			`${url}/get-commissary-finance-breakdown?id=${id}&start=${startDate}&end=${endDate}`,
+			`${url}/get-commissary-finance-breakdown-try?id=${id}&start=${startDate}&end=${endDate}&category=${category}`,
 			"GET",
 		);
 	}
@@ -83,7 +83,7 @@ export class InventoryService {
 			`${url}/get-commissary-raw-material-finance-breakdown?id=${id}&start=${startDate}&end=${endDate}`,
 			"GET",
 		);
-	}
+	}	
 
 	static async createInventory(inventory: Inventory) {
 		return await requestData(

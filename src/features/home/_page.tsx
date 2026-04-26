@@ -21,8 +21,9 @@ export function Homepage() {
 				curveAmount={100}
 				direction="right"
 				interactive
-				className="pb-50! top-0"
+				className="zpb-50! top-0"
 			/>
+
 			<HeroSection />
 			
 			{/* <VisionSection />

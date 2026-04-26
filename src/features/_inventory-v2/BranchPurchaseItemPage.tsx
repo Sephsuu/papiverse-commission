@@ -1,23 +1,25 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useToday } from "@/hooks/use-today";
+import React, { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
-import { CalendarDays, ChevronDown, Repeat } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Skeleton } from "@/components/ui/skeleton";
-import { SectionLoading } from "@/components/ui/loader";
-import { Input } from "@/components/ui/input";
-import { useFetchOne } from "@/hooks/use-fetch-one";
-import { SupplyOrderService } from "@/services/supplyOrder.service";
-import { Badge } from "@/components/ui/badge";
+import { Boxes, CalendarDays, PackageSearch, Store, TrendingUp } from "lucide-react";
+
 import { AppHeader } from "@/components/shared/AppHeader";
 import { AppSelect } from "@/components/shared/AppSelect";
+import { TablePagination } from "@/components/shared/TablePagination";
+import { Badge } from "@/components/ui/badge";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Input } from "@/components/ui/input";
+import { SectionLoading } from "@/components/ui/loader";
+import { useFetchOne } from "@/hooks/use-fetch-one";
+import { usePagination } from "@/hooks/use-pagination";
+import { useSearchFilter } from "@/hooks/use-search-filter";
+import { useToday } from "@/hooks/use-today";
+import { SupplyOrderService } from "@/services/supplyOrder.service";
 import { DatePickerModal, InventoryReportPeriodMode } from "../_finance-v2/components/DatePickerModal";
+import { formatNumber } from "@/lib/formatter";
+import { TableFilter } from "@/components/shared/TableFilter";
 
-type NameItem = { id: string | number | null | undefined; name?: string | null };
 type PurchaseBranch = {
     branchName?: string | null;
     totalOrder?: number | null;
@@ -25,189 +27,73 @@ type PurchaseBranch = {
     total_order?: number | null;
     toral_order?: number | null;
 };
+
 type PurchaseSupply = {
     id?: string | number | null;
     sku?: string | null;
     name?: string | null;
+    unitMeasurement?: string | null;
     branches?: PurchaseBranch[] | null;
 };
+
 type BranchPurchaseMatrix = {
+    dateRange?: {
+        startDate?: string;
+        endDate?: string;
+    };
     items?: PurchaseSupply[] | PurchaseSupply | null;
 };
 
-const SORTS = [
-    { key: "alpha_asc", label: "A-Z" },
-    { key: "alpha_desc", label: "Z-A" },
-    { key: "total_desc", label: "Highest total" },
-    { key: "total_asc", label: "Lowest total" },
-] as const;
+type NormalizedBranch = {
+    branchName: string;
+    totalOrder: number;
+};
 
-type SortKey = (typeof SORTS)[number]["key"];
+type NormalizedItem = {
+    key: string;
+    sku: string;
+    name: string;
+    unitMeasurement: string;
+    totalOrder: number;
+    activeBranchCount: number;
+    branches: NormalizedBranch[];
+};
+
+type ItemViewMode = "active" | "all";
+type ItemSortMode = "total_desc" | "name_asc" | "active_branch_desc";
+
 const numberFormatter = new Intl.NumberFormat("en-PH", {
     maximumFractionDigits: 2,
 });
 
-function getMatrixCellValue(
-    totalLookup: Map<string, number>,
-    isSwapped: boolean,
-    rowName: string,
-    colName: string
-) {
-    const branchName = isSwapped ? colName : rowName;
-    const supplyName = isSwapped ? rowName : colName;
-    const key = `${String(supplyName).trim()}||${String(branchName).trim()}`;
+const pageKey = "branchPurchaseItemPageV2";
 
-    return totalLookup.get(key) ?? 0;
+function parseOrderValue(branch?: PurchaseBranch | null) {
+    if (!branch) return 0;
+    return Number(branch.totalOrder ?? branch.toralOrder ?? branch.total_order ?? branch.toral_order ?? 0) || 0;
 }
 
-function useOnClickOutside(
-    refs: Array<React.RefObject<HTMLElement | null>>,
-    handler: () => void,
-    enabled: boolean
-) {
-    useEffect(() => {
-        if (!enabled) return;
+function getRangeLabel(mode: InventoryReportPeriodMode, startDate?: string, endDate?: string) {
+    if (!startDate) return "Select period";
 
-        const listener = (event: MouseEvent | TouchEvent) => {
-            const target = event.target as Node;
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : start;
 
-            const inside = refs.some((ref) => {
-                const el = ref.current;
-                return el ? el.contains(target) : false;
-            });
+    if (mode === "DAY") return format(start, "MMMM dd, yyyy");
+    if (mode === "WEEK") return `${format(start, "MMM d, yyyy")} - ${format(end, "MMM d, yyyy")}`;
+    if (mode === "MONTH") return format(start, "MMMM yyyy");
 
-            if (!inside) handler();
-        };
-
-        document.addEventListener("mousedown", listener, true);
-        document.addEventListener("touchstart", listener, true);
-
-        return () => {
-            document.removeEventListener("mousedown", listener, true);
-            document.removeEventListener("touchstart", listener, true);
-        };
-    }, [refs, handler, enabled]);
+    const quarterNumber = Math.floor(start.getMonth() / 3) + 1;
+    return `Q${quarterNumber} ${format(start, "yyyy")}`;
 }
 
-function MultiSelectPopover({
-    label,
-    items,
-    selected,
-    onToggle,
-    onClear,
-    placeholderAll,
-    widthClassName = "w-full",
-}: {
-    label: string;
-    items: NameItem[];
-    selected: string[];
-    onToggle: (v: string) => void;
-    onClear: () => void;
-    placeholderAll: string;
-    widthClassName?: string;
-}) {
-    const [open, setOpen] = useState(false);
-    const [q, setQ] = useState("");
-    const triggerRef = useRef<HTMLButtonElement>(null);
-    const panelRef = useRef<HTMLDivElement>(null);
+function getRangeBadge(mode: InventoryReportPeriodMode, startDate?: string) {
+    if (!startDate) return "PERIOD";
 
-    useOnClickOutside([triggerRef, panelRef], () => setOpen(false), open);
-
-    const selectedCount = selected.length;
-
-    const filteredItems = useMemo(() => {
-        const query = q.trim().toLowerCase();
-        if (!query) return items;
-        return items.filter((it) => String(it?.name ?? "").toLowerCase().includes(query));
-    }, [items, q]);
-
-    return (
-        <div className={`relative ${widthClassName}`}>
-            <button
-                ref={triggerRef}
-                type="button"
-                className="w-full flex items-center justify-between gap-2 rounded-md bg-white px-3 py-2 border border-slate-300"
-                onClick={() => setOpen((p) => !p)}
-            >
-                <span className="text-sm text-left truncate">
-                    {selectedCount === 0 ? placeholderAll : `${selectedCount} selected`}
-                </span>
-                <ChevronDown className={`w-4 h-4 opacity-70 transition-transform ${open ? "rotate-180" : ""}`} />
-            </button>
-
-            {open && (
-                <div
-                    ref={panelRef}
-                    className="absolute z-50 mt-2 w-[320px] rounded-md border bg-white shadow-lg"
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="p-2">
-                        <div className="flex items-center justify-between gap-2">
-                            <div className="text-sm font-semibold">{label}</div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="h-7 px-2 text-xs"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    onClear();
-                                }}
-                            >
-                                Clear
-                            </Button>
-                        </div>
-
-                        <div className="mt-2">
-                            <Input
-                                value={q}
-                                onChange={(e) => setQ(e.target.value)}
-                                placeholder="Search..."
-                                className="h-9"
-                            />
-                        </div>
-                    </div>
-
-                    <Separator className="bg-gray-200" />
-
-                    <div className="max-h-64 overflow-auto p-1">
-                        {filteredItems.length === 0 ? (
-                            <div className="text-sm text-gray-500 py-4 text-center">No results</div>
-                        ) : (
-                            filteredItems.map((item) => {
-                                const name = String(item?.name ?? "");
-                                if (!name) return null;
-
-                                const checked = selected.includes(name);
-
-                                return (
-                                    <button
-                                        key={item.id ?? name}
-                                        type="button"
-                                        className="w-full flex items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-slate-100"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            onToggle(name);
-                                        }}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={checked}
-                                            readOnly
-                                            className="pointer-events-none accent-lightbrown"
-                                        />
-                                        <span className="truncate text-sm">{name}</span>
-                                    </button>
-                                );
-                            })
-                        )}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
+    if (mode === "DAY") return format(new Date(startDate), "EEEE").toUpperCase();
+    if (mode === "WEEK") return "SUN-SAT";
+    if (mode === "MONTH") return "MONTH";
+    return "QUARTER";
 }
 
 export function BranchPurchaseItemPage({ className }: { className?: string }) {
@@ -216,35 +102,10 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
     const [endDate, setEndDate] = useState(today);
     const [mode, setMode] = useState<InventoryReportPeriodMode>("DAY");
     const [toggleDate, setToggleDate] = useState(false);
-    const parsedDate = date ? new Date(date) : null;
-    const parsedEndDate = endDate ? new Date(endDate) : null;
+    const [itemViewMode, setItemViewMode] = useState<ItemViewMode>("active");
+    const [itemSortMode, setItemSortMode] = useState<ItemSortMode>("total_desc");
+
     const isWeeklyView = mode === "WEEK";
-    const displayDate = parsedDate
-        ? format(parsedDate, "MMMM dd, yyyy")
-        : "Select date";
-    const displayBadge = parsedDate
-        ? isWeeklyView
-            ? "Sun-Sat"
-            : format(parsedDate, "EEEE").toUpperCase()
-        : "DAY";
-    const dateLabel = isWeeklyView && parsedDate && parsedEndDate
-        ? `${format(parsedDate, "MMM d, yyyy")} - ${format(parsedEndDate, "MMM d, yyyy")}`
-        : displayDate;
-
-    const [isSwapped, setIsSwapped] = useState(false);
-
-    const [rowBranchSelected, setRowBranchSelected] = useState<string[]>([]);
-    const [rowSupplySelected, setRowSupplySelected] = useState<string[]>([]);
-    const [colBranchSelected, setColBranchSelected] = useState<string[]>([]);
-    const [colSupplySelected, setColSupplySelected] = useState<string[]>([]);
-    const [rowBranchSearch, setRowBranchSearch] = useState("");
-    const [rowSupplySearch, setRowSupplySearch] = useState("");
-    const [colBranchSearch, setColBranchSearch] = useState("");
-    const [colSupplySearch, setColSupplySearch] = useState("");
-
-    // NEW: sorting mode
-    const [rowSort, setRowSort] = useState<SortKey>("total_desc");
-    const [colSort, setColSort] = useState<SortKey>("total_desc");
 
     const { data: purchaseItems, loading: loadingPurchaseItems } = useFetchOne<BranchPurchaseMatrix>(
         SupplyOrderService.getAllBranchPurchaseItem,
@@ -259,412 +120,319 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
         return [raw];
     }, [purchaseItems]);
 
-    const apiBranchNames = useMemo(() => {
-        const set = new Set<string>();
+    const normalizedItems = useMemo(() => {
+        return apiSupplies.map((item, index) => {
+            const branches = Array.isArray(item.branches) ? item.branches : [];
+            const branchMap = new Map<string, number>();
 
-        for (const s of apiSupplies) {
-            const bs = Array.isArray(s?.branches) ? s.branches : [];
-            for (const b of bs) {
-                const bn = String(b?.branchName ?? "").trim();
-                if (bn) set.add(bn);
+            for (const branch of branches) {
+                const name = String(branch?.branchName ?? "").trim();
+                if (!name) continue;
+
+                const qty = parseOrderValue(branch);
+                branchMap.set(name, (branchMap.get(name) ?? 0) + qty);
             }
-        }
 
-        return Array.from(set);
+            const normalizedBranches = Array.from(branchMap.entries())
+                .map(([branchName, totalOrder]) => ({ branchName, totalOrder }))
+                .sort((a, b) => b.totalOrder - a.totalOrder);
+
+            const totalOrder = normalizedBranches.reduce((sum, branch) => sum + branch.totalOrder, 0);
+            const activeBranchCount = normalizedBranches.filter((branch) => branch.totalOrder > 0).length;
+
+            return {
+                key: `${item.sku ?? item.id ?? "item"}-${index}`,
+                sku: String(item.sku ?? "N/A"),
+                name: String(item.name ?? "Unknown Item"),
+                unitMeasurement: String(item.unitMeasurement ?? "unit"),
+                totalOrder,
+                activeBranchCount,
+                branches: normalizedBranches,
+            } satisfies NormalizedItem;
+        });
     }, [apiSupplies]);
 
-    const totalLookup = useMemo(() => {
-        const map = new Map<string, number>();
+    const { search, setSearch, filteredItems: searchFilteredItems } = useSearchFilter<NormalizedItem>(
+        normalizedItems,
+        ["name", "sku"]
+    );
 
-        for (const s of apiSupplies) {
-            const supplyName = String(s?.name ?? "").trim();
-            if (!supplyName) continue;
+    const displayItems = useMemo(() => {
+        const baseItems = itemViewMode === "active"
+            ? searchFilteredItems.filter((item) => item.totalOrder > 0)
+            : searchFilteredItems;
 
-            const bs = Array.isArray(s?.branches) ? s.branches : [];
-            for (const b of bs) {
-                const branchName = String(b?.branchName ?? "").trim();
-                if (!branchName) continue;
+        const sorted = [...baseItems];
 
-                const n =
-                    Number(b?.totalOrder ?? b?.toralOrder ?? b?.total_order ?? b?.toral_order ?? 0) || 0;
-
-                map.set(`${supplyName}||${branchName}`, n);
-            }
+        if (itemSortMode === "name_asc") {
+            sorted.sort((a, b) => a.name.localeCompare(b.name));
+            return sorted;
         }
 
-        return map;
-    }, [apiSupplies]);
-
-    const branchItems: NameItem[] = useMemo(() => {
-        return apiBranchNames.map((name) => ({ id: name, name }));
-    }, [apiBranchNames]);
-
-    const supplyItems: NameItem[] = useMemo(() => {
-        return apiSupplies
-            .map((s) => ({
-                id: s?.sku ?? s?.id ?? s?.name,
-                name: s?.name ?? "",
-            }))
-            .filter((x) => String(x?.name ?? "").trim().length > 0);
-    }, [apiSupplies]);
-
-    const rowDataBase = (isSwapped ? supplyItems : branchItems) as NameItem[];
-    const columnDataBase = (isSwapped ? branchItems : supplyItems) as NameItem[];
-
-    const activeRowSelected = isSwapped ? rowSupplySelected : rowBranchSelected;
-    const activeColSelected = isSwapped ? colBranchSelected : colSupplySelected;
-    const activeRowSearch = isSwapped ? rowSupplySearch : rowBranchSearch;
-    const activeColSearch = isSwapped ? colBranchSearch : colSupplySearch;
-
-    const setActiveRowSelected = isSwapped ? setRowSupplySelected : setRowBranchSelected;
-    const setActiveColSelected = isSwapped ? setColBranchSelected : setColSupplySelected;
-    const setActiveRowSearch = isSwapped ? setRowSupplySearch : setRowBranchSearch;
-    const setActiveColSearch = isSwapped ? setColBranchSearch : setColSupplySearch;
-
-    const rowLabel = isSwapped ? "Supply" : "Branch";
-    const columnLabel = isSwapped ? "Branch" : "Supply";
-
-    const loadingRow = loadingPurchaseItems;
-    const loadingColumn = loadingPurchaseItems;
-
-    const toggleSelection = (
-        value: string,
-        setter: React.Dispatch<React.SetStateAction<string[]>>
-    ) => {
-        setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
-    };
-
-    const clearSelections = (setter: React.Dispatch<React.SetStateAction<string[]>>) => setter([]);
-
-    const rowTotals = useMemo(() => {
-        const map = new Map<string, number>();
-
-        for (const r of rowDataBase) {
-            const rn = String(r?.name ?? "").trim();
-            if (!rn) continue;
-
-            let sum = 0;
-            for (const c of columnDataBase) {
-                const cn = String(c?.name ?? "").trim();
-                if (!cn) continue;
-                sum += getMatrixCellValue(totalLookup, isSwapped, rn, cn);
-            }
-
-            map.set(rn, sum);
-        }
-
-        return map;
-    }, [columnDataBase, isSwapped, rowDataBase, totalLookup]);
-
-    const colTotals = useMemo(() => {
-        const map = new Map<string, number>();
-
-        for (const c of columnDataBase) {
-            const cn = String(c?.name ?? "").trim();
-            if (!cn) continue;
-
-            let sum = 0;
-            for (const r of rowDataBase) {
-                const rn = String(r?.name ?? "").trim();
-                if (!rn) continue;
-                sum += getMatrixCellValue(totalLookup, isSwapped, rn, cn);
-            }
-
-            map.set(cn, sum);
-        }
-
-        return map;
-    }, [columnDataBase, isSwapped, rowDataBase, totalLookup]);
-
-    const applySort = (items: NameItem[], mode: SortKey, totals: Map<string, number>) => {
-        const arr = [...items];
-
-        if (mode === "alpha_asc") {
-            arr.sort((a, b) => String(a?.name ?? "").localeCompare(String(b?.name ?? "")));
-            return arr;
-        }
-
-        if (mode === "alpha_desc") {
-            arr.sort((a, b) => String(b?.name ?? "").localeCompare(String(a?.name ?? "")));
-            return arr;
-        }
-
-        if (mode === "total_desc") {
-            arr.sort((a, b) => {
-                const ta = totals.get(String(a?.name ?? "").trim()) ?? 0;
-                const tb = totals.get(String(b?.name ?? "").trim()) ?? 0;
-                if (tb !== ta) return tb - ta;
-                return String(a?.name ?? "").localeCompare(String(b?.name ?? ""));
+        if (itemSortMode === "active_branch_desc") {
+            sorted.sort((a, b) => {
+                if (b.activeBranchCount !== a.activeBranchCount) return b.activeBranchCount - a.activeBranchCount;
+                return b.totalOrder - a.totalOrder;
             });
-            return arr;
+            return sorted;
         }
 
-        if (mode === "total_asc") {
-            arr.sort((a, b) => {
-                const ta = totals.get(String(a?.name ?? "").trim()) ?? 0;
-                const tb = totals.get(String(b?.name ?? "").trim()) ?? 0;
-                if (ta !== tb) return ta - tb;
-                return String(a?.name ?? "").localeCompare(String(b?.name ?? ""));
-            });
-            return arr;
+        sorted.sort((a, b) => b.totalOrder - a.totalOrder);
+        return sorted;
+    }, [itemSortMode, itemViewMode, searchFilteredItems]);
+
+    const summary = useMemo(() => {
+        let activeItems = 0;
+        let totalOrderedQty = 0;
+        const branchTotals = new Map<string, number>();
+
+        for (const item of normalizedItems) {
+            if (item.totalOrder > 0) activeItems += 1;
+            totalOrderedQty += item.totalOrder;
+
+            for (const branch of item.branches) {
+                branchTotals.set(
+                    branch.branchName,
+                    (branchTotals.get(branch.branchName) ?? 0) + branch.totalOrder
+                );
+            }
         }
 
-        return arr;
-    };
+        const totalBranches = branchTotals.size;
+        const activeBranches = Array.from(branchTotals.values()).filter((value) => value > 0).length;
 
-    const rowData = useMemo(
-        () => applySort(rowDataBase, rowSort, rowTotals),
-        [rowDataBase, rowSort, rowTotals]
-    );
+        let topBranchName = "-";
+        let topBranchQty = 0;
 
-    const columnData = useMemo(
-        () => applySort(columnDataBase, colSort, colTotals),
-        [columnDataBase, colSort, colTotals]
-    );
+        for (const [name, qty] of branchTotals.entries()) {
+            if (qty > topBranchQty) {
+                topBranchName = name;
+                topBranchQty = qty;
+            }
+        }
 
-    const filteredRowData = useMemo(() => {
-        const base = activeRowSelected.length === 0
-            ? rowData
-            : rowData.filter((item) => activeRowSelected.includes(String(item?.name ?? "")));
+        return {
+            totalItems: normalizedItems.length,
+            activeItems,
+            totalBranches,
+            activeBranches,
+            totalOrderedQty,
+            topBranchName,
+            topBranchQty,
+        };
+    }, [normalizedItems]);
 
-        const query = activeRowSearch.trim().toLowerCase();
-        if (!query) return base;
+    const dateLabel = useMemo(() => {
+        const startFromResponse = purchaseItems?.dateRange?.startDate ?? date;
+        const endFromResponse = purchaseItems?.dateRange?.endDate ?? endDate;
+        return getRangeLabel(mode, startFromResponse, endFromResponse);
+    }, [date, endDate, mode, purchaseItems?.dateRange?.endDate, purchaseItems?.dateRange?.startDate]);
 
-        return base.filter((item) => String(item?.name ?? "").toLowerCase().includes(query));
-    }, [rowData, activeRowSearch, activeRowSelected]);
+    const dateBadge = useMemo(() => {
+        const startFromResponse = purchaseItems?.dateRange?.startDate ?? date;
+        return getRangeBadge(mode, startFromResponse);
+    }, [date, mode, purchaseItems?.dateRange?.startDate]);
 
-    const filteredColumnData = useMemo(() => {
-        const base = activeColSelected.length === 0
-            ? columnData
-            : columnData.filter((item) => activeColSelected.includes(String(item?.name ?? "")));
+    const { page, setPage, size, setSize, paginated } = usePagination(displayItems, 12, pageKey);
 
-        const query = activeColSearch.trim().toLowerCase();
-        if (!query) return base;
-
-        return base.filter((item) => String(item?.name ?? "").toLowerCase().includes(query));
-    }, [columnData, activeColSearch, activeColSelected]);
-
-    const colCount = filteredColumnData.length;
-    const gridTemplateColumns = useMemo(
-        () => `220px repeat(${colCount}, minmax(150px, 1fr))`,
-        [colCount]
-    );
-    const minWidthPx = useMemo(() => 220 + colCount * 150, [colCount]);
-
-    const showTotalsHintRow = rowSort === "total_desc" || rowSort === "total_asc";
-    const showTotalsHintCol = colSort === "total_desc" || colSort === "total_asc";
-
+    return <div className="h-screen flex-center">
+        <div className="text-8xl">Under Maintenance</div>
+    </div>
     return (
-        <section className={`stack-md w-full min-w-0 max-w-full overflow-x-hidden pb-12 ${className}`}>
-            <AppHeader label="Branch Purchases" />
+        <section className={`stack-md w-full min-w-0 max-w-full overflow-x-hidden pb-12 ${className ?? ""}`}>
+            <AppHeader label="Branch Purchase Insights" />
 
-            <div className="w-full">
-                <div className="mb-4 flex items-center justify-between gap-3 max-md:flex-col max-md:items-start">
-                    <div
-                        onClick={() => setToggleDate(true)}
-                        className="flex-center-y gap-3 rounded-md border border-slate-300 bg-light px-4 py-2 text-lg font-bold shadow-sm w-fit cursor-pointer max-md:m-1"
-                    >
-                        <CalendarDays className="w-5 h-5" />
-
-                        <div className="scale-x-110 origin-left">
-                            {dateLabel}
-                        </div>
-
-                        <Badge className="bg-darkbrown font-bold ml-2">
-                            {displayBadge}
-                        </Badge>
-                    </div>
-
-                    <button
-                        type="button"
-                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white max-md:w-full max-md:justify-center"
-                        onClick={() => setIsSwapped((prev) => !prev)}
-                    >
-                        <Repeat className="h-4 w-4 text-darkbrown" />
-                        Swap to {isSwapped ? "Branch x Supply" : "Supply x Branch"}
-                    </button>
-                </div>
-
-                <div className="row-md items-center max-md:grid! max-md:mx-1">
-                    {loadingColumn ? (
-                        <Skeleton className="h-12 w-full bg-slate-300" />
-                    ) : (
-                        <div className="w-100">
-                            <div className="mb-2 flex items-center justify-between">
-                                <div className="text-sm font-semibold text-slate-700">
-                                    {columnLabel} <span className="text-slate-400">(Column)</span>
-                                </div>
-                                {activeColSelected.length > 0 && (
-                                    <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600">
-                                        {activeColSelected.length} selected
-                                    </Badge>
-                                )}
-                            </div>
-
-                            <div className="flex-center-y gap-4">
-                                <div className="w-full space-y-2">
-                                    <Input
-                                        value={activeColSearch}
-                                        onChange={(e) => setActiveColSearch(e.target.value)}
-                                        placeholder={`Search ${columnLabel.toLowerCase()}...`}
-                                        className="h-9 bg-white"
-                                    />
-                                    <MultiSelectPopover
-                                        label={`${columnLabel}s`}
-                                        items={columnData}
-                                        selected={activeColSelected}
-                                        onToggle={(v) => toggleSelection(v, setActiveColSelected)}
-                                        onClear={() => clearSelections(setActiveColSelected)}
-                                        placeholderAll={`All ${columnLabel.toLowerCase()}s`}
-                                    />
-                                    <AppSelect
-                                        className="w-full"
-                                        placeholder="Sort columns"
-                                        items={SORTS.map((s) => ({ label: s.label, value: s.key }))}
-                                        value={colSort}
-                                        onChange={(value) => setColSort(value as SortKey)}
-                                        triggerClassName="w-full flex items-center justify-between gap-2 rounded-md bg-white px-3 py-2 border border-slate-300"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {loadingRow ? (
-                        <Skeleton className="h-12 w-full bg-slate-300" />
-                    ) : (
-                        <div className="w-100">
-                            <div className="mb-2 flex items-center justify-between">
-                                <div className="text-sm font-semibold text-slate-700">
-                                    {rowLabel} <span className="text-slate-400">(Row)</span>
-                                </div>
-                                {activeRowSelected.length > 0 && (
-                                    <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600">
-                                        {activeRowSelected.length} selected
-                                    </Badge>
-                                )}
-                            </div>
-
-                            <div className="flex-center-y gap-4">
-                                <div className="w-full space-y-2">
-                                    <Input
-                                        value={activeRowSearch}
-                                        onChange={(e) => setActiveRowSearch(e.target.value)}
-                                        placeholder={`Search ${rowLabel.toLowerCase()}...`}
-                                        className="h-9 bg-white"
-                                    />
-                                    <MultiSelectPopover
-                                        label={`${rowLabel}s`}
-                                        items={rowData}
-                                        selected={activeRowSelected}
-                                        onToggle={(v) => toggleSelection(v, setActiveRowSelected)}
-                                        onClear={() => clearSelections(setActiveRowSelected)}
-                                        placeholderAll={`All ${rowLabel.toLowerCase()}s`}
-                                    />
-                                    <AppSelect
-                                        className="w-full"
-                                        placeholder="Sort columns"
-                                        items={SORTS.map((s) => ({ label: s.label, value: s.key }))}
-                                        value={rowSort}
-                                        onChange={(value) => setRowSort(value as SortKey)}
-                                        triggerClassName="w-full flex items-center justify-between gap-2 rounded-md bg-white px-3 py-2 border border-slate-300"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
+ 
+            <div
+                onClick={() => setToggleDate(true)}
+                className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-300 bg-light px-4 py-2 text-base font-bold shadow-sm"
+            >
+                <CalendarDays className="h-5 w-5" />
+                <div className="truncate scale-x-110 origin-left">{dateLabel}</div>
+                <Badge className="ml-auto bg-darkbrown font-bold">{dateBadge}</Badge>
             </div>
+
+
 
             {loadingPurchaseItems ? (
                 <SectionLoading />
-            ) : filteredRowData.length === 0 || filteredColumnData.length === 0 ? (
-                <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/70 px-6 py-12 text-center">
-                    <div className="text-lg font-semibold text-slate-900">No matrix data for the current filters</div>
-                    <div className="mt-2 text-sm text-slate-500">
-                        Clear some row or column filters, or swap the matrix orientation to explore the purchase summary differently.
-                    </div>
-                </div>
             ) : (
-                <div
-                    className="table-wrapper-scrollable animate-fade-in-up overflow-x-auto overflow-y-hidden"
-                >
-                    <div
-                        className="thead grid border-b border-slate-200"
-                        style={{
-                            gridTemplateColumns,
-                            minWidth: `${minWidthPx}px`,
-                        }}
-                    >
-                        <div className="th sticky left-0 z-40 bg-[#e2e8f0] border-r"></div>
+                <>
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                        <div className="rounded-md border border-slate-300 bg-white p-4 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Items</p>
+                                <Boxes className="h-4 w-4 text-darkbrown" />
+                            </div>
+                            <p className="mt-3 text-2xl font-semibold text-slate-900">
+                                {numberFormatter.format(summary.activeItems)} / {numberFormatter.format(summary.totalItems)}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">Active over total supplies</p>
+                        </div>
 
-                        {filteredColumnData.map((item, i: number) => {
-                            const name = String(item?.name ?? "");
-                            const t = colTotals.get(name.trim()) ?? 0;
+                        <div className="rounded-md border border-slate-300 bg-white p-4 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Branches</p>
+                                <Store className="h-4 w-4 text-darkbrown" />
+                            </div>
+                            <p className="mt-3 text-2xl font-semibold text-slate-900">
+                                {numberFormatter.format(summary.activeBranches)} / {numberFormatter.format(summary.totalBranches)}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">Branches with orders in period</p>
+                        </div>
 
-                            return (
-                                <Tooltip key={i}>
-                                    <TooltipTrigger className="th bg-[#eef2f7] relative" key={item.id ?? item.name}>
-                                        <div className="truncate">{name}</div>
-                                        {showTotalsHintCol && (
-                                            <Badge className="absolute top-1 right-2 rounded-full text-[11px] font-semibold bg-darkbrown">
-                                                {numberFormatter.format(t)}
-                                            </Badge>
-                                        )}
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-lightbrown mb-2 font-bold" showArrow={false}>{name}</TooltipContent>
-                                </Tooltip>
-                            );
-                        })}
+                        <div className="rounded-md border border-slate-300 bg-white p-4 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Total Ordered</p>
+                                <TrendingUp className="h-4 w-4 text-darkbrown" />
+                            </div>
+                            <p className="mt-3 text-2xl font-semibold text-slate-900">{numberFormatter.format(summary.totalOrderedQty)}</p>
+                            <p className="mt-1 text-xs text-slate-500">Combined order quantity</p>
+                        </div>
+
+                        <div className="rounded-md border border-slate-300 bg-white p-4 shadow-sm md:col-span-2">
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Top Branch by Quantity</p>
+                                <PackageSearch className="h-4 w-4 text-darkbrown" />
+                            </div>
+                            <p className="mt-3 truncate text-xl font-semibold text-slate-900">{summary.topBranchName}</p>
+                            <p className="mt-1 text-sm text-slate-500">{numberFormatter.format(summary.topBranchQty)} total ordered</p>
+                        </div>
                     </div>
 
-                    {filteredRowData.map((row) => {
-                        const rowName = String(row?.name ?? "");
-                        const rt = rowTotals.get(rowName.trim()) ?? 0;
+                    <div className="mb-3 flex items-end justify-between gap-3 max-md:flex-col max-md:items-start">
+                        <div>
+                            <div className="text-lg font-semibold text-darkbrown">Item Details</div>
+                            <div className="text-sm text-slate-500">Items, branches who ordered, and ordered quantity per branch.</div>
+                        </div>
 
-                        return (
-                            <div
-                                className="tdata grid relative border-b border-slate-100 last:border-b-0"
-                                key={row.id ?? row.name}
-                                style={{
-                                    gridTemplateColumns,
-                                    minWidth: `${minWidthPx}px`,
-                                }}
-                            >
-                                <Tooltip>
-                                    <TooltipTrigger className="td sticky left-0 z-40 bg-[#fffaf4] border-r border-slate-200 shadow-[2px_0_6px_rgba(0,0,0,0.08)]">
-                                        <div className="truncate">{rowName}</div>
-                                        {showTotalsHintRow && (
-                                            <Badge className="absolute top-1 right-1 text-[11px] rounded-full bg-lightbrown font-semibold">
-                                                {numberFormatter.format(rt)}
-                                            </Badge>
-                                        )}
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-lightbrown mb-2 font-bold" showArrow={false}>{rowName}</TooltipContent>
-                                </Tooltip>
+                        <div className="w-full max-w-[220px]">
+                            <AppSelect
+                                groupLabel="Rows per page"
+                                placeholder="Rows"
+                                value={String(size)}
+                                onChange={(value) => setSize(Number(value))}
+                                items={["10", "20", "30", "50"]}
+                                triggerClassName="h-9 bg-white"
+                            />
+                        </div>
+                    </div>
 
-                                {filteredColumnData.map((col) => {
-                                    const v = getMatrixCellValue(
-                                        totalLookup,
-                                        isSwapped,
-                                        String(row?.name ?? ""),
-                                        String(col?.name ?? "")
-                                    );
-                                    return (
-                                        <div
-                                            className={`td border border-slate-200 text-right font-medium ${
-                                                v > 0 ? "bg-white text-slate-900" : "bg-slate-50/70 text-slate-400"
-                                            }`}
-                                            key={col.id ?? col.name}
-                                        >
-                                            {numberFormatter.format(v)}
-                                        </div>
-                                    );
-                                })}
+                    <TableFilter
+                        setSearch={ setSearch }
+                        searchPlaceholder="Search for a supply"
+                        size={ size }
+                        setSize={ setSize }
+                        removeAdd
+                        removeFilter
+                    />
+
+
+                        {displayItems.length === 0 ? (
+                            <div className="rounded-md border border-dashed px-4 py-12 text-center text-sm text-slate-500">
+                                No items match your current filters.
                             </div>
-                        );
-                    })}
-                </div>
+                        ) : (
+                            <>
+                                <div className="table-wrapper">
+                                    <div className="thead grid grid-cols-7">
+                                        <div className="th col-span-2">Item</div>
+                                        <div className="th col-span-2">Total</div>
+                                        <div className="th col-span-3">Branches Who Ordered (Full)</div>
+                                    </div>
+
+                                    <div className="bg-white">
+                                        {paginated.map((item) => {
+                                            const orderedBranches = item.branches.filter((branch) => branch.totalOrder > 0);
+                                            const previewBranches = orderedBranches.slice(0, 3);
+                                            const hiddenCount = Math.max(0, orderedBranches.length - previewBranches.length);
+
+                                            return (
+                                                <div key={item.key} className="tdata grid grid-cols-7 border-b border-slate-100 last:border-b-0">
+                                                    <div className="td col-span-2">
+                                                        <div>
+                                                            <p className="font-semibold">{item.name}</p>
+                                                            <p className="text-gray text-xs">{item.sku}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="td col-span-2 font-semibold">{formatNumber(item.totalOrder)}</div>
+
+                                                    <div className="td col-span-3 flex-col">
+                                                        <div className="w-full">
+                                                            {orderedBranches.length === 0 ? (
+                                                                <span className="text-slate-400">No active branch</span>
+                                                            ) : (
+                                                                <>
+                                                                    {previewBranches.map((branch) => (
+                                                                        <div
+                                                                            key={`${item.key}-${branch.branchName}`}
+                                                                            className="w-full rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700"
+                                                                        >
+                                                                            <span className="font-medium">{branch.branchName}</span>
+                                                                            <span className="ml-2 text-slate-500">({numberFormatter.format(branch.totalOrder)})</span>
+                                                                        </div>
+                                                                    ))}
+
+                                                                    {hiddenCount > 0 && (
+                                                                        <HoverCard openDelay={120} closeDelay={80}>
+                                                                            <HoverCardTrigger asChild>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="ml-2 mt-1 text-xs font-semibold text-gray underline underline-offset-2"
+                                                                                >
+                                                                                    View more ({hiddenCount})
+                                                                                </button>
+                                                                            </HoverCardTrigger>
+                                                                            <HoverCardContent
+                                                                                align="start"
+                                                                                className="w-[420px] max-w-[90vw] p-3"
+                                                                            >
+                                                                                <div className="mb-2 text-sm font-semibold text-slate-900">
+                                                                                    All ordering branches
+                                                                                </div>
+                                                                                <div className="max-h-72 space-y-1 overflow-auto pr-1">
+                                                                                    {orderedBranches.map((branch) => (
+                                                                                        <div
+                                                                                            key={`all-${item.key}-${branch.branchName}`}
+                                                                                            className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700"
+                                                                                        >
+                                                                                            <span className="mr-3 truncate">{branch.branchName}</span>
+                                                                                            <span className="shrink-0 font-medium">
+                                                                                                {numberFormatter.format(branch.totalOrder)}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </HoverCardContent>
+                                                                        </HoverCard>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div className="mt-4">
+                                    <TablePagination
+                                        data={displayItems}
+                                        page={page}
+                                        size={size}
+                                        setPage={setPage}
+                                        paginated={paginated}
+                                        search={search}
+                                        filter={itemViewMode}
+                                        pageKey={pageKey}
+                                    />
+                                </div>
+                            </>
+                        )}
+                 
+                </>
             )}
 
             <DatePickerModal

@@ -109,9 +109,9 @@ export function SupplytBreakdownPage() {
     }, [parsedStartDate, periodMode]);
 
     const { data: report, loading: loadingReport } = useFetchOne<InventoryReportBreakdown>(
-        InventoryService.getCommissaryFinanceBreakdown,
-        [startDate, endDate],
-        [1, startDate, endDate]
+        InventoryService.getSupplyFinanceBreakdown,
+        [startDate, endDate, filter],
+        [1, startDate, endDate, filter.replace(' ', '')]
     )
 
     const { setSearch, filteredItems } = useSearchFilter(report?.items, ['rawMaterialName']);

@@ -33,7 +33,7 @@ export function useFetchOne<T>(
         return () => {
         isMounted = false;
         };
-    }, [...args, ...deps]);
+    }, deps);
 
     return { data: item, loading, error };
 }

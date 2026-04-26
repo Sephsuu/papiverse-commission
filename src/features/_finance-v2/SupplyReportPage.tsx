@@ -54,7 +54,7 @@ export function SupplyReportPage() {
     }, [parsedDate, periodMode]);
 
     const { data: report, loading: loadingReport } = useFetchOne(
-        InventoryService.getCommissaryFinanceReport,
+        InventoryService.getSupplyFinanceReport,
         [startDate, endDate],
         [1, startDate, endDate]
     )
@@ -189,8 +189,14 @@ export function SupplyReportPage() {
                                         {category.category} Breakdown
                                     </p>
                                     <p className="mt-1 text-sm text-slate-500">
-                                        {formatNumber(category.soldQuantity)} sold from{" "}
-                                        {formatNumber(category.producedQuantity)} produced
+                                        {Number(category.soldQuantity).toLocaleString("en-PH", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        })} sold from{" "}
+                                        {Number(category.producedQuantity).toLocaleString("en-PH", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        })} produced
                                     </p>
                                 </div>
                                 <Badge
@@ -243,7 +249,7 @@ export function SupplyReportPage() {
                         </div>
                     </div>
                     <Link 
-                        href={`/inventory/pricing}`}
+                        href={`/finance/supply-breakdown`}
                         className="hover:underline max-sm:text-right"
                     >
                         View All

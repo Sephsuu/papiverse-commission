@@ -48,6 +48,7 @@ export const adminRoute = [
             { title: 'Supply Breakdown', href: '/finance/supply-breakdown' },
             { title: 'Raw Material Reports', href: '/finance/raw-material-reports' },
             { title: 'Raw Material Breakdown', href: '/finance/raw-material-breakdown' },
+            { title: 'Branch PO Report', href: '/finance/branch-po-report' },
         ]
     },
     { 
