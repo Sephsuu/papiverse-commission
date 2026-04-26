@@ -1,7 +1,6 @@
 'use client'
 
 import { AppHeader } from "@/components/shared/AppHeader";
-import { AppSelect } from "@/components/shared/AppSelect";
 import { Badge } from "@/components/ui/badge";
 import { PapiverseLoading } from "@/components/ui/loader";
 import { useFetchData } from "@/hooks/use-fetch-data";
@@ -15,7 +14,8 @@ import { Branch } from "@/types/branch";
 import { format } from "date-fns";
 import { CalendarDays, Store } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { DatePickerModal, InventoryReportPeriodMode } from "./components/DatePickerModal";
+import { InventoryReportPeriodMode } from "./components/DatePickerModal";
+import { BranchPODatePickerModal } from "./components/BranchPODatePickerModal";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -101,9 +101,9 @@ export function BranchPOReportPage() {
         [branches]
     );
 
-    const parsedDate = date ? new Date(date) : null;
-    const parsedEndDate = endDate ? new Date(endDate) : null;
     const displayDate = useMemo(() => {
+        const parsedDate = date ? new Date(date) : null;
+        const parsedEndDate = endDate ? new Date(endDate) : null;
         if (!parsedDate || !parsedEndDate) return "Select period";
 
         if (periodMode === "DAY") return format(parsedDate, "MMMM dd, yyyy");
@@ -112,15 +112,16 @@ export function BranchPOReportPage() {
 
         const quarterNumber = Math.floor(parsedDate.getMonth() / 3) + 1;
         return `Q${quarterNumber} ${format(parsedDate, "yyyy")}`;
-    }, [parsedDate, parsedEndDate, periodMode]);
+    }, [date, endDate, periodMode]);
 
     const displayBadge = useMemo(() => {
+        const parsedDate = date ? new Date(date) : null;
         if (!parsedDate) return null;
         if (periodMode === "DAY") return format(parsedDate, "EEEE").toUpperCase();
         if (periodMode === "WEEK") return "Sun-Sat";
         if (periodMode === "MONTH") return "MONTH";
         return "QUARTER";
-    }, [parsedDate, periodMode]);
+    }, [date, periodMode]);
 
     const selectedBranchName = useMemo(
         () => branchOptions.find((item) => item.value === selectedBranch)?.label ?? "",
@@ -184,37 +185,21 @@ export function BranchPOReportPage() {
                 label="Branch Purchase Order Report"
             />
 
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="relative">
-                    <Store className="ml-4 absolute top-1/2 -translate-y-1/2" />
-                    <AppSelect
-                        groupLabel="Branches"
-                        placeholder="Select Branch"
-                        items={branchOptions}
-                        value={selectedBranch}
-                        onChange={setSelectedBranch}
-                        triggerClassName="pl-12! h-auto w-full gap-3 rounded-md border-slate-300 bg-light px-4 py-5 text-base font-bold shadow-sm"
-                    />
-                </div>
-
-                <div
-                    onClick={() => setToggleDate(true)}
-                    className="flex-center-y gap-3 rounded-md border border-slate-300 bg-light px-4 py-2 text-base font-bold shadow-sm w-fit cursor-pointer my-auto ms-auto max-md:w-full"
-                >
-                    <CalendarDays />
-
-                    <div className="scale-x-110 origin-left">
-                        {displayDate}
-                    </div>
-
-                    <Badge className={`bg-darkbrown font-bold ml-2 ${periodMode !== "DAY" && "ml-4"}`}>
-                        {displayBadge}
-                    </Badge>
-                </div>
-           
+            <div
+                onClick={() => setToggleDate(true)}
+                className="flex-center-y w-fit max-w-full cursor-pointer gap-3 rounded-md border border-slate-300 bg-light px-4 py-2 text-base font-bold shadow-sm max-md:w-full"
+            >
+                <Store />
+                <div className="truncate">{selectedBranchName || "Select Branch"}</div>
+                <span className="text-slate-400">|</span>
+                <CalendarDays />
+                <div className="truncate scale-x-110 origin-left">{displayDate}</div>
+                <Badge className={`bg-darkbrown font-bold ml-2 ${periodMode !== "DAY" && "ml-4"}`}>
+                    {displayBadge}
+                </Badge>
             </div>
 
-            <DatePickerModal
+            <BranchPODatePickerModal
                 date={date}
                 mode={periodMode}
                 setDate={setDate}
@@ -222,6 +207,9 @@ export function BranchPOReportPage() {
                 open={toggleDate}
                 setOpen={setToggleDate}
                 setMode={setPeriodMode}
+                branchOptions={branchOptions}
+                selectedBranch={selectedBranch}
+                setSelectedBranch={setSelectedBranch}
             />
 
             {!selectedBranch && (

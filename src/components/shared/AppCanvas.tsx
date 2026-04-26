@@ -16,7 +16,7 @@ export function AppCanvas({ children }: { children: React.ReactNode }) {
         pathName === "/auth/kp-product" ||
         pathName === "/unauthorized";
     const isAuth = isStandaloneAuthPage || claims.roles.length === 0
-    const dismissKey = `changes-banner-dismissed-06-26-2026`;
+    const dismissKey = `changes-banner-dismissed-04-26-2026`;
     const [isDismissed, setIsDismissed] = useState(false);
 
     useEffect(() => {
@@ -39,7 +39,7 @@ export function AppCanvas({ children }: { children: React.ReactNode }) {
             <main className={`w-full bg-slate-100 ${!isAuth ? "py-4 pl-2 pr-4 max-md:pr-2" : ""}`}>
                 {!isAuth && !isDismissed && (
                     <div className="relative mb-4 flex items-start justify-between gap-3 rounded-md border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-darkbrown shadow-sm">
-                        <div className="font-semibold">There were some changes on April 14, 2026 - April 15, 2026.</div>
+                        <div className="font-semibold">There were some changes on April 26, 2026.</div>
                         <Link href="/changes" className="font-semibold underline underline-offset-2 hover:opacity-80">
                             View changes
                         </Link>

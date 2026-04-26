@@ -8,8 +8,6 @@ import { AppHeader } from "@/components/shared/AppHeader";
 import { AppSelect } from "@/components/shared/AppSelect";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { Badge } from "@/components/ui/badge";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Input } from "@/components/ui/input";
 import { SectionLoading } from "@/components/ui/loader";
 import { useFetchOne } from "@/hooks/use-fetch-one";
 import { usePagination } from "@/hooks/use-pagination";
@@ -17,9 +15,12 @@ import { useSearchFilter } from "@/hooks/use-search-filter";
 import { useToday } from "@/hooks/use-today";
 import { SupplyOrderService } from "@/services/supplyOrder.service";
 import { DatePickerModal, InventoryReportPeriodMode } from "../_finance-v2/components/DatePickerModal";
-import { formatNumber } from "@/lib/formatter";
 import { TableFilter } from "@/components/shared/TableFilter";
+import { AppTabSwitcher } from "@/components/shared/AppTabSwitcher";
+import { SupplyItemTable } from "./components/SupplyItemTable";
+import { BranchItemTable } from "./components/BranchItemTable";
 
+const tabs = ['Supply Items', 'Branches']
 type PurchaseBranch = {
     branchName?: string | null;
     totalOrder?: number | null;
@@ -57,6 +58,22 @@ type NormalizedItem = {
     totalOrder: number;
     activeBranchCount: number;
     branches: NormalizedBranch[];
+};
+
+type BranchOrderedItem = {
+    itemKey: string;
+    itemName: string;
+    sku: string;
+    totalOrder: number;
+};
+
+type NormalizedBranchRow = {
+    key: string;
+    branchName: string;
+    totalOrder: number;
+    activeItemCount: number;
+    searchableItems: string;
+    orderedItems: BranchOrderedItem[];
 };
 
 type ItemViewMode = "active" | "all";
@@ -98,19 +115,33 @@ function getRangeBadge(mode: InventoryReportPeriodMode, startDate?: string) {
 
 export function BranchPurchaseItemPage({ className }: { className?: string }) {
     const { today } = useToday();
+    const [tab, setTab] = useState(tabs[0]);
     const [date, setDate] = useState(today);
     const [endDate, setEndDate] = useState(today);
     const [mode, setMode] = useState<InventoryReportPeriodMode>("DAY");
     const [toggleDate, setToggleDate] = useState(false);
     const [itemViewMode, setItemViewMode] = useState<ItemViewMode>("active");
     const [itemSortMode, setItemSortMode] = useState<ItemSortMode>("total_desc");
-
-    const isWeeklyView = mode === "WEEK";
+    const filters = useMemo(
+        () => [
+            { label: "Active Orders", value: "active" },
+            { label: "All Supplies", value: "all" },
+        ],
+        []
+    );
+    const sorts = useMemo(
+        () => [
+            { label: "Highest Total", value: "total_desc" },
+            { label: "Name (A-Z)", value: "name_asc" },
+            { label: "Most Branches", value: "active_branch_desc" },
+        ],
+        []
+    );
 
     const { data: purchaseItems, loading: loadingPurchaseItems } = useFetchOne<BranchPurchaseMatrix>(
         SupplyOrderService.getAllBranchPurchaseItem,
         [mode, date, endDate],
-        [isWeeklyView ? "WEEK" : "CUSTOM_DATE", date, "0"]
+        [date, endDate]
     );
 
     const apiSupplies = useMemo(() => {
@@ -181,6 +212,51 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
         return sorted;
     }, [itemSortMode, itemViewMode, searchFilteredItems]);
 
+    const normalizedBranches = useMemo(() => {
+        const branchMap = new Map<string, { totalOrder: number; orderedItems: BranchOrderedItem[] }>();
+
+        for (const item of normalizedItems) {
+            for (const branch of item.branches) {
+                if (branch.totalOrder <= 0) continue;
+
+                const existing = branchMap.get(branch.branchName) ?? { totalOrder: 0, orderedItems: [] };
+                existing.totalOrder += branch.totalOrder;
+                existing.orderedItems.push({
+                    itemKey: item.key,
+                    itemName: item.name,
+                    sku: item.sku,
+                    totalOrder: branch.totalOrder,
+                });
+                branchMap.set(branch.branchName, existing);
+            }
+        }
+
+        return Array.from(branchMap.entries())
+            .map(([branchName, value]) => {
+                const orderedItems = [...value.orderedItems].sort((a, b) => b.totalOrder - a.totalOrder);
+
+                return {
+                    key: branchName,
+                    branchName,
+                    totalOrder: value.totalOrder,
+                    activeItemCount: orderedItems.length,
+                    searchableItems: orderedItems.map((item) => `${item.itemName} ${item.sku}`).join(" "),
+                    orderedItems,
+                } satisfies NormalizedBranchRow;
+            })
+            .sort((a, b) => b.totalOrder - a.totalOrder);
+    }, [normalizedItems]);
+
+    const {
+        search: branchSearch,
+        setSearch: setBranchSearch,
+        filteredItems: searchFilteredBranches,
+    } = useSearchFilter<NormalizedBranchRow>(normalizedBranches, ["branchName", "searchableItems"]);
+
+    const displayBranches = useMemo(() => {
+        return searchFilteredBranches;
+    }, [searchFilteredBranches]);
+
     const summary = useMemo(() => {
         let activeItems = 0;
         let totalOrderedQty = 0;
@@ -233,23 +309,42 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
         return getRangeBadge(mode, startFromResponse);
     }, [date, mode, purchaseItems?.dateRange?.startDate]);
 
-    const { page, setPage, size, setSize, paginated } = usePagination(displayItems, 12, pageKey);
+    const {
+        page: itemPage,
+        setPage: setItemPage,
+        size: itemSize,
+        setSize: setItemSize,
+        paginated: paginatedItems,
+    } = usePagination(displayItems, 10, `${pageKey}-items`);
+    const {
+        page: branchPage,
+        setPage: setBranchPage,
+        size: branchSize,
+        setSize: setBranchSize,
+        paginated: paginatedBranches,
+    } = usePagination(displayBranches, 10, `${pageKey}-branches`);
 
-    return <div className="h-screen flex-center">
-        <div className="text-8xl">Under Maintenance</div>
-    </div>
+    const isSupplyTab = tab === tabs[0];
+
     return (
         <section className={`stack-md w-full min-w-0 max-w-full overflow-x-hidden pb-12 ${className ?? ""}`}>
             <AppHeader label="Branch Purchase Insights" />
 
  
-            <div
-                onClick={() => setToggleDate(true)}
-                className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-300 bg-light px-4 py-2 text-base font-bold shadow-sm"
-            >
-                <CalendarDays className="h-5 w-5" />
-                <div className="truncate scale-x-110 origin-left">{dateLabel}</div>
-                <Badge className="ml-auto bg-darkbrown font-bold">{dateBadge}</Badge>
+            <div className="flex-center-y justify-between">
+                <AppTabSwitcher
+                    tabs={tabs}
+                    selectedTab={tab}
+                    setSelectedTab={setTab}
+                />
+                <div
+                    onClick={() => setToggleDate(true)}
+                    className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-300 bg-light px-4 py-2 text-base font-bold shadow-sm"
+                >
+                    <CalendarDays className="h-5 w-5" />
+                    <div className="truncate scale-x-110 origin-left">{dateLabel}</div>
+                    <Badge className="ml-auto bg-darkbrown font-bold">{dateBadge}</Badge>
+                </div>
             </div>
 
 
@@ -300,137 +395,82 @@ export function BranchPurchaseItemPage({ className }: { className?: string }) {
                         </div>
                     </div>
 
-                    <div className="mb-3 flex items-end justify-between gap-3 max-md:flex-col max-md:items-start">
-                        <div>
-                            <div className="text-lg font-semibold text-darkbrown">Item Details</div>
-                            <div className="text-sm text-slate-500">Items, branches who ordered, and ordered quantity per branch.</div>
+                    <div>
+                        <div className="text-lg font-semibold text-darkbrown">
+                            {isSupplyTab ? "Item Details" : "Branch Details"}
                         </div>
-
-                        <div className="w-full max-w-[220px]">
-                            <AppSelect
-                                groupLabel="Rows per page"
-                                placeholder="Rows"
-                                value={String(size)}
-                                onChange={(value) => setSize(Number(value))}
-                                items={["10", "20", "30", "50"]}
-                                triggerClassName="h-9 bg-white"
-                            />
+                        <div className="text-sm text-slate-500">
+                            {isSupplyTab
+                                ? "Items, branches who ordered, and ordered quantity per branch."
+                                : "Branches, ordered items, and quantity ordered per item."}
                         </div>
                     </div>
 
-                    <TableFilter
-                        setSearch={ setSearch }
-                        searchPlaceholder="Search for a supply"
-                        size={ size }
-                        setSize={ setSize }
-                        removeAdd
-                        removeFilter
-                    />
+                    {isSupplyTab ? (
+                        <div className="flex-center-y gap-2 max-md:flex-col">
+                            <TableFilter
+                                className="w-full"
+                                setSearch={setSearch}
+                                search={search}
+                                searchPlaceholder="Search for a supply"
+                                size={itemSize}
+                                setSize={setItemSize}
+                                filters={filters}
+                                filter={itemViewMode}
+                                setFilter={(value) => setItemViewMode(value as ItemViewMode)}
+                                removeAdd
+                            />
+                            <AppSelect
+                                className="w-full md:w-[220px] md:shrink-0"
+                                triggerClassName="bg-light shadow-xs border-input"
+                                items={[...sorts]}
+                                value={itemSortMode}
+                                onChange={(value) => setItemSortMode(value as ItemSortMode)}
+                            />
+                        </div>
+                    ) : (
+                        <TableFilter
+                            className="w-full"
+                            setSearch={setBranchSearch}
+                            search={branchSearch}
+                            searchPlaceholder="Search for a branch or item"
+                            size={branchSize}
+                            setSize={setBranchSize}
+                            removeAdd
+                            removeFilter
+                        />
+                    )}
 
+                    {isSupplyTab && displayItems.length === 0 ? (
+                        <div className="rounded-md border border-dashed px-4 py-12 text-center text-sm text-slate-500">
+                            No items match your current filters.
+                        </div>
+                    ) : !isSupplyTab && displayBranches.length === 0 ? (
+                        <div className="rounded-md border border-dashed px-4 py-12 text-center text-sm text-slate-500">
+                            No branches match your current filters.
+                        </div>
+                    ) : (
+                        <>
+                            {isSupplyTab ? (
+                                <SupplyItemTable items={paginatedItems} />
+                            ) : (
+                                <BranchItemTable branches={paginatedBranches} />
+                            )}
 
-                        {displayItems.length === 0 ? (
-                            <div className="rounded-md border border-dashed px-4 py-12 text-center text-sm text-slate-500">
-                                No items match your current filters.
+                            <div className="mt-4">
+                                <TablePagination
+                                    data={isSupplyTab ? displayItems : displayBranches}
+                                    page={isSupplyTab ? itemPage : branchPage}
+                                    size={isSupplyTab ? itemSize : branchSize}
+                                    setPage={isSupplyTab ? setItemPage : setBranchPage}
+                                    paginated={isSupplyTab ? paginatedItems : paginatedBranches}
+                                    search={isSupplyTab ? search : branchSearch}
+                                    filter={isSupplyTab ? itemViewMode : "all"}
+                                    pageKey={isSupplyTab ? `${pageKey}-items` : `${pageKey}-branches`}
+                                />
                             </div>
-                        ) : (
-                            <>
-                                <div className="table-wrapper">
-                                    <div className="thead grid grid-cols-7">
-                                        <div className="th col-span-2">Item</div>
-                                        <div className="th col-span-2">Total</div>
-                                        <div className="th col-span-3">Branches Who Ordered (Full)</div>
-                                    </div>
-
-                                    <div className="bg-white">
-                                        {paginated.map((item) => {
-                                            const orderedBranches = item.branches.filter((branch) => branch.totalOrder > 0);
-                                            const previewBranches = orderedBranches.slice(0, 3);
-                                            const hiddenCount = Math.max(0, orderedBranches.length - previewBranches.length);
-
-                                            return (
-                                                <div key={item.key} className="tdata grid grid-cols-7 border-b border-slate-100 last:border-b-0">
-                                                    <div className="td col-span-2">
-                                                        <div>
-                                                            <p className="font-semibold">{item.name}</p>
-                                                            <p className="text-gray text-xs">{item.sku}</p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="td col-span-2 font-semibold">{formatNumber(item.totalOrder)}</div>
-
-                                                    <div className="td col-span-3 flex-col">
-                                                        <div className="w-full">
-                                                            {orderedBranches.length === 0 ? (
-                                                                <span className="text-slate-400">No active branch</span>
-                                                            ) : (
-                                                                <>
-                                                                    {previewBranches.map((branch) => (
-                                                                        <div
-                                                                            key={`${item.key}-${branch.branchName}`}
-                                                                            className="w-full rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700"
-                                                                        >
-                                                                            <span className="font-medium">{branch.branchName}</span>
-                                                                            <span className="ml-2 text-slate-500">({numberFormatter.format(branch.totalOrder)})</span>
-                                                                        </div>
-                                                                    ))}
-
-                                                                    {hiddenCount > 0 && (
-                                                                        <HoverCard openDelay={120} closeDelay={80}>
-                                                                            <HoverCardTrigger asChild>
-                                                                                <button
-                                                                                    type="button"
-                                                                                    className="ml-2 mt-1 text-xs font-semibold text-gray underline underline-offset-2"
-                                                                                >
-                                                                                    View more ({hiddenCount})
-                                                                                </button>
-                                                                            </HoverCardTrigger>
-                                                                            <HoverCardContent
-                                                                                align="start"
-                                                                                className="w-[420px] max-w-[90vw] p-3"
-                                                                            >
-                                                                                <div className="mb-2 text-sm font-semibold text-slate-900">
-                                                                                    All ordering branches
-                                                                                </div>
-                                                                                <div className="max-h-72 space-y-1 overflow-auto pr-1">
-                                                                                    {orderedBranches.map((branch) => (
-                                                                                        <div
-                                                                                            key={`all-${item.key}-${branch.branchName}`}
-                                                                                            className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700"
-                                                                                        >
-                                                                                            <span className="mr-3 truncate">{branch.branchName}</span>
-                                                                                            <span className="shrink-0 font-medium">
-                                                                                                {numberFormatter.format(branch.totalOrder)}
-                                                                                            </span>
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            </HoverCardContent>
-                                                                        </HoverCard>
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                <div className="mt-4">
-                                    <TablePagination
-                                        data={displayItems}
-                                        page={page}
-                                        size={size}
-                                        setPage={setPage}
-                                        paginated={paginated}
-                                        search={search}
-                                        filter={itemViewMode}
-                                        pageKey={pageKey}
-                                    />
-                                </div>
-                            </>
-                        )}
+                        </>
+                    )}
                  
                 </>
             )}

@@ -12,6 +12,34 @@ export type ChangeEntry = {
 
 export const changes: ChangeEntry[] = [
     {
+        id: "finance-supply-profit-computation-aligned-to-monitoring-excel",
+        title: "Supply report and breakdown computation updated.",
+        date: "2026-04-26",
+        area: "Finance",
+        summary: "Binago na po natin yung computation ng SUPPLY REPORT at SUPPLY BREAKDOWN para i-align sa Excel file na ginagamit ninyo sa profit monitoring. Pareho na po ngayon ng computation flow/reference style para mas tugma ang lumalabas sa system at sa manual monitoring ninyo.",
+    },
+    {
+        id: "finance-branch-po-profit-report",
+        title: "Branch PO profit report added.",
+        date: "2026-04-26",
+        area: "Finance",
+        summary: "Nadagdag na po ang BRANCH PURCHASE ORDER PROFIT REPORT para makita ang profit performance ng kada purchase order per branch based sa PO-related data.",
+    },
+    {
+        id: "finance-po-profit-report",
+        title: "PO profit report added.",
+        date: "2026-04-26",
+        area: "Finance",
+        summary: "Nadagdag na rin po ang PURCHASE ORDER PROFIT REPORT (click nyo lang po yung PO number sa Branch PO Report) para may dedicated view ng profit per purchase order.",
+    },
+    {
+        id: "branch-purchase-item-redesign",
+        title: "Branch purchase item page redesigned.",
+        date: "2026-04-26",
+        area: "Logs",
+        summary: "Ni-redesign na po ang BRANCH PURCHASE ITEM page para mas madaling i-review ang data. May tabbed views na po for SUPPLY ITEMS at BRANCHES, improved filtering/sorting/pagination behavior, at clearer table presentation ng ordered items at ordering branches.",
+    },
+    {
         id: "navigation-sidebar-restructure",
         title: "Sidebar navigation regrouped.",
         date: "2026-04-16",
