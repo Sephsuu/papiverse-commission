@@ -1,5 +1,5 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { formatDateToWords, getWeekday } from "@/lib/formatter";
+import { formatDateToWords, formatToPeso, getWeekday } from "@/lib/formatter";
 import { InventoryLog } from "@/types/inventory-log";
 import dayjs from "dayjs"
 import { ArrowBigDown, ArrowBigUp, Boxes, CalendarClock, CircleDollarSign, ScanText } from "lucide-react";
@@ -19,18 +19,45 @@ export function InputLogs({ logs }: Props) {
             {logs.map((item) => {
                 const inputCount = item.logs.filter((subItem) => subItem.type === "IN").length;
                 const outputCount = item.logs.filter((subItem) => subItem.type === "OUT").length;
+                const productionLogs = item.logs.filter(
+                    (subItem) => (subItem.businessEvent ?? "").trim() === "PRODUCTION"
+                );
+                const totalCapital = productionLogs.reduce(
+                    (sum, subItem) => sum + (subItem.capitalAmount ?? 0),
+                    0
+                );
+                const totalSales = productionLogs.reduce(
+                    (sum, subItem) => sum + (subItem.salesAmount ?? 0),
+                    0
+                );
+                const totalProfit = totalSales - totalCapital;
 
                 return (
                     <Accordion type="multiple" key={item.date} className="overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm">
-                        <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/80 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/80 px-4 py-2 sm:flex-row sm:items-start sm:justify-between">
                             <div className="flex items-center gap-2">
                                 <div className="text-base font-semibold text-darkbrown">{formatDateToWords(item.date)}</div>
-                                <div className="rounded-sm bg-dark px-2 py-0.5 text-[10px] font-semibold text-light">
+                                <div className="rounded-sm bg-dark px-2 text-[10px] font-semibold text-light">
                                     {getWeekday(item.date)}
                                 </div>
-                            </div>
 
-                            <div className="flex-center-y gap-4 sm:w-auto">
+                                <div className="ml-4 grid grid-cols-3 gap-2">
+                                    <div className="space-x-2 p-2 border bg-white rounded-md">
+                                        <span className="text-gray text-xs">Total Capital</span>
+                                        <span className="text-sm font-semibold">{formatToPeso(Number(totalCapital.toFixed(2)))}</span>
+                                    </div>
+                                    <div className="space-x-2 p-2 border bg-white rounded-md">
+                                        <span className="text-gray text-xs">Amount</span>
+                                        <span className="text-sm font-semibold">{formatToPeso(Number(totalSales.toFixed(2)))}</span>
+                                    </div>
+                                    <div className="space-x-2 p-2 border bg-white rounded-md">
+                                        <span className="text-gray text-xs">Projected Profit</span>
+                                        <span className="text-sm font-semibold text-darkgreen">{formatToPeso(Number(totalProfit.toFixed(2)))}</span>
+                                    </div>
+                                </div>
+                            </div>
+                                
+                            <div className="flex-center-y gap-4 my-auto sm:w-auto">
                                 <div className="flex-center-y">
                                     <span className="text-darkgreen font-semibold">IN</span>
                                     <span className="ml-2 text-gray font-semibold">{inputCount}</span>
@@ -88,19 +115,22 @@ export function InputLogs({ logs }: Props) {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center gap-2 text-sm font-semibold">
-                                                    {subItem.type === "IN" ? (
-                                                        <ArrowBigUp className="h-4 w-4 text-darkgreen" fill="#014421" />
-                                                    ) : (
-                                                        <ArrowBigDown className="h-4 w-4 text-darkred" fill="#731c13" />
-                                                    )}
-                                                    <span className={subItem.type === "IN" ? "text-darkgreen" : "text-darkred"}>
-                                                        {subItem.quantityChanged} {subItem.unitMeasurement}
-                                                    </span>
+                                                <div className="flex flex-col items-end gap-2">
+                                                    <div className="flex items-center gap-2 text-sm font-semibold">
+                                                        {subItem.type === "IN" ? (
+                                                            <ArrowBigUp className="h-4 w-4 text-darkgreen" fill="#014421" />
+                                                        ) : (
+                                                            <ArrowBigDown className="h-4 w-4 text-darkred" fill="#731c13" />
+                                                        )}
+                                                        <span className={subItem.type === "IN" ? "text-darkgreen" : "text-darkred"}>
+                                                            {subItem.quantityChanged} {subItem.unitMeasurement}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-gray text-xs">{dayjs(subItem.dateTime).format("ddd, MMM D, YYYY h:mm A")}</span>
                                                 </div>
                                             </div>
 
-                                            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                                                 <div className="rounded-md bg-slate-50 px-3 py-3">
                                                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.14em] text-slate-500">
                                                         <ScanText className="h-4 w-4" />
@@ -112,20 +142,37 @@ export function InputLogs({ logs }: Props) {
                                                 </div>
                                                 <div className="rounded-md bg-slate-50 px-3 py-3">
                                                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.14em] text-slate-500">
-                                                        <CalendarClock className="h-4 w-4" />
-                                                        Timestamp
+                                                        <CircleDollarSign className="h-4 w-4" />
+                                                        Capital
                                                     </div>
                                                     <div className="mt-2 font-medium text-slate-900">
-                                                        {dayjs(subItem.dateTime).format("ddd, MMM D, YYYY h:mm A")}
+                                                        {(subItem.businessEvent ?? "").trim() === "PRODUCTION" && subItem.capitalAmount != null
+                                                            ? `PHP ${subItem.capitalAmount.toFixed(2)}`
+                                                            : "Not available"}
                                                     </div>
                                                 </div>
                                                 <div className="rounded-md bg-slate-50 px-3 py-3">
                                                     <div className="flex items-center gap-2 text-xs uppercase tracking-[0.14em] text-slate-500">
                                                         <CircleDollarSign className="h-4 w-4" />
-                                                        Capital
+                                                        Sales
                                                     </div>
                                                     <div className="mt-2 font-medium text-slate-900">
-                                                        {subItem.capitalAmount != null ? `PHP ${subItem.capitalAmount.toFixed(2)}` : "Not available"}
+                                                        {(subItem.businessEvent ?? "").trim() === "PRODUCTION" && subItem.salesAmount != null
+                                                            ? `PHP ${subItem.salesAmount.toFixed(2)}`
+                                                            : "Not available"}
+                                                    </div>
+                                                </div>
+                                                <div className="rounded-md bg-slate-50 px-3 py-3">
+                                                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.14em] text-slate-500">
+                                                        <CircleDollarSign className="h-4 w-4" />
+                                                        Profit
+                                                    </div>
+                                                    <div className="mt-2 font-medium text-slate-900">
+                                                        {(subItem.businessEvent ?? "").trim() === "PRODUCTION" &&
+                                                        subItem.salesAmount != null &&
+                                                        subItem.capitalAmount != null
+                                                            ? `PHP ${(subItem.salesAmount - subItem.capitalAmount).toFixed(2)}`
+                                                            : "Not available"}
                                                     </div>
                                                 </div>
                                                 <div className="rounded-md bg-slate-50 px-3 py-3">

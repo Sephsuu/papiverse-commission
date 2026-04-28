@@ -7,7 +7,7 @@ import { PapiverseLoading } from "@/components/ui/loader";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useFetchOne } from "@/hooks/use-fetch-one";
 import { useToday } from "@/hooks/use-today";
-import { formatDateToWords, formatToPeso } from "@/lib/formatter";
+import { formatDateToWords, formatNumber, formatToPeso } from "@/lib/formatter";
 import { InventoryService } from "@/services/inventory.service";
 import { InventoryReportBreakdown } from "@/types/inventory";
 import { format } from "date-fns";
@@ -39,14 +39,6 @@ const sorts = [
 ] as const;
 type SortKey = (typeof sorts)[number]["value"];
 
-
-const numberFormatter = new Intl.NumberFormat("en-PH", {
-    maximumFractionDigits: 2,
-});
-
-function formatNumber(value: number) {
-    return numberFormatter.format(value);
-}
 
 function formatProfit(value: number) {
     return value < 0 ? `-${formatToPeso(Math.abs(value))}` : formatToPeso(value);

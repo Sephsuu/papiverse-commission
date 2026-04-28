@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# temporary ignored files
+src/features/_finance-v2/components/CreateExpense.tsx
+src/types/expense.ts

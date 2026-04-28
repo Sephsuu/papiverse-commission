@@ -11,6 +11,7 @@ import { handleChange } from "@/lib/form-handle";
 import { cn } from "@/lib/utils";
 import { ExpenseService } from "@/services/expense.service";
 import { Expense, expenseFields, expenseInit } from "@/types/expense";
+import { useAuth } from "@/hooks/use-auth";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import Image from "next/image";
@@ -24,6 +25,14 @@ const paymentModes = [
     { label: "Credit Card", value: "CREDIT_CARD" },
     { label: "Debit Card", value: "DEBIT_CARD" },
 ];
+const categoryOptions = [
+    { label: "Meat", value: "MEAT" },
+    { label: "Snowfrost", value: "SNOW" },
+];
+const purposeOptionsByCategory: Record<string, string[]> = {
+    MEAT: ["CFS", "ATKINS", "BASILIA", "EASYTRIP/RFID", "JFQ", "JEN", "OTHERS"],
+    SNOW: ["JERRY", "REN", "JEN", "PAYROLL", "OTHERS"],
+};
 
 interface Props {
     setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -31,6 +40,7 @@ interface Props {
 }
 
 export function CreateExpense({ setOpen, setReload }: Props) {
+    const { claims } = useAuth();
     const [onProcess, setProcess] = useState(false);
     const [expense, setExpense] = useState<Partial<Expense>>(() => {
         const spentAt = toExpenseDateTimeString(new Date());
@@ -47,6 +57,7 @@ export function CreateExpense({ setOpen, setReload }: Props) {
         parseExpenseCalendarDate(toExpenseDateTimeString(new Date()))
     );
     const [dateOpen, setDateOpen] = useState(false);
+    const isOthersPurpose = (expense.purpose ?? "") === "OTHERS";
 
     function handleTotalChange(value: string) {
         const sanitizedValue = sanitizeDecimalInput(value);
@@ -85,15 +96,23 @@ export function CreateExpense({ setOpen, setReload }: Props) {
                     invalid = true;
                 }
             }
+            if (isOthersPurpose && !(expense.customPurpose ?? "").trim()) {
+                invalid = true;
+            }
             if (invalid) {
                 toast.info("Please fill up all fields!");
                 setProcess(false);
                 return
             }
-            
-            const data = await ExpenseService.createExpense(expense);
+
+            const payload: Partial<Expense> = {
+                ...expense,
+                branchId: claims.branch.branchId,
+                purpose: isOthersPurpose ? expense.customPurpose : expense.purpose,
+            };
+            const data = await ExpenseService.createExpense(payload);
             if (data) {
-                toast.success(`Expenditure for ${expense.purpose} added successfully.`);
+                toast.success(`Expenditure for ${payload.purpose} added successfully.`);
                 setReload(prev => !prev);
                 setOpen(false);
                 const nextSpentAt = toExpenseDateTimeString(new Date());
@@ -190,14 +209,64 @@ export function CreateExpense({ setOpen, setReload }: Props) {
                         </Select>
                     </div>
                     <div className="flex flex-col gap-1 col-span-2">
-                        <div>Expenditure Purpose</div>
-                        <Textarea 
-                            className="border border-gray"
-                            name="purpose"
-                            value={ expense.purpose ?? "" }
-                            onChange={ e => handleChange(e, setExpense) }
-                        />
+                        <div>Order Category</div>
+                        <Select
+                            value={ expense.orderCategory ?? "MEAT" }
+                            onValueChange={ (value) => setExpense((prev) => ({
+                                ...prev,
+                                orderCategory: value,
+                                purpose: "",
+                                customPurpose: "",
+                            }))}
+                        >
+                            <SelectTrigger className="w-full border border-gray">
+                                <SelectValue placeholder="Select Category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectLabel>Categories</SelectLabel>
+                                    {categoryOptions.map((item) => (
+                                        <SelectItem key={ item.value } value={ item.value }>{ item.label }</SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
                     </div>
+                    <div className="flex flex-col gap-1 col-span-2">
+                        <div>Expenditure Purpose</div>
+                        <Select
+                            value={ expense.purpose ?? "" }
+                            onValueChange={ (value) => setExpense((prev) => ({
+                                ...prev,
+                                purpose: value,
+                                customPurpose: value === "OTHERS" ? prev.customPurpose : "",
+                            }))}
+                        >
+                            <SelectTrigger className="w-full border border-gray">
+                                <SelectValue placeholder="Select Purpose" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectLabel>Purpose</SelectLabel>
+                                    {(purposeOptionsByCategory[expense.orderCategory ?? "MEAT"] ?? []).map((item) => (
+                                        <SelectItem key={ item } value={ item }>{ item }</SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {isOthersPurpose && (
+                        <div className="flex flex-col gap-1 col-span-2">
+                            <div>Specify Purpose</div>
+                            <Textarea 
+                                className="border border-gray"
+                                name="customPurpose"
+                                value={ expense.customPurpose ?? "" }
+                                onChange={ e => handleChange(e, setExpense) }
+                                placeholder="Type your purpose here"
+                            />
+                        </div>
+                    )}
                 </div>
                 <form 
                     className="flex justify-end gap-4"

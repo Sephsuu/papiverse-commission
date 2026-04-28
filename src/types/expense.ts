@@ -6,13 +6,17 @@ export interface Expense {
     addedByName: string;
     spentAt: string;
     modeOfPayment: string;
+    orderCategory?: string;
+    branchId?: number;
     purpose: string;
+    customPurpose?: string;
 
 }
 
 export const expenseInit: Partial<Expense> = {
     total: 0,
     modeOfPayment: 'CASH',
+    orderCategory: 'MEAT',
     purpose: ''
 };
 

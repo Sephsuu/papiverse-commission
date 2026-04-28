@@ -95,6 +95,18 @@ const columns = [
     { title: "Snow Profit", style: "" },
     { title: "Overall Profit", style: "" },
 ];
+const branchNameColors = [
+    "text-slate-900",
+    "text-blue-950",
+    "text-emerald-900",
+    "text-red-950",
+    "text-amber-900",
+    "text-cyan-950",
+    "text-violet-950",
+    "text-fuchsia-950",
+    "text-lime-900",
+    "text-stone-900",
+];
 
 const emptyRanking = async () => null;
 
@@ -184,6 +196,40 @@ export function BranchProfitRankingPage() {
             },
         ];
     }, [ranking]);
+    const branchColorById = useMemo(() => {
+        const map = new Map<number, string>();
+        tableRows.forEach((row, index) => {
+            map.set(row.branchId, branchNameColors[index % branchNameColors.length]);
+        });
+        return map;
+    }, [tableRows]);
+    const branchColorByName = useMemo(() => {
+        const map = new Map<string, string>();
+        tableRows.forEach((row) => {
+            map.set(row.branchName, branchColorById.get(row.branchId) ?? "text-slate-900");
+        });
+        return map;
+    }, [tableRows, branchColorById]);
+    const branchHexByName = useMemo(() => {
+        const classToHex: Record<string, string> = {
+            "text-slate-900": "#0f172a",
+            "text-blue-950": "#172554",
+            "text-emerald-900": "#064e3b",
+            "text-red-950": "#450a0a",
+            "text-amber-900": "#78350f",
+            "text-cyan-950": "#083344",
+            "text-violet-950": "#2e1065",
+            "text-fuchsia-950": "#4a044e",
+            "text-lime-900": "#365314",
+            "text-stone-900": "#1c1917",
+        };
+        const map = new Map<string, string>();
+        tableRows.forEach((row) => {
+            const twClass = branchColorByName.get(row.branchName) ?? "text-slate-900";
+            map.set(row.branchName, classToHex[twClass] ?? "#0f172a");
+        });
+        return map;
+    }, [tableRows, branchColorByName]);
 
     useEffect(() => {
         const params = new URLSearchParams(searchParams.toString());
@@ -244,7 +290,25 @@ export function BranchProfitRankingPage() {
                                         textAnchor="end"
                                         interval={0}
                                         height={74}
-                                        tick={{ fontSize: 11 }}
+                                        tick={(props) => {
+                                            const { x, y, payload } = props;
+                                            const label = String(payload?.value ?? "");
+                                            const fill = branchHexByName.get(label) ?? "#0f172a";
+                                            return (
+                                                <text
+                                                    x={x}
+                                                    y={y}
+                                                    dy={16}
+                                                    textAnchor="end"
+                                                    transform={`rotate(-25, ${x}, ${y})`}
+                                                    fill={fill}
+                                                    fontSize={11}
+                                                    fontWeight={700}
+                                                >
+                                                    {label}
+                                                </text>
+                                            );
+                                        }}
                                     />
                                     <YAxis
                                         width={72}
@@ -290,8 +354,8 @@ export function BranchProfitRankingPage() {
                                             <div className="td w-15 flex-center">{row.overallRank}</div>
                                             <div className="w-full grid grid-cols-6 border-b border-slate-100 last:border-b-0">
                                                 <Link 
-                                                    href={`/finance/branch-po-report?branch=${row.branchId}&start=${date}&end=${endDate}`}
-                                                    className="td hover:font-semibold hover:underline"
+                                                    href={`/finance/branch-po-report?branch=${row.branchId}&startDate=${date}&endDate=${endDate}&mode=${periodMode}`}
+                                                    className={`td font-semibold hover:font-semibold hover:underline ${branchColorById.get(row.branchId) ?? "text-slate-900"}`}
                                                 >
                                                     {row.branchName}
                                                 </Link>

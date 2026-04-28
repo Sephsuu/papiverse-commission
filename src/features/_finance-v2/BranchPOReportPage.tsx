@@ -82,12 +82,17 @@ export function BranchPOReportPage() {
     const initialBranch = searchParams.get("branch") ?? "";
     const initialStartDate = searchParams.get("startDate") ?? searchParams.get("start") ?? today;
     const initialEndDate = searchParams.get("endDate") ?? searchParams.get("end") ?? today;
+    const initialModeParam = searchParams.get("mode");
+    const initialMode: InventoryReportPeriodMode =
+        initialModeParam === "WEEK" || initialModeParam === "MONTH" || initialModeParam === "QUARTER"
+            ? initialModeParam
+            : "DAY";
 
     const [selectedBranch, setSelectedBranch] = useState<string>(initialBranch);
     const [date, setDate] = useState(initialStartDate);
     const [endDate, setEndDate] = useState(initialEndDate);
     const [toggleDate, setToggleDate] = useState(false);
-    const [periodMode, setPeriodMode] = useState<InventoryReportPeriodMode>("DAY");
+    const [periodMode, setPeriodMode] = useState<InventoryReportPeriodMode>(initialMode);
 
     const { data: branches, loading: loadingBranches } = useFetchData<Branch>(
         BranchService.getAllBranches
@@ -146,12 +151,15 @@ export function BranchPOReportPage() {
         if (endDate) params.set("endDate", endDate);
         else params.delete("endDate");
 
+        if (periodMode) params.set("mode", periodMode);
+        else params.delete("mode");
+
         const current = searchParams.toString();
         const next = params.toString();
         if (current !== next) {
             router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
         }
-    }, [selectedBranch, date, endDate, pathname, router, searchParams]);
+    }, [selectedBranch, date, endDate, periodMode, pathname, router, searchParams]);
 
     const summaryCards = useMemo(() => {
         if (!branchProfit) return [];
