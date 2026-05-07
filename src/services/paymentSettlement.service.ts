@@ -25,6 +25,16 @@ export interface CreateLedgerEntryRequest {
     recordedAt?: string | null;
 }
 
+export interface UpdateLedgerEntryRequest {
+    fromPersonId: number;
+    toPersonId: number;
+    amount: number;
+    entryType: SettlementEntryType;
+    weekLabel?: string;
+    description?: string;
+    recordedAt?: string | null;
+}
+
 export interface PairSummaryQuery {
     personAId: number;
     personBId: number;
@@ -81,10 +91,22 @@ export class PaymentSettlementService {
         );
     }
 
-    static async getLedgerEntriesByGroup(settlementGroupId: number) {
+    static async getLedgerEntriesByGroup(settlementGroupId: number, month : string) {
         return await requestData(
-            `${paymentSettlementsUrl}/groups/${settlementGroupId}/entries`,
+            `${paymentSettlementsUrl}/groups/${settlementGroupId}/entries?month=${month}`,
             "GET"
+        );
+    }
+
+    static async updateLedgerEntry(
+        ledgerEntryId: number,
+        payload: UpdateLedgerEntryRequest
+    ) {
+        return await requestData(
+            `${paymentSettlementsUrl}/entries/${ledgerEntryId}`,
+            "PUT",
+            undefined,
+            payload
         );
     }
 

@@ -1,26 +1,33 @@
 import { AppSelect } from "@/components/shared/AppSelect";
-import { AddButton, Button } from "@/components/ui/button";
+import { Button, UpdateButton } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { Textarea } from "@/components/ui/textarea";
 import { PaymentSettlementService, SettlementEntryType } from "@/services/paymentSettlement.service";
 import { format } from "date-fns";
-import Image from "next/image";
-import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
-import { toast } from "sonner";
 import { ArrowLeftRight, CalendarIcon } from "lucide-react";
+import Image from "next/image";
+import React, { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 type Person = { id: number; displayName: string };
+type LedgerEntry = {
+    id: number;
+    fromPersonId: number;
+    toPersonId: number;
+    amount: number;
+    entryType: SettlementEntryType;
+    description: string;
+    recordedAt?: string;
+};
 
 interface Props {
-    setOpen: Dispatch<SetStateAction<boolean>>;
-    setReload: Dispatch<SetStateAction<boolean>>;
-    settlementGroupId: number;
+    toUpdate: LedgerEntry;
     people: Person[];
-    selectedMonth: string;
-    selectedYear: string;
+    setUpdate: React.Dispatch<React.SetStateAction<LedgerEntry | undefined>>;
+    setReload: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 function getWeekLabelFromDate(date: Date) {
@@ -35,57 +42,27 @@ function toLocalDateTimeString(date: Date) {
     return format(date, "yyyy-MM-dd'T'HH:mm:ss");
 }
 
-function getLockedMonthDate(selectedMonth: string, selectedYear: string) {
-    const monthNum = Number(selectedMonth);
-    const yearNum = Number(selectedYear);
-
-    if (!monthNum || !yearNum) return new Date();
-    return new Date(yearNum, monthNum - 1, 1);
+function parseRecordedAt(value?: string) {
+    if (!value) return new Date();
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return new Date();
+    return parsed;
 }
 
-export function CreatePaymentSettlementEntry({
-    setOpen,
-    setReload,
-    settlementGroupId,
-    people,
-    selectedMonth,
-    selectedYear,
-}: Props) {
+export function UpdatePaymentSettlementEntry({ toUpdate, people, setUpdate, setReload }: Props) {
     const [onProcess, setProcess] = useState(false);
     const [dateOpen, setDateOpen] = useState(false);
-    const [fromPersonId, setFromPersonId] = useState(people[0]?.id ? String(people[0].id) : "");
-    const [toPersonId, setToPersonId] = useState(people[1]?.id ? String(people[1].id) : "");
-    const [entryType, setEntryType] = useState<SettlementEntryType>("DEBT");
-    const [amount, setAmount] = useState("");
-    const [description, setDescription] = useState("");
-    const lockedMonthDate = useMemo(
-        () => getLockedMonthDate(selectedMonth, selectedYear),
-        [selectedMonth, selectedYear]
-    );
-    const [recordedAtDate, setRecordedAtDate] = useState<Date>(() => {
-        const now = new Date();
-        const initial = new Date(lockedMonthDate);
-
-        const isCurrentMonth =
-            now.getFullYear() === lockedMonthDate.getFullYear() &&
-            now.getMonth() === lockedMonthDate.getMonth();
-
-        if (isCurrentMonth) {
-            initial.setDate(now.getDate());
-            initial.setHours(now.getHours(), now.getMinutes(), 0, 0);
-        } else {
-            initial.setHours(12, 0, 0, 0);
-        }
-
-        return initial;
-    });
+    const [fromPersonId, setFromPersonId] = useState(String(toUpdate.fromPersonId));
+    const [toPersonId, setToPersonId] = useState(String(toUpdate.toPersonId));
+    const [entryType, setEntryType] = useState<SettlementEntryType>(toUpdate.entryType);
+    const [amount, setAmount] = useState(String(toUpdate.amount ?? ""));
+    const [description, setDescription] = useState(toUpdate.description ?? "");
+    const [recordedAtDate, setRecordedAtDate] = useState<Date>(() => parseRecordedAt(toUpdate.recordedAt));
 
     const personItems = useMemo(
         () => people.map((person) => ({ label: person.displayName, value: String(person.id) })),
         [people]
     );
-    const fromPersonItems = personItems;
-    const toPersonItems = personItems;
 
     React.useEffect(() => {
         if (!fromPersonId || !toPersonId) return;
@@ -99,32 +76,22 @@ export function CreatePaymentSettlementEntry({
         try {
             setProcess(true);
 
-            if (!settlementGroupId) {
-                toast.info("Please select a settlement group first.");
-                setProcess(false);
-                return;
-            }
-
             if (!fromPersonId || !toPersonId || !amount.trim() || !description.trim()) {
                 toast.info("Please fill up all fields.");
-                setProcess(false);
                 return;
             }
 
             if (fromPersonId === toPersonId) {
                 toast.info("From and To person must be different.");
-                setProcess(false);
                 return;
             }
 
             if (Number(amount) <= 0) {
                 toast.info("Amount must be greater than zero.");
-                setProcess(false);
                 return;
             }
 
             const payload = {
-                settlementGroupId,
                 fromPersonId: Number(fromPersonId),
                 toPersonId: Number(toPersonId),
                 amount: Number(amount),
@@ -134,12 +101,12 @@ export function CreatePaymentSettlementEntry({
                 recordedAt: toLocalDateTimeString(recordedAtDate),
             };
 
-            const data = await PaymentSettlementService.createLedgerEntry(settlementGroupId, payload);
+            const data = await PaymentSettlementService.updateLedgerEntry(toUpdate.id, payload);
 
             if (data) {
-                toast.success("Payment settlement entry created successfully.");
+                toast.success("Payment settlement entry updated successfully.");
                 setReload((prev) => !prev);
-                setOpen(false);
+                setUpdate(undefined);
             }
         } catch (error) {
             toast.error(`${error}`);
@@ -149,7 +116,7 @@ export function CreatePaymentSettlementEntry({
     }
 
     return (
-        <Dialog open onOpenChange={setOpen}>
+        <Dialog open onOpenChange={(open) => { if (!open) setUpdate(undefined); }}>
             <DialogContent>
                 <DialogTitle className="flex items-center gap-2">
                     <Image
@@ -158,7 +125,7 @@ export function CreatePaymentSettlementEntry({
                         width={40}
                         height={40}
                     />
-                    <div className="text-xl font-semibold">Create Settlement Entry</div>
+                    <div className="text-xl font-semibold">Update Settlement Entry</div>
                 </DialogTitle>
 
                 <form
@@ -173,7 +140,7 @@ export function CreatePaymentSettlementEntry({
                             label="From Person"
                             groupLabel="People"
                             placeholder="Select person"
-                            items={fromPersonItems}
+                            items={personItems}
                             value={fromPersonId}
                             onChange={setFromPersonId}
                             labelClassName="text-md"
@@ -196,7 +163,7 @@ export function CreatePaymentSettlementEntry({
                             label="To Person"
                             groupLabel="People"
                             placeholder="Select person"
-                            items={toPersonItems}
+                            items={personItems}
                             value={toPersonId}
                             onChange={setToPersonId}
                             labelClassName="text-md"
@@ -229,8 +196,6 @@ export function CreatePaymentSettlementEntry({
                                 />
                             </div>
                         </div>
-                        <div className="flex flex-col gap-1">
-                        </div>
                     </div>
 
                     <div className="flex flex-col gap-1">
@@ -249,14 +214,6 @@ export function CreatePaymentSettlementEntry({
                                 <Calendar
                                     mode="single"
                                     selected={recordedAtDate}
-                                    month={lockedMonthDate}
-                                    disableNavigation
-                                    fromMonth={lockedMonthDate}
-                                    toMonth={lockedMonthDate}
-                                    disabled={(value) =>
-                                        value.getFullYear() !== lockedMonthDate.getFullYear() ||
-                                        value.getMonth() !== lockedMonthDate.getMonth()
-                                    }
                                     onSelect={(value) => {
                                         if (!value) return;
                                         const nextDate = new Date(value);
@@ -285,11 +242,11 @@ export function CreatePaymentSettlementEntry({
 
                     <div className="mt-1 flex justify-end gap-4">
                         <DialogClose className="text-sm">Close</DialogClose>
-                        <AddButton
+                        <UpdateButton
                             type="submit"
                             onProcess={onProcess}
-                            label="Create Entry"
-                            loadingLabel="Creating Entry"
+                            label="Update Entry"
+                            loadingLabel="Updating Entry"
                         />
                     </div>
                 </form>
@@ -297,3 +254,4 @@ export function CreatePaymentSettlementEntry({
         </Dialog>
     );
 }
+

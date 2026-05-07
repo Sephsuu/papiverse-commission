@@ -12,9 +12,11 @@ import { CreatePaymentSettlementGroup } from "@/features/_finance-v2/components/
 import { CreatePaymentSettlementEntry } from "@/features/_finance-v2/components/CreatePaymentSettlementEntry";
 import { PaymentPairSummaryFilterModal } from "@/features/_finance-v2/components/PaymentPairSummaryFilterModal";
 import { PaymentPairSummarySelector } from "@/features/_finance-v2/components/PaymentPairSummarySelector";
+import { DeletePaymentSettlementEntry } from "@/features/_finance-v2/components/DeletePaymentSettlementEntry";
+import { UpdatePaymentSettlementEntry } from "@/features/_finance-v2/components/UpdatePaymentSettlementEntry";
 import { PaymentSettlementService, SettlementEntryType } from "@/services/paymentSettlement.service";
 import { formatToPeso } from "@/lib/formatter";
-import { Plus } from "lucide-react";
+import { Plus, SquarePen, Trash2 } from "lucide-react";
 import { useSearchFilter } from "@/hooks/use-search-filter";
 import { TableFilter } from "@/components/shared/TableFilter";
 import { useCrudState } from "@/hooks/use-crud-state";
@@ -56,19 +58,47 @@ type PairSummary = {
 };
 
 const WEEK_LABELS = ["WEEK 1", "WEEK 2", "WEEK 3", "WEEK 4"];
+const PAYMENT_SETTLEMENT_FILTERS_KEY = "paymentSettlementFilters";
+
+function readStoredFilters() {
+    if (typeof window === "undefined") {
+        return { groupId: null as number | null, month: "4", year: "2026" };
+    }
+
+    const raw = window.sessionStorage.getItem(PAYMENT_SETTLEMENT_FILTERS_KEY);
+    if (!raw) return { groupId: null as number | null, month: "4", year: "2026" };
+
+    try {
+        const parsed = JSON.parse(raw) as { groupId?: unknown; month?: unknown; year?: unknown };
+        const groupId = typeof parsed.groupId === "number" && Number.isFinite(parsed.groupId) ? parsed.groupId : null;
+        const month = String(parsed.month ?? "");
+        const year = String(parsed.year ?? "");
+
+        const monthNum = Number(month);
+        const yearNum = Number(year);
+
+        return {
+            groupId,
+            month: monthNum >= 1 && monthNum <= 12 ? month : "4",
+            year: yearNum >= 1900 ? year : "2026",
+        };
+    } catch {
+        return { groupId: null as number | null, month: "4", year: "2026" };
+    }
+}
 
 export function PaymentSettlementPage() {
+    const storedFilters = readStoredFilters();
     const entryTypeFilters = ["All", "DEBT", "PAYMENT"];
-    const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+    const [selectedGroupId, setSelectedGroupId] = useState<number | null>(storedFilters.groupId);
     const [openCreateGroup, setOpenCreateGroup] = useState(false);
-    const [openCreateEntry, setOpenCreateEntry] = useState(false);
     const [openPairFilter, setOpenPairFilter] = useState(false);
     const [reload, setReload] = useState(false);
 
     const [personAId, setPersonAId] = useState(0);
     const [personBId, setPersonBId] = useState(0);
-    const [month, setMonth] = useState("4");
-    const [year, setYear] = useState("2026");
+    const [month, setMonth] = useState(storedFilters.month);
+    const [year, setYear] = useState(storedFilters.year);
     const [filter, setFilter] = useState(entryTypeFilters[0]);
     const pathname = usePathname();
     const router = useRouter();
@@ -94,13 +124,20 @@ export function PaymentSettlementPage() {
         selectedGroupId ? [selectedGroupId] : []
     );
 
+    const ledgerMonthParam = useMemo(() => {
+        const monthNum = Number(month);
+        const yearNum = Number(year);
+        if (!monthNum || !yearNum) return "";
+        return `${yearNum}-${String(monthNum).padStart(2, "0")}`;
+    }, [month, year]);
+
     const { data: ledger, loading: loadingLedger } = useFetchData<LedgerEntry>(
         PaymentSettlementService.getLedgerEntriesByGroup as any,
-        [selectedGroupId, reload],
-        selectedGroupId ? [selectedGroupId, reload] : [],
+        [selectedGroupId, ledgerMonthParam, reload],
+        selectedGroupId && ledgerMonthParam ? [selectedGroupId, ledgerMonthParam] : [],
         0,
         1000,
-        Boolean(selectedGroupId)
+        Boolean(selectedGroupId && ledgerMonthParam)
     );
 
     const { data: summary, loading: loadingSummary } = useFetchOne<PairSummary | null>(
@@ -112,7 +149,7 @@ export function PaymentSettlementPage() {
                 year: year ? Number(year) : undefined,
             }) as any)
             : emptyFetchOne,
-        [selectedGroupId, personAId, personBId, month, year],
+        [selectedGroupId, personAId, personBId, month, year, reload],
         []
     );
 
@@ -131,8 +168,25 @@ export function PaymentSettlementPage() {
             return;
         }
 
-        if (!selectedGroupId && groups[0]?.id) setSelectedGroupId(groups[0].id);
+        const selectedGroupStillExists = selectedGroupId
+            ? groups.some((group) => group.id === selectedGroupId)
+            : false;
+
+        if (!selectedGroupStillExists && groups[0]?.id) setSelectedGroupId(groups[0].id);
     }, [groupParam, groups, selectedGroupId]);
+
+    useEffect(() => {
+        if (!month || !year) return;
+
+        window.sessionStorage.setItem(
+            PAYMENT_SETTLEMENT_FILTERS_KEY,
+            JSON.stringify({
+                groupId: selectedGroupId,
+                month,
+                year,
+            })
+        );
+    }, [month, selectedGroupId, year]);
 
     useEffect(() => {
         if (!selectedGroupId) return;
@@ -163,6 +217,8 @@ export function PaymentSettlementPage() {
     }
 
     const { open, setOpen } = useCrudState();
+    const [toUpdate, setUpdate] = useState<LedgerEntry | undefined>();
+    const [toDelete, setDelete] = useState<LedgerEntry | undefined>();
     const tableData = useMemo(
         () => (ledger ?? []).slice().sort((a, b) => new Date(a.recordedAt ?? "").getTime() - new Date(b.recordedAt ?? "").getTime()),
         [ledger]
@@ -281,11 +337,11 @@ export function PaymentSettlementPage() {
             />
 
             <div className="table-wrapper">
-                <div className="thead grid grid-cols-6 bg-darkbrown/10!">
-                    <div className="th">Week</div><div className="th">From</div><div className="th">To</div><div className="th">Type</div><div className="th">Description</div><div className="th">Amount</div>
+                <div className="thead grid grid-cols-7 bg-darkbrown/10!">
+                    <div className="th">Week</div><div className="th">From</div><div className="th">To</div><div className="th">Type</div><div className="th">Description</div><div className="th">Amount</div><div className="th">Actions</div>
                 </div>
                 {paginated.map((item) => (
-                    <div className="tdata grid grid-cols-6" key={item.id}>
+                    <div className="tdata grid grid-cols-7" key={item.id}>
                         <div className="td">{item.weekLabel || "-"}</div>
                         <div className="td">{item.fromPerson?.displayName || item.fromPersonName || resolvePersonName(item.fromPersonId) || item.fromPersonId}</div>
                         <div className="td">{item.toPerson?.displayName || item.toPersonName || resolvePersonName(item.toPersonId) || item.toPersonId}</div>
@@ -294,6 +350,14 @@ export function PaymentSettlementPage() {
                         <div className="td justify-between">
                             <span>₱</span>
                             <span>{formatToPeso(item.amount || 0).replace("₱", "")}</span>
+                        </div>
+                        <div className="td justify-center gap-2">
+                            <button onClick={() => setDelete(item)}>
+                                <Trash2 className="h-4 w-4 text-darkred" />
+                            </button>
+                            <button onClick={() => setUpdate(item)}>
+                                <SquarePen className="h-4 w-4 text-darkgreen" />
+                            </button>
                         </div>
                     </div>
                 ))}
@@ -308,6 +372,25 @@ export function PaymentSettlementPage() {
                     setReload={setReload}
                     settlementGroupId={selectedGroupId!}
                     people={selectedGroup?.people ?? []}
+                    selectedMonth={month}
+                    selectedYear={year}
+                />
+            )}
+
+            {toUpdate && (
+                <UpdatePaymentSettlementEntry
+                    toUpdate={toUpdate}
+                    people={selectedGroup?.people ?? []}
+                    setUpdate={setUpdate}
+                    setReload={setReload}
+                />
+            )}
+
+            {toDelete && (
+                <DeletePaymentSettlementEntry
+                    toDelete={toDelete}
+                    setDelete={setDelete}
+                    setReload={setReload}
                 />
             )}
 
@@ -329,3 +412,5 @@ export function PaymentSettlementPage() {
         </section>
     );
 }
+
+
