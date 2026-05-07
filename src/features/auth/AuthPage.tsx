@@ -1,13 +1,11 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { handleChange } from '../../lib/form-handle';
 import { FormLoader } from '@/components/ui/loader';
 import { toast } from 'sonner';
-import { jwtDecode } from 'jwt-decode'
 import { useRouter } from 'next/navigation';
 import { AuthService } from '@/services/auth.service';
 import { Toaster } from '@/components/ui/toaster';

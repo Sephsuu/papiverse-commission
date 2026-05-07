@@ -9,7 +9,8 @@ import { parseOptionalDecimal, sanitizeDecimalInput } from "@/lib/decimal-input"
 import { parseExpenseCalendarDate, toExpenseDateTimeString } from "@/lib/expense-date";
 import { cn } from "@/lib/utils";
 import { ExpenseService } from "@/services/expense.service";
-import { Expense } from "@/types/expense";
+import { Expense, expenseFields } from "@/types/expense";
+import { useAuth } from "@/hooks/use-auth";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import Image from "next/image";
@@ -23,6 +24,14 @@ const paymentModes = [
     { label: "Credit Card", value: "CREDIT_CARD" },
     { label: "Debit Card", value: "DEBIT_CARD" },
 ];
+const categoryOptions = [
+    { label: "Meat", value: "MEAT" },
+    { label: "Snowfrost", value: "SNOW" },
+];
+const purposeOptionsByCategory: Record<string, string[]> = {
+    MEAT: ["CFS", "ATKINS", "BASILIA", "EASYTRIP/RFID", "JFQ", "JEN", "OTHERS"],
+    SNOW: ["JERRY", "REN", "JEN", "PAYROLL", "OTHERS"],
+};
 
 interface Props {
     toUpdate: Expense;
@@ -31,18 +40,22 @@ interface Props {
 }
 
 export function UpdateExpense({ toUpdate, setUpdate, setReload }: Props) {
+    const { claims } = useAuth();
     const [onProcess, setProcess] = useState(false);
     const [expense, setExpense] = useState<Partial<Expense>>({
         total: toUpdate.total,
         spentAt: toUpdate.spentAt,
         modeOfPayment: toUpdate.modeOfPayment,
+        orderCategory: toUpdate.orderCategory ?? "MEAT",
         purpose: toUpdate.purpose,
+        customPurpose: "",
     });
     const [totalInput, setTotalInput] = useState(String(toUpdate.total ?? ""));
     const [spentAtDate, setSpentAtDate] = useState<Date | undefined>(() =>
         parseExpenseCalendarDate(toUpdate.spentAt)
     );
     const [dateOpen, setDateOpen] = useState(false);
+    const isOthersPurpose = (expense.purpose ?? "") === "OTHERS";
 
     function handleTotalChange(value: string) {
         const sanitizedValue = sanitizeDecimalInput(value);
@@ -69,13 +82,24 @@ export function UpdateExpense({ toUpdate, setUpdate, setReload }: Props) {
         try {
             setProcess(true);
 
-            if (
-                !expense.spentAt ||
-                !expense.modeOfPayment ||
-                !expense.purpose?.trim() ||
-                expense.total === undefined ||
-                Number(expense.total) <= 0
-            ) {
+            let invalid = !expense.spentAt;
+            for (const field of expenseFields) {
+                const value = expense[field];
+
+                if (
+                    value === undefined ||
+                    value === null ||
+                    (typeof value === "string" && value.trim() === "") ||
+                    (field === "total" && Number(value) <= 0)
+                ) {
+                    invalid = true;
+                }
+            }
+            if (isOthersPurpose && !(expense.customPurpose ?? "").trim()) {
+                invalid = true;
+            }
+
+            if (invalid) {
                 toast.info("Please fill up all fields!");
                 return;
             }
@@ -84,7 +108,10 @@ export function UpdateExpense({ toUpdate, setUpdate, setReload }: Props) {
                 total: Number(expense.total),
                 spentAt: expense.spentAt,
                 modeOfPayment: expense.modeOfPayment,
-                purpose: expense.purpose.trim(),
+                orderCategory: expense.orderCategory,
+                branchId: claims.branch.branchId,
+                addedById: claims.userId,
+                purpose: isOthersPurpose ? expense.customPurpose?.trim() : expense.purpose?.trim(),
             });
 
             if (data) {
@@ -121,18 +148,15 @@ export function UpdateExpense({ toUpdate, setUpdate, setReload }: Props) {
                 >
                     <div className="grid grid-cols-2 gap-2">
                         <div className="flex flex-col gap-1">
-                            <div>Total</div>
-                            <div className="flex rounded-md border border-gray">
-                                <input
-                                    disabled
-                                    value="₱"
-                                    className="w-10 border-0 text-center"
-                                />
+                            <div>Expense</div>
+                            <div className="relative border border-gray rounded-md">
+                                <div className="absolute top-1/2 -translate-y-1/2 mx-2">₱</div>
                                 <Input
-                                    className="border-0"
+                                    className="pl-8 border-0"
                                     type="text"
                                     inputMode="decimal"
                                     pattern="[0-9]*[.]?[0-9]{0,2}"
+                                    name="total"
                                     value={totalInput}
                                     onChange={(e) => handleTotalChange(e.target.value)}
                                 />
@@ -193,16 +217,78 @@ export function UpdateExpense({ toUpdate, setUpdate, setReload }: Props) {
                         </div>
 
                         <div className="col-span-2 flex flex-col gap-1">
-                            <div>Expenditure Purpose</div>
-                            <Textarea
-                                className="border border-gray"
-                                value={expense.purpose ?? ""}
-                                onChange={(e) => setExpense((prev) => ({
-                                    ...prev,
-                                    purpose: e.target.value,
-                                }))}
-                            />
+                            <div>Order Category</div>
+                            <Select
+                                value={expense.orderCategory ?? "MEAT"}
+                                onValueChange={(value) =>
+                                    setExpense((prev) => ({
+                                        ...prev,
+                                        orderCategory: value,
+                                        purpose: "",
+                                        customPurpose: "",
+                                    }))
+                                }
+                            >
+                                <SelectTrigger className="w-full border border-gray">
+                                    <SelectValue placeholder="Select Category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectLabel>Categories</SelectLabel>
+                                        {categoryOptions.map((item) => (
+                                            <SelectItem key={item.value} value={item.value}>
+                                                {item.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
                         </div>
+
+                        <div className="col-span-2 flex flex-col gap-1">
+                            <div>Expenditure Purpose</div>
+                            <Select
+                                value={expense.purpose ?? ""}
+                                onValueChange={(value) =>
+                                    setExpense((prev) => ({
+                                        ...prev,
+                                        purpose: value,
+                                        customPurpose: value === "OTHERS" ? prev.customPurpose : "",
+                                    }))
+                                }
+                            >
+                                <SelectTrigger className="w-full border border-gray">
+                                    <SelectValue placeholder="Select Purpose" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectLabel>Purpose</SelectLabel>
+                                        {(purposeOptionsByCategory[expense.orderCategory ?? "MEAT"] ?? []).map((item) => (
+                                            <SelectItem key={item} value={item}>
+                                                {item}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {isOthersPurpose && (
+                            <div className="col-span-2 flex flex-col gap-1">
+                                <div>Specify Purpose</div>
+                                <Textarea
+                                    className="border border-gray"
+                                    value={expense.customPurpose ?? ""}
+                                    onChange={(e) =>
+                                        setExpense((prev) => ({
+                                            ...prev,
+                                            customPurpose: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="Type your purpose here"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex justify-end gap-4">

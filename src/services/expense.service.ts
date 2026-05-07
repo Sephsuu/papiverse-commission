@@ -7,13 +7,10 @@ const url = `${BASE_URL}/financial-logs`;
 const expensesUrl = `${BASE_URL}/expenses`
 
 export class ExpenseService {
-    static async getExpensesByDate(startDate: string, endDate: string, page: number, size: number) {
-        const token = localStorage.getItem('token');
-
+    static async getExpensesByDate(branchId: number, month: string, page: number, size: number) {
         return await requestData(
-            `${expensesUrl}/range?startDate=${startDate}&endDate=${endDate}&page=${page}&size=${size}`,
+            `${expensesUrl}/range?branchId=${branchId}&month=${month}&page=${page}&size=${size}`,
             "GET",
-            {"Authorization": `Bearer ${token}`}
         );
     }
 
@@ -24,8 +21,7 @@ export class ExpenseService {
         );
     }
 
-    static async createExpense(expense: Partial<Expense>) {
-        const token = localStorage.getItem('token');
+    static async createExpense(expense: Partial<Expense>, userId: number) {
         const payload = {
             ...expense,
             total: Number(expense.total),
@@ -33,20 +29,18 @@ export class ExpenseService {
         };
 
         return await requestData(
-            `${expensesUrl}/`,
+            `${expensesUrl}?userId=${userId}`,
             "POST",
-            {"Authorization": `Bearer ${token}`},
+            undefined,
             payload
         );
     }
 
     static async updateExpense(id: number, expense: Partial<Expense>) {
-        const token = localStorage.getItem('token');
-
         return await requestData(
             `${expensesUrl}/${id}`,
             "PUT",
-            {"Authorization": `Bearer ${token}`},
+            undefined,
             {
                 ...expense,
                 total: Number(expense.total),
@@ -55,12 +49,9 @@ export class ExpenseService {
     }
 
     static async deleteExpense(id: number) {
-        const token = localStorage.getItem('token');
-
         return await requestData(
             `${expensesUrl}/${id}`,
             "DELETE",
-            {"Authorization": `Bearer ${token}`}
         );
     }
 }

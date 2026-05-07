@@ -110,7 +110,7 @@ export function CreateExpense({ setOpen, setReload }: Props) {
                 branchId: claims.branch.branchId,
                 purpose: isOthersPurpose ? expense.customPurpose : expense.purpose,
             };
-            const data = await ExpenseService.createExpense(payload);
+            const data = await ExpenseService.createExpense(payload, claims.userId);
             if (data) {
                 toast.success(`Expenditure for ${payload.purpose} added successfully.`);
                 setReload(prev => !prev);
@@ -142,14 +142,10 @@ export function CreateExpense({ setOpen, setReload }: Props) {
                 <div className="grid grid-cols-2 gap-2">
                     <div className="flex flex-col gap-1">
                         <div>Expense</div>
-                        <div className="flex border border-gray rounded-md">
-                            <input
-                                disabled
-                                placeholder="₱"
-                                className="border-0 w-10 placeholder:text-dark placeholder:text-center"
-                            />
+                        <div className="relative border border-gray rounded-md">
+                            <div className="absolute top-1/2 -translate-y-1/2 mx-2">₱</div>
                             <Input 
-                                className="border-0"
+                                className="pl-8 border-0"
                                 type="text"
                                 inputMode="decimal"
                                 pattern="[0-9]*[.]?[0-9]{0,2}"

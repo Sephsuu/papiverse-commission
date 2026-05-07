@@ -3,7 +3,6 @@ import Image from "next/image";
 import { Sidebar, SidebarContent } from "./sidebar";
 import { Skeleton } from "./skeleton";
 import { Dialog, DialogContent, DialogTitle } from "./dialog";
-import { cn } from "@/lib/utils";
 
 interface LoaderProps {
     onProcess: boolean;

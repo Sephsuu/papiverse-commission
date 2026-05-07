@@ -44,6 +44,7 @@ export const adminRoute = [
         icon: HandCoins,
         children: [
             { title: 'Expenses', href: '/finance/expenses' },
+            { title: 'Payment Settlement', href: '/finance/payment-settlement' },
             { title: 'Supply Reports', href: '/finance/supply-reports' },
             { title: 'Supply Breakdown', href: '/finance/supply-breakdown' },
             { title: 'Raw Material Reports', href: '/finance/raw-material-reports' },
