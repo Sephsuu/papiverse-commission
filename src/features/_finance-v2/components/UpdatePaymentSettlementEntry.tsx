@@ -65,6 +65,33 @@ export function UpdatePaymentSettlementEntry({ toUpdate, people, setUpdate, setR
     );
 
     React.useEffect(() => {
+        setFromPersonId(String(toUpdate.fromPersonId));
+        setToPersonId(String(toUpdate.toPersonId));
+        setEntryType(toUpdate.entryType);
+        setAmount(String(toUpdate.amount ?? ""));
+        setDescription(toUpdate.description ?? "");
+        setRecordedAtDate(parseRecordedAt(toUpdate.recordedAt));
+    }, [toUpdate]);
+
+    React.useEffect(() => {
+        if (personItems.length === 0) return;
+
+        const hasFrom = personItems.some((item) => item.value === fromPersonId);
+        const hasTo = personItems.some((item) => item.value === toPersonId);
+
+        if (!hasFrom) {
+            const preferredFrom = personItems.find((item) => item.value === String(toUpdate.fromPersonId));
+            setFromPersonId(preferredFrom?.value ?? personItems[0].value);
+        }
+
+        if (!hasTo) {
+            const preferredTo = personItems.find((item) => item.value === String(toUpdate.toPersonId));
+            const fallbackTo = personItems.find((item) => item.value !== fromPersonId);
+            setToPersonId(preferredTo?.value ?? fallbackTo?.value ?? personItems[0].value);
+        }
+    }, [personItems, fromPersonId, toPersonId, toUpdate.fromPersonId, toUpdate.toPersonId]);
+
+    React.useEffect(() => {
         if (!fromPersonId || !toPersonId) return;
         if (fromPersonId !== toPersonId) return;
 
@@ -214,6 +241,7 @@ export function UpdatePaymentSettlementEntry({ toUpdate, people, setUpdate, setR
                                 <Calendar
                                     mode="single"
                                     selected={recordedAtDate}
+                                    defaultMonth={recordedAtDate}
                                     onSelect={(value) => {
                                         if (!value) return;
                                         const nextDate = new Date(value);
@@ -254,4 +282,3 @@ export function UpdatePaymentSettlementEntry({ toUpdate, people, setUpdate, setR
         </Dialog>
     );
 }
-

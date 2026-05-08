@@ -59,6 +59,18 @@ type PairSummary = {
 
 const WEEK_LABELS = ["WEEK 1", "WEEK 2", "WEEK 3", "WEEK 4"];
 const PAYMENT_SETTLEMENT_FILTERS_KEY = "paymentSettlementFilters";
+const summaryColumns = [
+    { title: "Week", style: "" },
+    { title: "Details", style: "" },
+    { title: "Amount", style: "" },
+];
+const settlementColumns = [
+    { title: "Week", style: "" },
+    { title: "Expense Transaction", style: "" },
+    { title: "Description", style: "" },
+    { title: "Amount", style: "" },
+    { title: "Actions", style: "" },
+];
 
 function readStoredFilters() {
     if (typeof window === "undefined") {
@@ -302,7 +314,11 @@ export function PaymentSettlementPage() {
 
             <div className="table-wrapper">
                 <div className="thead grid grid-cols-3 bg-darkbrown/10!">
-                    <div className="th">Week</div><div className="th">Details</div><div className="th">Amount</div>
+                    {summaryColumns.map((column) => (
+                        <div key={column.title} className={`th ${column.style}`}>
+                            {column.title}
+                        </div>
+                    ))}
                 </div>
                 {weeklyRows.map((row) => (
                     <div className="tdata grid grid-cols-3" key={row.weekLabel}>
@@ -337,16 +353,33 @@ export function PaymentSettlementPage() {
             />
 
             <div className="table-wrapper">
-                <div className="thead grid grid-cols-7 bg-darkbrown/10!">
-                    <div className="th">Week</div><div className="th">From</div><div className="th">To</div><div className="th">Type</div><div className="th">Description</div><div className="th">Amount</div><div className="th">Actions</div>
+                <div className="thead grid grid-cols-5 bg-darkbrown/10!">
+                    {settlementColumns.map((column) => (
+                        <div key={column.title} className={`th ${column.style}`}>
+                            {column.title}
+                        </div>
+                    ))}
                 </div>
                 {paginated.map((item) => (
-                    <div className="tdata grid grid-cols-7" key={item.id}>
+                    <div className="tdata grid grid-cols-5" key={item.id}>
+                        {(() => {
+                            const fromName = item.fromPerson?.displayName || item.fromPersonName || resolvePersonName(item.fromPersonId) || String(item.fromPersonId);
+                            const toName = item.toPerson?.displayName || item.toPersonName || resolvePersonName(item.toPersonId) || String(item.toPersonId);
+                            const isDebt = item.entryType === "DEBT";
+                            const typeLabel = isDebt ? "DEBT" : "PAYS";
+                            const typeClassName = isDebt ? "text-darkred" : "text-darkgreen";
+
+                            return (
+                                <>
                         <div className="td">{item.weekLabel || "-"}</div>
-                        <div className="td">{item.fromPerson?.displayName || item.fromPersonName || resolvePersonName(item.fromPersonId) || item.fromPersonId}</div>
-                        <div className="td">{item.toPerson?.displayName || item.toPersonName || resolvePersonName(item.toPersonId) || item.toPersonId}</div>
-                        <div className="td">{item.entryType}</div>
-                        <div className="td">{item.description || "-"}</div>
+                        <div className="td gap-[3px]">
+                            <span className="font-semibold">{fromName}</span>
+                            <span>{isDebt ? " is in " : " "}</span>
+                            <span className={`font-semibold ${typeClassName}`}>{typeLabel}</span>
+                            {isDebt ? " to " : " "}
+                            <span className="font-semibold">{toName}</span>
+                        </div>
+                        <div className="td">{item.description}</div>
                         <div className="td justify-between">
                             <span>₱</span>
                             <span>{formatToPeso(item.amount || 0).replace("₱", "")}</span>
@@ -359,10 +392,21 @@ export function PaymentSettlementPage() {
                                 <SquarePen className="h-4 w-4 text-darkgreen" />
                             </button>
                         </div>
+                                </>
+                            );
+                        })()}
                     </div>
                 ))}
-                <TablePagination data={entryTypeFilteredItems} paginated={paginated} page={page} size={size} setPage={setPage} pageKey="paymentSettlementPage" />
             </div>
+
+            <TablePagination 
+                data={entryTypeFilteredItems}   
+                paginated={paginated} 
+                page={page} 
+                size={size} 
+                setPage={setPage} 
+                pageKey="paymentSettlementPage" 
+            />
 
             {openCreateGroup && <CreatePaymentSettlementGroup setOpen={setOpenCreateGroup} setReload={setReload} />}
 
@@ -412,5 +456,3 @@ export function PaymentSettlementPage() {
         </section>
     );
 }
-
-

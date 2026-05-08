@@ -1,6 +1,7 @@
 "use client"
 
 import { TablePagination } from "@/components/shared/TablePagination";
+import { AppTabSwitcher } from "@/components/shared/AppTabSwitcher";
 import {  PapiverseLoading } from "@/components/ui/loader";
 import { useAuth } from "@/hooks/use-auth";
 import { Expense, ExpenseMonthlyResponse } from "@/types/expense";
@@ -15,7 +16,7 @@ import { UpdateExpense } from "./components/UpdateExpense";
 import { DeleteExpense } from "./components/DeleteExpense";
 import { useToday } from "@/hooks/use-today";
 import { endOfMonth, format, isAfter, startOfMonth } from "date-fns";
-import { CalendarDays, SquarePen, Trash2 } from "lucide-react";
+import { CalendarDays, Plus, SquarePen, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { capitalizeWords, formatDateTime, formatToPeso } from "@/lib/formatter";
 import { ExpenseDateDialog } from "./components/ExpenseDateDialog";
@@ -24,8 +25,11 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getCategoryIcon } from "@/hooks/use-helper";
+import { Button } from "@/components/ui/button";
 
 const pageKey = "expensesPage";
+const expenseLayoutKey = "expensesPageLayout";
+const expenseLayoutTabs = ["Overview", "Summary", "Detailed"] as const;
 const columns = [
     { title: "Added By", style: "col-span-2" },
     { title: "Purpose", style: "" },
@@ -48,14 +52,6 @@ function parseDateOnly(value: string) {
     return new Date(`${value}T00:00:00`);
 }
 
-function getInitials(name: string) {
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    return parts
-        .slice(0, 2)
-        .map((part) => part[0]?.toUpperCase() ?? "")
-        .join("");
-}
-
 function toAmount(value: unknown) {
     if (typeof value === "number") return Number.isFinite(value) ? value : 0;
     if (typeof value === "string") {
@@ -76,33 +72,54 @@ export function ExpensesPage() {
     const searchParams = useSearchParams();
     const currentMonth = format(parseDateOnly(today), "yyyy-MM");
     const monthParam = searchParams.get("month");
-    const [date, setDate] = useState(`${currentMonth}-01`);
-    const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+    const selectedMonth = monthParam && /^\d{4}-\d{2}$/.test(monthParam) ? monthParam : currentMonth;
+    const [date, setDate] = useState(`${selectedMonth}-01`);
     const [startDate, setStartDate] = useState(format(startOfMonth(parseDateOnly(today)), "yyyy-MM-dd"));
     const [endDate, setEndDate] = useState(today);
     const [toggleDate, setToggleDate] = useState(false);
     const [loading, setLoading] = useState(true);
     const [monthlyData, setMonthlyData] = useState<ExpenseMonthlyResponse | null>(null);
     const [filter, setFilter] = useState(expenseCategoryFilters[0]);
+    const [selectedLayout, setSelectedLayout] = useState<(typeof expenseLayoutTabs)[number]>(() => {
+        if (typeof window === "undefined") return expenseLayoutTabs[0];
+        const storedLayout = sessionStorage.getItem(expenseLayoutKey);
+        if (storedLayout && expenseLayoutTabs.includes(storedLayout as (typeof expenseLayoutTabs)[number])) {
+            return storedLayout as (typeof expenseLayoutTabs)[number];
+        }
+        return expenseLayoutTabs[0];
+    });
     const lastReplacedMonthRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        sessionStorage.setItem(expenseLayoutKey, selectedLayout);
+    }, [selectedLayout]);
 
     function replaceMonthParam(nextMonth: string) {
         if (!nextMonth) return;
         if (monthParam === nextMonth) return;
         if (lastReplacedMonthRef.current === nextMonth) return;
 
+        const currentQuery = searchParams.toString();
+        const nextParams = new URLSearchParams(currentQuery);
+        nextParams.set("month", nextMonth);
+        const nextQuery = nextParams.toString();
+        if (nextQuery === currentQuery) return;
+
         lastReplacedMonthRef.current = nextMonth;
-        router.replace(`${pathname}?month=${nextMonth}`);
+        router.replace(`${pathname}?${nextQuery}`, { scroll: false });
     }
 
     useEffect(() => {
-        const safeMonth = monthParam && /^\d{4}-\d{2}$/.test(monthParam) ? monthParam : currentMonth;
+        const isValidMonthParam = Boolean(monthParam && /^\d{4}-\d{2}$/.test(monthParam));
+        const safeMonth = isValidMonthParam ? monthParam! : currentMonth;
+        const safeDate = `${safeMonth}-01`;
 
-        if (!monthParam || !/^\d{4}-\d{2}$/.test(monthParam)) replaceMonthParam(safeMonth);
+        if (!isValidMonthParam) {
+            replaceMonthParam(safeMonth);
+        }
 
-        setSelectedMonth((prev) => (prev === safeMonth ? prev : safeMonth));
-        setDate((prev) => (prev === `${safeMonth}-01` ? prev : `${safeMonth}-01`));
-    }, [currentMonth, monthParam]);
+        setDate((prev) => (prev === safeDate ? prev : safeDate));
+    }, [currentMonth, monthParam, pathname, router, searchParams]);
 
     useEffect(() => {
         if (!date) return;
@@ -111,17 +128,9 @@ export function ExpensesPage() {
         const todayDate = parseDateOnly(today);
 
         const monthEndDate = endOfMonth(selectedDate);
-        const nextMonth = format(selectedDate, "yyyy-MM");
         setStartDate(format(startOfMonth(selectedDate), "yyyy-MM-dd"));
         setEndDate(format(isAfter(monthEndDate, todayDate) ? todayDate : monthEndDate, "yyyy-MM-dd"));
-
-        if (nextMonth !== selectedMonth) setSelectedMonth(nextMonth);
-    }, [date, selectedMonth, today]);
-
-    useEffect(() => {
-        if (!selectedMonth) return;
-        replaceMonthParam(selectedMonth);
-    }, [monthParam, selectedMonth]);
+    }, [date, today]);
 
     useEffect(() => {
         if (monthParam === lastReplacedMonthRef.current) {
@@ -239,7 +248,7 @@ export function ExpensesPage() {
             ),
         [categoryFilteredItems]
     );
-    const { page, setPage, size, setSize, paginated } = usePagination(sortedExpenses, 20, pageKey);
+    const { page, setPage, size, setSize, paginated } = usePagination(sortedExpenses, 10, pageKey);
 
     const [open, setOpen] = useState(false);
     const [toUpdate, setUpdate] = useState<Expense | undefined>();
@@ -251,12 +260,11 @@ export function ExpensesPage() {
             <AppHeader label="All Expenses" />
 
             <div className="flex-center-y justify-between">
-                <div className="text-xl font-semibold">
-                    Expenditures for 
-                    <span className="text-darkbrown ml-1.5">
-                        {format(parsedStartDate!, "MMMM yyyy")}
-                    </span>
-                </div>
+                <AppTabSwitcher
+                    tabs={[...expenseLayoutTabs]}
+                    selectedTab={selectedLayout}
+                    setSelectedTab={(tab) => setSelectedLayout(tab as (typeof expenseLayoutTabs)[number])}
+                />
                 <div
                     onClick={() => setToggleDate(true)}
                     className="flex-center-y gap-3 rounded-md border border-slate-300 bg-light px-4 py-2 text-lg font-bold shadow-sm w-fit cursor-pointer max-md:m-1"
@@ -271,229 +279,285 @@ export function ExpensesPage() {
                 </div>
             </div>
 
-            <div className="table-wrapper">
-                <div className="thead grid grid-cols-6 bg-darkbrown/10!">
-                    {weeklyBreakdownColumns.map((item, index) => (
-                        <div className="th" key={`meat-${item.title}`}>
-                            {index === 0 ? "MEAT Expenses" : item.title}
-                        </div>
-                    ))}
-                </div>
-
-                {meatBreakdown.map((item, idx) => (
-                    <div className="tdata grid grid-cols-6" key={idx}>
-                        <div className="td font-semibold">{item.purpose}</div>
-                        <div className="td justify-between">
-                            <span>₱</span>
-                            {item.week1 === "N/A" ? "N/A" : item.week1}
-                        </div>
-                        <div className="td justify-between">
-                            <span>₱</span>
-                            {item.week2 === "N/A" ? "N/A" : item.week2}
-                        </div>
-                        <div className="td justify-between">
-                            <span>₱</span>
-                            {item.week3 === "N/A" ? "N/A" : item.week3}
-                        </div>
-                        <div className="td justify-between">
-                            <span>₱</span>
-                            {item.week4 === "N/A" ? "N/A" : item.week4}
-                        </div>
-                        <div className="td justify-between font-semibold">
-                            <span>₱</span>
-                            <span>{formatToPeso(item.total).slice(1,)}</span>
-                        </div>
-                    </div>
-                ))}
-                {meatBreakdown.length === 0 && (
-                    <div className="tdata grid grid-cols-6">
-                        <div className="td font-semibold">No MEAT expenses yet.</div>
-                        <div className="td">-</div>
-                        <div className="td">-</div>
-                        <div className="td">-</div>
-                        <div className="td">-</div>
-                        <div className="td">-</div>
-                    </div>
-                )}
-                <div className="tdata grid grid-cols-6 bg-darkbrown/5!">
-                    <div className="td font-bold">MEAT Total</div>
-                    <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week1).slice(1,)}</span></div>
-                    <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week2).slice(1,)}</span></div>
-                    <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week3).slice(1,)}</span></div>
-                    <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week4).slice(1,)}</span></div>
-                    <div className="td justify-between font-bold"><span>₱</span><span>{formatToPeso(meatTotals.total).slice(1,)}</span></div>
-                </div>
-
-                <div className="thead grid grid-cols-6 bg-blue/10!">
-                    {weeklyBreakdownColumns.map((item, index) => (
-                        <div className="th" key={`snow-${item.title}`}>
-                            {index === 0 ? "SNOWFROST Expenses" : item.title}
-                        </div>
-                    ))}
-                </div>
-
-                {snowfrostBreakdown.map((item, idx) => (
-                    <div className="tdata grid grid-cols-6" key={`snow-${idx}`}>
-                        <div className="td font-semibold">{item.purpose}</div>
-                        <div className="td justify-between">
-                            <span>₱</span>
-                            {item.week1 === "N/A" ? "N/A" : item.week1}
-                        </div>
-                        <div className="td justify-between">
-                            <span>₱</span>
-                            {item.week2 === "N/A" ? "N/A" : item.week2}
-                        </div>
-                        <div className="td justify-between">
-                            <span>₱</span>
-                            {item.week3 === "N/A" ? "N/A" : item.week3}
-                        </div>
-                        <div className="td justify-between">
-                            <span>₱</span>
-                            {item.week4 === "N/A" ? "N/A" : item.week4}
-                        </div>
-                        <div className="td justify-between font-semibold">
-                            <span>₱</span>
-                            <span>{formatToPeso(item.total).slice(1,)}</span>
-                        </div>
-                    </div>
-                ))}
-                {snowfrostBreakdown.length === 0 && (
-                    <div className="tdata grid grid-cols-6">
-                        <div className="td font-semibold">No SNOWFROST expenses yet.</div>
-                        <div className="td">-</div>
-                        <div className="td">-</div>
-                        <div className="td">-</div>
-                        <div className="td">-</div>
-                        <div className="td">-</div>
-                    </div>
-                )}
-                <div className="tdata grid grid-cols-6 bg-blue/5!">
-                    <div className="td font-bold">SNOWFROST Total</div>
-                    <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week1).slice(1,)}</span></div>
-                    <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week2).slice(1,)}</span></div>
-                    <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week3).slice(1,)}</span></div>
-                    <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week4).slice(1,)}</span></div>
-                    <div className="td justify-between font-bold"><span>₱</span><span>{formatToPeso(snowTotals.total).slice(1,)}</span></div>
-                </div>
-                <div className="tdata grid grid-cols-6 bg-green-50!">
-                    <div className="td font-bold">Combined Weekly Total</div>
-                    <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week1).slice(1,)}</span></div>
-                    <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week2).slice(1,)}</span></div>
-                    <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week3).slice(1,)}</span></div>
-                    <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week4).slice(1,)}</span></div>
-                    <div className="td justify-between font-bold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.total).slice(1,)}</span></div>
-                </div>
-                
-            </div>
-
-            <Card className="w-full bg-light p-4">
-                <div>
-                    <div className="text-darkbrown font-bold text-xl">Weekly Expenses Chart</div>
+            <div className="flex-center-y justify-between">
+                <div className="mb-2">
+                    <div className="font-bold text-xl">{selectedLayout === expenseLayoutTabs[0] ? 'Expenses Overview' : selectedLayout === expenseLayoutTabs[1] ? 'Expenditure Summary' : 'Detailed Expenditures'} for <span className="text-darkbrown">{format(parsedStartDate!, "MMMM yyyy")}</span></div>
                     <div className="text-sm text-gray">
-                        Weekly total expenses for the selected month, shown in Philippine peso (₱).
+                        Expense entries and weekly spending breakdown for the selected month.
                     </div>
                 </div> 
+                {(selectedLayout === expenseLayoutTabs[0] || selectedLayout === expenseLayoutTabs[2]) && (
+                    <Button
+                        className="bg-darkgreen! hover:opacity-90"
+                        onClick={() => setOpen(!open)}
+                    >   
+                        <Plus /> Add expenses
+                    </Button>
+                )}
+            </div>
 
-                <div className="h-52 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={weeklyChartData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="label" />
-                            <YAxis tick={{ fontSize: 11 }} tickFormatter={(value: number) => `₱${Number(value).toLocaleString()}`} />
-                            <Tooltip formatter={(value: number) => formatToPeso(Number(value))} />
-                            <Bar dataKey="amount" fill="#5c4033" radius={[6, 6, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </Card>      
+            <div className="animate-fade-in-up" key={selectedLayout}>
+                {(selectedLayout === expenseLayoutTabs[0] || selectedLayout === expenseLayoutTabs[2]) && (
+                    <div className="space-y-2 mb-4">
+                        <div className="mb-2 grid gap-4 animate-fade-in-up md:grid-cols-2 xl:grid-cols-3">
+                            {[
+                                {
+                                    label: "Overall Expenses",
+                                    value: formatToPeso(combinedWeekTotals.total),
+                                    helper: "Total expenditure for selected month",
+                                },
+                                {
+                                    label: "MEAT Expenses",
+                                    value: formatToPeso(meatTotals.total),
+                                    helper: "Total MEAT category expenditure",
+                                },
+                                {
+                                    label: "SNOWFROST Expenses",
+                                    value: formatToPeso(snowTotals.total),
+                                    helper: "Total SNOWFROST category expenditure",
+                                },
+                            ].map((item) => (
+                                <div key={item.label} className="rounded-md border border-slate-300 bg-white p-5 shadow-sm">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-darkbrown">
+                                        {item.label}
+                                    </p>
+                                    <p className="mt-3 text-2xl font-semibold text-slate-900">
+                                        {item.value}
+                                    </p>
+                                    <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
+                                </div>
+                            ))}
+                        </div>
 
-            <div className="mt-4">
-                <div className="text-darkbrown font-bold text-xl">Detailed Expenditures</div>
-                <div className="text-sm text-gray">
-                    Expense entries and weekly spending breakdown for the selected month.
-                </div>
-            </div> 
+                        <Card className="w-full bg-light p-4">
+                            <div>
+                                <div className="text-darkbrown font-bold text-xl">Weekly Expenses Chart</div>
+                                <div className="text-sm text-gray">
+                                    Weekly total expenses for the selected month, shown in Philippine peso (₱).
+                                </div>
+                            </div> 
 
-            <TableFilter
-                setSearch={ setSearch }
-                searchPlaceholder="Search for an expense"
-                setSize={ setSize }
-                size={ size }
-                buttonLabel="Add an expense"
-                setOpen={ setOpen }
-                filters={expenseCategoryFilters}
-                filter={filter}
-                setFilter={setFilter}
-            />
-
-            <section className="w-full">
-                <div className="table-wrapper">
-                    <div className="thead grid grid-cols-7">
-                        {columns.map((item, index) => (
-                            <div key={index} className={`th ${item.style}`}>
-                                {item.title}
+                            <div className="h-52 w-full">
+                                {expensesData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={weeklyChartData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="label" />
+                                            <YAxis tick={{ fontSize: 11 }} tickFormatter={(value: number) => `₱${Number(value).toLocaleString()}`} />
+                                            <Tooltip formatter={(value: number) => formatToPeso(Number(value))} />
+                                            <Bar dataKey="amount" fill="#5c4033" radius={[6, 6, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-sm text-gray">
+                                        There are no expenses yet.
+                                    </div>
+                                )}
                             </div>
-                        ))}
-                    </div>
-                </div>
+                        </Card> 
 
-                <div className="animate-fade-in-up" key={`${filter}-${page}`}>
-                    {paginated.length > 0 ? (
-                        paginated.map((expense) => (
-                            <div className="tdata grid grid-cols-7 max-md:w-300!" key={expense.id}>
-                                <div className="td col-span-2 gap-3">
-                                    {getCategoryIcon(expense.orderCategory!)}
-                                    <div className="min-w-0">
-                                        <div className="truncate font-semibold">{expense.addedByName}</div>
-                                        <div className="truncate text-xs text-gray">@{expense.addedByUsername}</div>
+                        <div className="table-wrapper" >
+                            <div className="thead grid grid-cols-6 bg-darkbrown/10!">
+                                {weeklyBreakdownColumns.map((item, index) => (
+                                    <div className="th" key={`meat-${item.title}`}>
+                                        {index === 0 ? "MEAT Expenses" : item.title}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {meatBreakdown.map((item, idx) => (
+                                <div className="tdata grid grid-cols-6" key={idx}>
+                                    <div className="td font-semibold">{item.purpose}</div>
+                                    <div className="td justify-between">
+                                        <span>₱</span>
+                                        {item.week1 === "N/A" ? "N/A" : item.week1}
+                                    </div>
+                                    <div className="td justify-between">
+                                        <span>₱</span>
+                                        {item.week2 === "N/A" ? "N/A" : item.week2}
+                                    </div>
+                                    <div className="td justify-between">
+                                        <span>₱</span>
+                                        {item.week3 === "N/A" ? "N/A" : item.week3}
+                                    </div>
+                                    <div className="td justify-between">
+                                        <span>₱</span>
+                                        {item.week4 === "N/A" ? "N/A" : item.week4}
+                                    </div>
+                                    <div className="td justify-between font-semibold">
+                                        <span>₱</span>
+                                        <span>{formatToPeso(item.total).slice(1,)}</span>
                                     </div>
                                 </div>
-
-                                <div className="td">
-                                    {expense.purpose}
+                            ))}
+                            {meatBreakdown.length === 0 && (
+                                <div className="tdata grid grid-cols-6">
+                                    <div className="td font-semibold">No MEAT expenses yet.</div>
+                                    <div className="td">-</div>
+                                    <div className="td">-</div>
+                                    <div className="td">-</div>
+                                    <div className="td">-</div>
+                                    <div className="td">-</div>
                                 </div>
+                            )}
+                            <div className="tdata grid grid-cols-6 bg-darkbrown/5!">
+                                <div className="td font-bold">MEAT Total</div>
+                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week1).slice(1,)}</span></div>
+                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week2).slice(1,)}</span></div>
+                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week3).slice(1,)}</span></div>
+                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week4).slice(1,)}</span></div>
+                                <div className="td justify-between font-bold"><span>₱</span><span>{formatToPeso(meatTotals.total).slice(1,)}</span></div>
+                            </div>
 
-                                <div className="td">
-                                    {capitalizeWords(expense.modeOfPayment.replace(/_/g, " "))}
+                            <div className="thead grid grid-cols-6 bg-blue/10!">
+                                {weeklyBreakdownColumns.map((item, index) => (
+                                    <div className="th" key={`snow-${item.title}`}>
+                                        {index === 0 ? "SNOWFROST Expenses" : item.title}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {snowfrostBreakdown.map((item, idx) => (
+                                <div className="tdata grid grid-cols-6" key={`snow-${idx}`}>
+                                    <div className="td font-semibold">{item.purpose}</div>
+                                    <div className="td justify-between">
+                                        <span>₱</span>
+                                        {item.week1 === "N/A" ? "N/A" : item.week1}
+                                    </div>
+                                    <div className="td justify-between">
+                                        <span>₱</span>
+                                        {item.week2 === "N/A" ? "N/A" : item.week2}
+                                    </div>
+                                    <div className="td justify-between">
+                                        <span>₱</span>
+                                        {item.week3 === "N/A" ? "N/A" : item.week3}
+                                    </div>
+                                    <div className="td justify-between">
+                                        <span>₱</span>
+                                        {item.week4 === "N/A" ? "N/A" : item.week4}
+                                    </div>
+                                    <div className="td justify-between font-semibold">
+                                        <span>₱</span>
+                                        <span>{formatToPeso(item.total).slice(1,)}</span>
+                                    </div>
                                 </div>
-
-                                <div className="td">
-                                    {formatDateTime(expense.spentAt)}
+                            ))}
+                            {snowfrostBreakdown.length === 0 && (
+                                <div className="tdata grid grid-cols-6">
+                                    <div className="td font-semibold">No SNOWFROST expenses yet.</div>
+                                    <div className="td">-</div>
+                                    <div className="td">-</div>
+                                    <div className="td">-</div>
+                                    <div className="td">-</div>
+                                    <div className="td">-</div>
                                 </div>
+                            )}
+                            <div className="tdata grid grid-cols-6 bg-blue/5!">
+                                <div className="td font-bold">SNOWFROST Total</div>
+                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week1).slice(1,)}</span></div>
+                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week2).slice(1,)}</span></div>
+                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week3).slice(1,)}</span></div>
+                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week4).slice(1,)}</span></div>
+                                <div className="td justify-between font-bold"><span>₱</span><span>{formatToPeso(snowTotals.total).slice(1,)}</span></div>
+                            </div>
+                            <div className="tdata grid grid-cols-6 bg-green-50!">
+                                <div className="td font-bold">Combined Weekly Total</div>
+                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week1).slice(1,)}</span></div>
+                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week2).slice(1,)}</span></div>
+                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week3).slice(1,)}</span></div>
+                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week4).slice(1,)}</span></div>
+                                <div className="td justify-between font-bold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.total).slice(1,)}</span></div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                )}
 
-                                <div className="td justify-between">
-                                    <div>₱</div>
-                                    <div>{formatToPeso(expense.total).slice(1,)}</div>
-                                </div>
+                {(selectedLayout === expenseLayoutTabs[0] || selectedLayout === expenseLayoutTabs[1]) && (
+                    <div className="space-y-2">
+                        <TableFilter
+                            setSearch={ setSearch }
+                            searchPlaceholder="Search for an expense"
+                            setSize={ setSize }
+                            size={ size }
+                            buttonLabel="Add expenses"
+                            setOpen={ setOpen }
+                            filters={expenseCategoryFilters}
+                            filter={filter}
+                            setFilter={setFilter}
+                        />
 
-                                <div className="td justify-center gap-2">
-                                    <button onClick={() => setUpdate(expense)}>
-                                        <SquarePen className="h-4 w-4 text-darkgreen" />
-                                    </button>
-                                    <button onClick={() => setDelete(expense)}>
-                                        <Trash2 className="h-4 w-4 text-darkred" />
-                                    </button>
+                        <section className="w-full">
+                            <div className="table-wrapper">
+                                <div className="thead grid grid-cols-7">
+                                    {columns.map((item, index) => (
+                                        <div key={index} className={`th ${item.style}`}>
+                                            {item.title}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        <div className="my-2 text-center text-sm">There are no expenses yet.</div>
-                    )}
-                </div>
-            </section>
 
-            {sortedExpenses.length > 0 && (
-                <TablePagination
-                    data={ sortedExpenses }
-                    paginated={ paginated }
-                    page={ page }
-                    size={ size }
-                    setPage={ setPage }
-                    search={ search }
-                    filter={ filter }
-                    pageKey={ pageKey }
-                />
-            )}
+                            <div className="animate-fade-in-up" key={`${filter}-${page}`}>
+                                {paginated.length > 0 ? (
+                                    paginated.map((expense) => (
+                                        <div className="tdata grid grid-cols-7 max-md:w-300!" key={expense.id}>
+                                            <div className="td col-span-2 gap-3">
+                                                {getCategoryIcon(expense.orderCategory!)}
+                                                <div className="min-w-0">
+                                                    <div className="truncate font-semibold">{expense.addedByName}</div>
+                                                    <div className="truncate text-xs text-gray">@{expense.addedByUsername}</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="td">
+                                                {expense.purpose}
+                                            </div>
+
+                                            <div className="td">
+                                                {capitalizeWords(expense.modeOfPayment.replace(/_/g, " "))}
+                                            </div>
+
+                                            <div className="td">
+                                                {formatDateTime(expense.spentAt)}
+                                            </div>
+
+                                            <div className="td justify-between">
+                                                <div>₱</div>
+                                                <div>{formatToPeso(expense.total).slice(1,)}</div>
+                                            </div>
+
+                                            <div className="td justify-center gap-2">
+                                                <button onClick={() => setUpdate(expense)}>
+                                                    <SquarePen className="h-4 w-4 text-darkgreen" />
+                                                </button>
+                                                <button onClick={() => setDelete(expense)}>
+                                                    <Trash2 className="h-4 w-4 text-darkred" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="my-2 text-center text-sm">There are no expenses yet.</div>
+                                )}
+                            </div>
+                        </section>
+
+                        {sortedExpenses.length > 0 && (
+                            <TablePagination
+                                data={ sortedExpenses }
+                                paginated={ paginated }
+                                page={ page }
+                                size={ size }
+                                setPage={ setPage }
+                                search={ search }
+                                filter={ filter }
+                                pageKey={ pageKey }
+                            />
+                        )}
+                    </div>
+                )}
+            </div>
 
             {open && (
                 <CreateExpense
@@ -521,9 +585,8 @@ export function ExpensesPage() {
             <ExpenseDateDialog
                 date={date}
                 open={toggleDate}
-                setDate={setDate}
                 selectedMonth={selectedMonth}
-                setSelectedMonth={setSelectedMonth}
+                onApplyMonth={replaceMonthParam}
                 setOpen={setToggleDate}
             />
 

@@ -17,8 +17,7 @@ type ExpenseDateDialogProps = {
     date: string;
     selectedMonth: string;
     open: boolean;
-    setDate: (value: string) => void;
-    setSelectedMonth: (value: string) => void;
+    onApplyMonth: (value: string) => void;
     setOpen: Dispatch<SetStateAction<boolean>>;
 };
 
@@ -26,8 +25,7 @@ export function ExpenseDateDialog({
     date,
     selectedMonth,
     open,
-    setDate,
-    setSelectedMonth,
+    onApplyMonth,
     setOpen,
 }: ExpenseDateDialogProps) {
     const today = useMemo(() => new Date(), []);
@@ -61,8 +59,7 @@ export function ExpenseDateDialog({
     const handleApply = () => {
         if (!periodAnchor) return;
 
-        setDate(format(periodAnchor, "yyyy-MM-dd"));
-        setSelectedMonth(format(periodAnchor, "yyyy-MM"));
+        onApplyMonth(format(periodAnchor, "yyyy-MM"));
         setOpen(false);
     };
 
@@ -78,10 +75,6 @@ export function ExpenseDateDialog({
             <DialogContent className="my-auto max-h-[90vh] overflow-y-auto">
                 <DialogTitle className="space-y-4">
                     <AppHeader label="Expense Date Filter" />
-
-                    <div className="rounded-2xl bg-slate-100 p-3 text-center text-sm font-semibold text-slate-700">
-                        Monthly filter only ({selectedMonth})
-                    </div>
                 </DialogTitle>
 
                 <div className="space-y-4">

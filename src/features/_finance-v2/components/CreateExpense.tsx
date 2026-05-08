@@ -143,7 +143,7 @@ export function CreateExpense({ setOpen, setReload }: Props) {
                     <div className="flex flex-col gap-1">
                         <div>Expense</div>
                         <div className="relative border border-gray rounded-md">
-                            <div className="absolute top-1/2 -translate-y-1/2 mx-2">₱</div>
+                            <div className="absolute top-1/2 -translate-y-1/2 mx-3">₱</div>
                             <Input 
                                 className="pl-8 border-0"
                                 type="text"
