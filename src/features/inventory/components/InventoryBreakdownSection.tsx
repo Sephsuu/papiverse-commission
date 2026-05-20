@@ -5,7 +5,7 @@ import { getCategoryIcon } from "@/hooks/use-helper";
 import { useFetchOne } from "@/hooks/use-fetch-one";
 import { usePagination } from "@/hooks/use-pagination";
 import { useSearchFilter } from "@/hooks/use-search-filter";
-import { formatToPeso } from "@/lib/formatter";
+import { formatDecimalWithoutRounding, formatToPeso } from "@/lib/formatter";
 import { InventoryService } from "@/services/inventory.service";
 import { Claim } from "@/types/claims";
 import { InventoryBreakdown } from "@/types/inventory";
@@ -163,7 +163,9 @@ export function InventoryBreakdownSection({ claims, rawMaterialType = "PRODUCT" 
                                         className={`font-semibold mr-1
                                             
                                         `}>
-                                        { item.quantity?.toFixed(3) }
+                                        {item.quantity !== null && item.quantity !== undefined
+                                            ? formatDecimalWithoutRounding(item.quantity, 3)
+                                            : "0"}
                                     </span> 
                                     { item.unitMeasurement }
                                 </div>

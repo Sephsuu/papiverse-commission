@@ -11,7 +11,7 @@ import { useCrudState } from "@/hooks/use-crud-state";
 import { getCategoryIcon } from "@/hooks/use-helper";
 import { usePagination } from "@/hooks/use-pagination";
 import { useSearchFilter } from "@/hooks/use-search-filter"
-import { formatToPeso } from "@/lib/formatter";
+import { formatDecimalWithoutRounding, formatToPeso } from "@/lib/formatter";
 import { Supply } from "@/types/supply"
 import { ArrowUpFromDot, Info, SquarePen, Trash2, Weight } from "lucide-react";
 import { CreateRawMaterial } from "./components/CreateRawMaterial";
@@ -109,7 +109,7 @@ export function RawMaterialsPage() {
                                                         <ArrowUpFromDot className="w-3 h-3 mr-1" />
                                                         {`${item.inventorySourceSku}`}
                                                         <Weight className="w-3 h-3 mr-1 ml-2" />
-                                                        {item.stockFactor !== null ? `${Number(item.stockFactor).toFixed(3)}` : ""}
+                                                        {item.stockFactor !== null ? formatDecimalWithoutRounding(Number(item.stockFactor), 3) : ""}
                                                     </div>
                                                 }
                                                 content={`Variation of ${item.inventorySourceSku}`}
@@ -117,10 +117,14 @@ export function RawMaterialsPage() {
                                         )}
                                     </div>
                                 </div>
-                                <div className="td flex gap-2">{ `${item.unitQuantity?.toFixed(2)} ${item.unitMeasurement}` }</div>
+                                <div className="td flex gap-2">
+                                    {`${item.unitQuantity !== null && item.unitQuantity !== undefined
+                                        ? formatDecimalWithoutRounding(item.unitQuantity, 3)
+                                        : "0"} ${item.unitMeasurement}`}
+                                </div>
                                <div className="td flex gap-2 ">
                                     {item.convertedQuantity && item.convertedMeasurement
-                                        ? `${item.convertedQuantity.toFixed(2)} ${item.convertedMeasurement}`
+                                        ? `${formatDecimalWithoutRounding(item.convertedQuantity, 3)} ${item.convertedMeasurement}`
                                         : <div className="text-darkred font-semibold">N/A</div>}
                                 </div>
                                 <div className={`td`}>

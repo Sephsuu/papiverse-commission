@@ -3,7 +3,7 @@
 import { PapiverseLoading, SectionLoading } from "@/components/ui/loader";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
-import { formatToPeso } from "@/lib/formatter";
+import { formatDecimalWithoutRounding, formatToPeso } from "@/lib/formatter";
 import { Inventory } from "@/types/inventory";
 import { Ham, Info, LayoutList, List, PackageX, Snowflake, SquarePen } from "lucide-react";
 import { useState } from "react";
@@ -162,7 +162,11 @@ export function InventorySection({ claims, rawMaterialType = "PRODUCT" }: {
                                     <TooltipTrigger 
                                         className={`td text-start ${item.stockLevel === 'GOOD' ? "text-darkgreen!" : item.stockLevel === 'WARNING' ? "text-darkorange" : item.stockLevel === 'DANGER' ? "text-darkred" : "text-red-950"}`}
                                     >
-                                        <span className="font-semibold mr-1">{ item.quantity?.toFixed(3) }</span> { item.unitMeasurement }
+                                        <span className="font-semibold mr-1">
+                                            {item.quantity !== null && item.quantity !== undefined
+                                                ? formatDecimalWithoutRounding(item.quantity, 3)
+                                                : "0"}
+                                        </span> { item.unitMeasurement }
                                     </TooltipTrigger>
                                     <TooltipContent className="text-center">
                                         <div>Required Stock</div> 
@@ -180,7 +184,9 @@ export function InventorySection({ claims, rawMaterialType = "PRODUCT" }: {
                                         : "text-red-950"}`}
                                 >
                                     <span className="font-semibold mr-1">
-                                        { item.convertedQuantity?.toFixed(3) ?? 'N/A' }</span> { item.convertedMeasurement }
+                                        {item.convertedQuantity !== null && item.convertedQuantity !== undefined
+                                            ? formatDecimalWithoutRounding(item.convertedQuantity, 3)
+                                            : "N/A"}</span> { item.convertedMeasurement }
                                 </div> */}
                                 <div className="td justify-between">
                                     { item.category === 'NONDELIVERABLES' 

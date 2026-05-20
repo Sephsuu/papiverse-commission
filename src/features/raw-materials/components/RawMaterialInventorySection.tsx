@@ -7,7 +7,7 @@ import { useCrudState } from "@/hooks/use-crud-state";
 import { useFetchOne } from "@/hooks/use-fetch-one";
 import { usePagination } from "@/hooks/use-pagination";
 import { useSearchFilter } from "@/hooks/use-search-filter";
-import { formatToPeso } from "@/lib/formatter";
+import { formatDecimalWithoutRounding, formatToPeso } from "@/lib/formatter";
 import { Inventory } from "@/types/inventory";
 import { Info, LayoutList, Search, SquarePen } from "lucide-react";
 import { UpdateRawMaterialInventory } from "./UpdateRawMaterialInventory";
@@ -111,7 +111,9 @@ export function RawMaterialInventorySection({ claims }: {
                                 </div>
 
                                 <div className="td">
-                                    {item.quantity?.toFixed(2)} {item.unitMeasurement}
+                                    {item.quantity !== null && item.quantity !== undefined
+                                        ? formatDecimalWithoutRounding(item.quantity, 3)
+                                        : "0"} {item.unitMeasurement}
                                 </div>
 
                                 <div className="td justify-between">

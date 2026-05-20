@@ -210,3 +210,17 @@ export function formatNumber(value: number) {
         maximumFractionDigits: fractionDigits,
     }).format(value);
 }
+
+export function formatDecimalWithoutRounding(value: number, maxDecimalPlaces = 20) {
+    if (!Number.isFinite(value)) return "0";
+
+    const [integerPart, decimalPart = ""] = value.toString().split(".");
+    const truncatedDecimal = decimalPart.slice(0, Math.max(0, maxDecimalPlaces));
+
+    if (!truncatedDecimal) {
+        return Number(integerPart).toLocaleString("en-PH");
+    }
+
+    const formattedInteger = Number(integerPart).toLocaleString("en-PH");
+    return `${formattedInteger}.${truncatedDecimal}`;
+}

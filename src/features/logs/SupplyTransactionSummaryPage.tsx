@@ -4,7 +4,7 @@ import { AppSelect } from "@/components/shared/AppSelect";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { useMemo, useState } from "react";
 import { CalendarDays, LayoutList, TrendingDown, TrendingUp } from "lucide-react";
-import { formatDateToWords } from "@/lib/formatter";
+import { formatDateToWords, formatDecimalWithoutRounding } from "@/lib/formatter";
 import { useFetchOne } from "@/hooks/use-fetch-one";
 import { InventoryTransactionSummary, InventoryTransactionSummaryItem } from "@/types/inventory";
 import { InventoryService } from "@/services/inventory.service";
@@ -174,15 +174,15 @@ export function SupplyTransactionSummaryPage() {
                                     </div>
                                 </div>
                                 <div className="td font-bold">
-                                    {item.previousInventory.toFixed(2)} 
+                                    {formatDecimalWithoutRounding(item.previousInventory, 3)} 
                                     <span className="ml-1 text-gray font-medium">{item.unitMeasurement}</span>
                                 </div>
                                 <div className="td font-bold">
-                                    {item.totalIn.toFixed(2)} 
+                                    {formatDecimalWithoutRounding(item.totalIn, 3)} 
                                     <span className="ml-1 text-gray font-medium">{item.unitMeasurement}</span>
                                 </div>
                                 <div className="td font-bold">
-                                    {item.totalOut.toFixed(2)} 
+                                    {formatDecimalWithoutRounding(item.totalOut, 3)} 
                                     <span className="ml-1 text-gray font-medium">{item.unitMeasurement}</span>
                                 </div>
                                 <div className="td font-bold">
@@ -199,15 +199,14 @@ export function SupplyTransactionSummaryPage() {
                                             ) : (
                                                 <TrendingDown className="w-3.5 h-3.5" />
                                             )}
-                                            {Number(
-                                                (
-                                                    ((item.currentInventory - item.previousInventory) / item.previousInventory) * 100
-                                                ).toFixed(2)
+                                            {formatDecimalWithoutRounding(
+                                                ((item.currentInventory - item.previousInventory) / item.previousInventory) * 100,
+                                                3
                                             )}
                                             %
                                         </span>
                                     )}
-                                    {item.currentInventory.toFixed(2)} 
+                                    {formatDecimalWithoutRounding(item.currentInventory, 3)} 
                                     <span className="ml-1 text-gray font-medium">{item.unitMeasurement}</span>
                                 </div>
                             </div>
