@@ -5,13 +5,13 @@ import { useToday } from "@/hooks/use-today";
 import { useMemo, useState } from "react";
 import { formatDateToWords, formatNumber, formatToPeso } from "@/lib/formatter";
 import { useFetchOne } from "@/hooks/use-fetch-one";
-import { InventoryService } from "@/services/inventory.service";
 import { PapiverseLoading } from "@/components/ui/loader";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarDays, Ham, PackageX, Snowflake } from "lucide-react";
 import { DatePickerModal, InventoryReportPeriodMode } from "./components/DatePickerModal";
 import { format } from "date-fns";
+import { FinanceService } from "@/services/finance.service";
 
 type RawMaterialFinanceReport = {
     branchId: number;
@@ -85,7 +85,7 @@ export function RawMaterialReportPage() {
     }, [parsedDate, periodMode]);
 
     const { data: report, loading: loadingReport } = useFetchOne<RawMaterialFinanceReport>(
-        InventoryService.getRawMaterialFinanceReport,
+        FinanceService.getRawMaterialFinanceReport,
         [startDate, endDate],
         [1, startDate, endDate]
     );

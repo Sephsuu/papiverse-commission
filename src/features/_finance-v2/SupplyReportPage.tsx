@@ -5,9 +5,7 @@ import { useToday } from "@/hooks/use-today";
 import { useMemo, useState } from "react";
 import { formatDateToWords, formatNumber, formatToPeso } from "@/lib/formatter";
 import { useFetchOne } from "@/hooks/use-fetch-one";
-import { InventoryService } from "@/services/inventory.service";
 import { PapiverseLoading } from "@/components/ui/loader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -15,6 +13,7 @@ import { CalendarDays, Ham, PackageX, Snowflake } from "lucide-react";
 import Link from "next/link";
 import { DatePickerModal, InventoryReportPeriodMode } from "./components/DatePickerModal";
 import { format } from "date-fns";
+import { FinanceService } from "@/services/finance.service";
 
 const columns = [
     {title: 'Product', style: ''},
@@ -54,7 +53,7 @@ export function SupplyReportPage() {
     }, [parsedDate, periodMode]);
 
     const { data: report, loading: loadingReport } = useFetchOne(
-        InventoryService.getSupplyFinanceReport,
+        FinanceService.getSupplyFinanceReport,
         [startDate, endDate],
         [1, startDate, endDate]
     )
@@ -130,24 +129,9 @@ export function SupplyReportPage() {
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {[
                     {
-                        label: "Produced Quantity",
-                        value: formatNumber(report.overall.producedQuantity),
-                        helper: "Total units prepared",
-                    },
-                    {
-                        label: "Sold Quantity",
-                        value: formatNumber(report.overall.soldQuantity),
-                        helper: "Units sold in range",
-                    },
-                    {
                         label: "Capital",
                         value: formatToPeso(report.overall.capital),
                         helper: "Estimated input cost",
-                    },
-                    {
-                        label: "Total Expenses",
-                        value: formatToPeso(report.totalExpenses),
-                        helper: "Total expenditure",
                     },
                     {
                         label: "Sales",
@@ -158,6 +142,21 @@ export function SupplyReportPage() {
                         label: "Profit",
                         value: formatToPeso(report.overall.profit),
                         helper: "Net return",
+                    },
+                    {
+                        label: "Total Expenses",
+                        value: formatToPeso(report.totalExpenses),
+                        helper: "Total expenditure",
+                    },
+                    {
+                        label: "Delivery Fees",
+                        value: formatToPeso(report.totalDelivery),
+                        helper: "Delivery fees on supply orders",
+                    },
+                    {
+                        label: "Other Fees",
+                        value: formatToPeso(report.totalOthers),
+                        helper: "Other fees on supply orders",
                     },
                 ].map((item) => (
                     <div key={item.label} className="gap-3 p-5 bg-white shadow-sm rounded-md border border-slate-300">

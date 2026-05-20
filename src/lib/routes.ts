@@ -1,5 +1,4 @@
-import { BookMarked, ChartNoAxesCombined, CircleQuestionMark, Container, Ham, HandCoins, Logs, LucideIcon, Megaphone, MessageCircleMore, MessageCircleQuestionMark, Store, UserRound, UsersRound, Wallet } from "lucide-react";
-import { hrtime } from "process";
+import { BookMarked, Container, HandCoins, Logs, LucideIcon, Store, UserRound } from "lucide-react";
 
 export interface PapiverseRoute {
     title: string;
@@ -44,6 +43,8 @@ export const adminRoute = [
         icon: HandCoins,
         children: [
             { title: 'Expenses', href: '/finance/expenses' },
+            { title: 'Commission Report', href: '/finance/commission-report' },
+            { title: 'Weekly Sales Report', href: '/finance/weekly-sales-report' },
             { title: 'Payment Settlement', href: '/finance/payment-settlement' },
             { title: 'Supply Reports', href: '/finance/supply-reports' },
             { title: 'Supply Breakdown', href: '/finance/supply-breakdown' },
@@ -51,6 +52,7 @@ export const adminRoute = [
             { title: 'Raw Material Breakdown', href: '/finance/raw-material-breakdown' },
             { title: 'Branch Profit Ranking', href: '/finance/branch-profit-ranking' },
             { title: 'Branch PO Report', href: '/finance/branch-po-report' },
+            { title: 'Branch Payment Report', href: '/finance/branch-payment-report' },
         ]
     },
     { 

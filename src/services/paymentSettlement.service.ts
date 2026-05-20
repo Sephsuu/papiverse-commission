@@ -2,6 +2,7 @@ import { BASE_URL } from "@/lib/urls";
 import { requestData } from "./_config";
 
 const paymentSettlementsUrl = `${BASE_URL}/payment-settlements`;
+const settlementReportsUrl = `${BASE_URL}/settlement-reports`;
 
 export type SettlementEntryType = "DEBT" | "PAYMENT";
 
@@ -47,6 +48,31 @@ export interface SoftDeleteLedgerEntryRequest {
 }
 
 export class PaymentSettlementService {
+    static async getWeeklySettlementReport(year: number, month: number, week: number) {
+        const params = new URLSearchParams({
+            year: String(year),
+            month: String(month),
+            week: String(week),
+        });
+
+        return await requestData(
+            `${settlementReportsUrl}/weekly?${params.toString()}`,
+            "GET"
+        );
+    }
+
+    static async getMonthlySettlementReport(year: number, month: number) {
+        const params = new URLSearchParams({
+            year: String(year),
+            month: String(month),
+        });
+
+        return await requestData(
+            `${settlementReportsUrl}/monthly?${params.toString()}`,
+            "GET"
+        );
+    }
+
     static async createSettlementGroup(payload: CreateSettlementGroupRequest) {
         return await requestData(
             `${paymentSettlementsUrl}/groups`,

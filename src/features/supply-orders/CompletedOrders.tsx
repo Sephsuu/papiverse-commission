@@ -1,7 +1,7 @@
 "use client"
 
 import { SupplyOrder } from "@/types/supplyOrder"
-import { CalendarArrowUp, MessageSquare, SquareMinus, TableOfContents, Truck } from "lucide-react";
+import { CalendarArrowUp, CircleEllipsis, FolderOpen, List, MessageSquare, NotebookTabs, SquareMinus, TableOfContents, Truck } from "lucide-react";
 import { TableDataTooltip } from "../users/components/TableDataTooltip";
 import { formatDateTime, formatToPeso } from "@/lib/formatter";
 import { OrderStatusBadge } from "@/components/ui/badge";
@@ -18,6 +18,9 @@ import { InventoryService } from "@/services/inventory.service";
 import { toast } from "sonner";
 import { ModalTitle } from "@/components/shared/ModalTitle";
 import { getCategoryIcon } from "@/hooks/use-helper";
+import { AppTooltip } from "@/components/shared/AppTooltip";
+import { useCrudState } from "@/hooks/use-crud-state";
+import { SupplyOrderPayment } from "./components/SupplyOrderPayment";
 
 const columns = [
     { title: 'Branch Name' , style: '' },
@@ -25,6 +28,7 @@ const columns = [
     { title: 'Status' , style: 'text-center' },
     { title: 'Order ID' , style: '' },
     { title: 'Total Amount' , style: '' },
+    { title: 'Remaining Balance' , style: '' },
 ]
 
 export function CompletedOrders({ claims, paginated, setReload }: {
@@ -35,6 +39,8 @@ export function CompletedOrders({ claims, paginated, setReload }: {
     const [order, setOrder] = useState<SupplyOrder>();
     const [onProcess, setProcess] = useState(false);
     const [isDelivered, setDelivered] = useState<number>()
+
+    const { toView, setView } = useCrudState<SupplyOrder>();
 
     async function handleReceived(id: number, meatApproved: boolean, snowApproved: boolean) {
         try {
@@ -57,12 +63,21 @@ export function CompletedOrders({ claims, paginated, setReload }: {
     }
 
     if (!paginated) return <SectionLoading />
+
+    const getPaymentStatusRowClass = (paymentStatus?: string) => {
+        if (paymentStatus === "PAID") return "bg-white!"
+        if (paymentStatus === "PARTIALLY_PAID") return "bg-darkyellow/10!"
+        if (paymentStatus === "UNPAID") return "bg-red-500/10!"
+        if (paymentStatus === "OVERPAID") return "bg-darkbrown/10!"
+        return ""
+    }
+
     return (
         <section className="table-wrapper animate-fade-in-up">
-            <div className="flex-center-y thead max-md:!w-250">
+            <div className="flex-center-y thead max-md:w-250!">
                 <div className="th"><SquareMinus className="w-4 h-4 mx-auto" strokeWidth={ 3 }/></div>
                 <div className="th"><Truck className="w-4 h-4 mx-auto" strokeWidth={ 3 }/></div>
-                <div className="grid grid-cols-5 w-full">
+                <div className="grid grid-cols-6 w-full">
                     {columns.map((item, _) => (
                         <div key={_} className={`th ${item.style}`}>{ item.title }</div>
                     ))}
@@ -72,7 +87,7 @@ export function CompletedOrders({ claims, paginated, setReload }: {
                 <div className="w-full text-center my-2 text-sm">There are no completed supply orders as of now.</div>
             )}
             {paginated.map((item, i) => (
-                <div className="flex-center-y tdata max-md:!w-250" key={i}>
+                <div className={`flex-center-y tdata max-md:w-250! ${getPaymentStatusRowClass(item.paymentStatus)}`} key={i}>
                     <Link href={`/inventory/supply-orders/${item.orderId}`}>
                         <TableDataTooltip
                             element={<TableOfContents className="w-4 h-4 text-gray mx-auto" strokeWidth={3} />}
@@ -98,7 +113,7 @@ export function CompletedOrders({ claims, paginated, setReload }: {
                             />
                         </div>
                     )}
-                    <div className="grid grid-cols-5 w-full">
+                    <div className="grid grid-cols-6 w-full">
                         <div className="td">{ item.branchName }</div>
                         <div className="td flex-col gap-1.5 items-start! justify-center!">
                             <div className="flex-center-y">
@@ -110,7 +125,7 @@ export function CompletedOrders({ claims, paginated, setReload }: {
                                 <span className="ml-1.5 text-xs text-slate-500">{ formatDateTime(item.expectedDelivery) }</span>
                             </div>
                         </div>
-                        <div className="td"><OrderStatusBadge className="text-xs!" status={ item.status } /></div>
+                        <div className="td"><OrderStatusBadge className="text-xs!" status={ item.paymentStatus } /></div>
                         <div className="td flex-col items-start! justify-center! gap-2">
                             {item.meatCategory?.meatOrderId && (
                                 <div className="flex-center-y gap-2">
@@ -129,6 +144,20 @@ export function CompletedOrders({ claims, paginated, setReload }: {
                             <div>₱</div>
                             <span>{ formatToPeso(item.completeOrderTotalAmount).slice(1,) }</span>
                         </div>
+                        <div className="td justify-between">
+                            <div>₱</div>
+                            <span className="flex-center-y gap-2">
+                                { formatToPeso(item.remainingBalance ?? 0).slice(1,) }
+                                <AppTooltip
+                                    onClick={() => setView(item)}
+                                    trigger={
+                                        <FolderOpen className={`h-4 w-4 ${item.isPaid ? 'text-darkgreen' : 'text-darkred'}`} />
+                                    }
+                                    content="Payment Details"
+                                />
+                                
+                            </span>
+                        </div>
                     </div>
                 </div>
             ))}
@@ -139,6 +168,13 @@ export function CompletedOrders({ claims, paginated, setReload }: {
                     order={ order }
                     setOrder={ setOrder }
                     setReload={ setReload }
+                />
+            )}
+
+            {toView && (
+                <SupplyOrderPayment 
+                   toView={toView}
+                   setView={setView}
                 />
             )}
 

@@ -86,7 +86,7 @@ export function CreateUser({ setOpen, setReload }: {
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>Username</div>
                             <Input    
-                                className="w-full border-1 border-gray max-md:w-full" 
+                                className="w-full border border-gray max-md:w-full" 
                                 name ="username"  
                                 value={user.username}
                                 onChange={ e => handleChange(e, setUser)}
@@ -115,7 +115,7 @@ export function CreateUser({ setOpen, setReload }: {
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>Position</div>
                             <Input    
-                                className="w-full border-1 border-gray max-md:w-full" 
+                                className="w-full border border-gray max-md:w-full" 
                                 name ="position"  
                                 value={user.position}
                                 onChange={ e => handleChange(e, setUser)}
@@ -125,7 +125,7 @@ export function CreateUser({ setOpen, setReload }: {
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>First Name</div>
                             <Input    
-                                className="w-full border-1 border-gray max-md:w-full" 
+                                className="w-full border border-gray max-md:w-full" 
                                 name ="firstName"  
                                 value={user.firstName}
                                 onChange={ e => handleChange(e, setUser)}
@@ -134,7 +134,7 @@ export function CreateUser({ setOpen, setReload }: {
                         <div className="flex flex-col gap-1">
                             <div>Middle Name</div>
                             <Input    
-                                className="w-full border-1 border-gray max-md:w-full" 
+                                className="w-full border border-gray max-md:w-full" 
                                 name ="middleName" 
                                 placeholder="(optional)" 
                                 value={user.middleName}
@@ -144,7 +144,7 @@ export function CreateUser({ setOpen, setReload }: {
                         <div className="flex flex-col gap-1">
                             <div>Last Name</div>
                             <Input    
-                                className="w-full border-1 border-gray max-md:w-full" 
+                                className="w-full border border-gray max-md:w-full" 
                                 name ="lastName"  
                                 value={user.lastName}
                                 onChange={ e => handleChange(e, setUser)}
@@ -157,7 +157,7 @@ export function CreateUser({ setOpen, setReload }: {
                                     <Button
                                         variant={"outline"}
                                         className={cn(
-                                            "justify-start text-left font-normal border-1 border-gray",
+                                            "justify-start text-left font-normal border border-gray",
                                             !date && "text-muted-foreground"
                                         )}
                                     >
@@ -191,7 +191,7 @@ export function CreateUser({ setOpen, setReload }: {
                                     gender: value
                                 }))} 
                             >
-                                <SelectTrigger className="w-full border-1 border-gray">
+                                <SelectTrigger className="w-full border border-gray">
                                     <SelectValue placeholder="Select Gender" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -210,7 +210,7 @@ export function CreateUser({ setOpen, setReload }: {
                                     branchId: value
                                 }))} 
                             >
-                                <SelectTrigger className="w-full border-1 border-gray">
+                                <SelectTrigger className="w-full border border-gray">
                                     <SelectValue className="block w-[100px] truncate" placeholder="Select Branch" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -233,7 +233,7 @@ export function CreateUser({ setOpen, setReload }: {
                         <div className="flex flex-col gap-1">
                             <div>E-mail Address</div>
                             <Input    
-                                className="w-full border-1 border-gray max-md:w-full" 
+                                className="w-full border border-gray max-md:w-full" 
                                 name ="email"  
                                 value={user.email}
                                 onChange={ e => handleChange(e, setUser)}
@@ -242,7 +242,7 @@ export function CreateUser({ setOpen, setReload }: {
                         <div className="flex flex-col gap-1">
                             <div>Contact Number</div>
                             <Input    
-                                className="w-full border-1 border-gray max-md:w-full" 
+                                className="w-full border border-gray max-md:w-full" 
                                 name ="contactNumber"  
                                 value={user.contactNumber}
                                 onChange={ e => handleChange(e, setUser)}
@@ -259,11 +259,11 @@ export function CreateUser({ setOpen, setReload }: {
                                 }))
                             }}>
                                 <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="FRANCHISOR" className="border-1 border-gray" id="r1" />
+                                    <RadioGroupItem value="FRANCHISOR" className="border border-gray" id="r1" />
                                     <Label htmlFor="r1">Franchisor</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="FRANCHISEE" className="border-1 border-gray" id="r2" />
+                                    <RadioGroupItem value="FRANCHISEE" className="border border-gray" id="r2" />
                                     <Label htmlFor="r2">Franchisee</Label>
                                 </div>
                             </RadioGroup>

@@ -37,16 +37,37 @@ const purposeOptionsByCategory: Record<string, string[]> = {
 interface Props {
     setOpen: React.Dispatch<React.SetStateAction<boolean>>;
     setReload: Dispatch<SetStateAction<boolean>>;
+    prefill?: {
+        purpose?: string;
+        orderCategory?: string;
+        weekRange?: {
+            start: string;
+            end: string;
+        };
+    };
 }
 
-export function CreateExpense({ setOpen, setReload }: Props) {
+function parseDateOnly(value: string) {
+    return new Date(`${value}T00:00:00`);
+}
+
+export function CreateExpense({ setOpen, setReload, prefill }: Props) {
     const { claims } = useAuth();
+    const weekStartDate = prefill?.weekRange?.start ? parseDateOnly(prefill.weekRange.start) : undefined;
+    const weekEndDate = prefill?.weekRange?.end ? parseDateOnly(prefill.weekRange.end) : undefined;
+    const now = new Date();
+    const initialSpentDate =
+        weekStartDate && weekEndDate
+            ? (now < weekStartDate ? weekStartDate : now > weekEndDate ? weekEndDate : now)
+            : now;
     const [onProcess, setProcess] = useState(false);
     const [expense, setExpense] = useState<Partial<Expense>>(() => {
-        const spentAt = toExpenseDateTimeString(new Date());
+        const spentAt = toExpenseDateTimeString(initialSpentDate);
 
         return {
             ...expenseInit,
+            orderCategory: prefill?.orderCategory ?? expenseInit.orderCategory,
+            purpose: prefill?.purpose ?? expenseInit.purpose,
             spentAt,
         };
     });
@@ -54,7 +75,7 @@ export function CreateExpense({ setOpen, setReload }: Props) {
         expenseInit.total ? String(expenseInit.total) : ""
     );
     const [spentAtDate, setSpentAtDate] = useState<Date | undefined>(() =>
-        parseExpenseCalendarDate(toExpenseDateTimeString(new Date()))
+        parseExpenseCalendarDate(toExpenseDateTimeString(initialSpentDate))
     );
     const [dateOpen, setDateOpen] = useState(false);
     const isOthersPurpose = (expense.purpose ?? "") === "OTHERS";
@@ -176,6 +197,11 @@ export function CreateExpense({ setOpen, setReload }: Props) {
                                     mode="single"
                                     selected={spentAtDate}
                                     onSelect={handleSpentAtChange}
+                                    defaultMonth={spentAtDate ?? weekStartDate}
+                                    disabled={(date) => {
+                                        if (!weekStartDate || !weekEndDate) return false;
+                                        return date < weekStartDate || date > weekEndDate;
+                                    }}
                                     captionLayout="dropdown"
                                     initialFocus
                                 />

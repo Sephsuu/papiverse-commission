@@ -57,6 +57,11 @@ function OrderStatusBadge({ status, padding, className } : {
         ${status === "CANCELLED" && "bg-darkred"}
         ${status === "REJECTED" && "bg-darkred"}
         ${status === "DELIVERED" && "bg-blue"}
+        ${status === "PAID" && "bg-darkgreen"}
+        ${status === "PARTIAL" && "bg-darkyellow"}
+        ${status === "UNPAID" && "bg-darkred"}
+        ${status === "OVERPAID" && "bg-darkbrown"}
+        ${status === "PARTIALLY_PAID" && "bg-darkyellow"}
     `}>
         { status }
     </div>

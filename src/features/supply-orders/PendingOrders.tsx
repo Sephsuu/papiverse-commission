@@ -130,7 +130,7 @@ export function PendingOrders({ claims, paginated, setReload, orderShortages }: 
                     </div>
                 ) : (
                     <div
-                        className="flex-center-y tdata max-md:w-250!"
+                        className="flex-center-y tdata bg-white! max-md:w-250!"
                         key={i}
                     >
                         <Link href={`/inventory/supply-orders/${item.orderId}`}>

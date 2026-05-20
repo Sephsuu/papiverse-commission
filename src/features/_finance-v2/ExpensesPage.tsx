@@ -16,7 +16,7 @@ import { UpdateExpense } from "./components/UpdateExpense";
 import { DeleteExpense } from "./components/DeleteExpense";
 import { useToday } from "@/hooks/use-today";
 import { endOfMonth, format, isAfter, startOfMonth } from "date-fns";
-import { CalendarDays, Plus, SquarePen, Trash2 } from "lucide-react";
+import { CalendarDays, CirclePlus, Plus, SquarePen, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { capitalizeWords, formatDateTime, formatToPeso } from "@/lib/formatter";
 import { ExpenseDateDialog } from "./components/ExpenseDateDialog";
@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button";
 
 const pageKey = "expensesPage";
 const expenseLayoutKey = "expensesPageLayout";
-const expenseLayoutTabs = ["Overview", "Summary", "Detailed"] as const;
+const expenseLayoutTabs = ["Overview", "Summary", "Detailed"];
 const columns = [
     { title: "Added By", style: "col-span-2" },
     { title: "Purpose", style: "" },
@@ -80,14 +80,7 @@ export function ExpensesPage() {
     const [loading, setLoading] = useState(true);
     const [monthlyData, setMonthlyData] = useState<ExpenseMonthlyResponse | null>(null);
     const [filter, setFilter] = useState(expenseCategoryFilters[0]);
-    const [selectedLayout, setSelectedLayout] = useState<(typeof expenseLayoutTabs)[number]>(() => {
-        if (typeof window === "undefined") return expenseLayoutTabs[0];
-        const storedLayout = sessionStorage.getItem(expenseLayoutKey);
-        if (storedLayout && expenseLayoutTabs.includes(storedLayout as (typeof expenseLayoutTabs)[number])) {
-            return storedLayout as (typeof expenseLayoutTabs)[number];
-        }
-        return expenseLayoutTabs[0];
-    });
+    const [selectedLayout, setSelectedLayout] = useState(expenseLayoutTabs[0]);
     const lastReplacedMonthRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -179,17 +172,6 @@ export function ExpensesPage() {
     const displayBadge = parsedStartDate
         ? "MONTHLY"
         : "PERIOD";
-    const weeklyChartData = useMemo(() => {
-        const weekly = monthlyData?.weeklyBreakdown;
-        if (!weekly) return [];
-
-        return [
-            { label: "Week 1", amount: weekly.week1 },
-            { label: "Week 2", amount: weekly.week2 },
-            { label: "Week 3", amount: weekly.week3 },
-            { label: "Week 4", amount: weekly.week4 },
-        ];
-    }, [monthlyData]);
     const meatBreakdown = useMemo(
         () => (monthlyData?.purposeWeeklyBreakdown ?? []).filter((item) => item.orderCategory === "MEAT"),
         [monthlyData]
@@ -232,6 +214,35 @@ export function ExpensesPage() {
         }),
         [meatTotals, snowTotals]
     );
+    const weeklyChartData = useMemo(
+        () => [
+            { label: "Week 1", meat: meatTotals.week1, snowfrost: snowTotals.week1, combined: combinedWeekTotals.week1 },
+            { label: "Week 2", meat: meatTotals.week2, snowfrost: snowTotals.week2, combined: combinedWeekTotals.week2 },
+            { label: "Week 3", meat: meatTotals.week3, snowfrost: snowTotals.week3, combined: combinedWeekTotals.week3 },
+            { label: "Week 4", meat: meatTotals.week4, snowfrost: snowTotals.week4, combined: combinedWeekTotals.week4 },
+        ],
+        [meatTotals, snowTotals, combinedWeekTotals]
+    );
+    const allocatedWeeklyChartData = useMemo(
+        () => weeklyChartData.filter((item) => toAmount(item.combined) > 0),
+        [weeklyChartData]
+    );
+    const allocatedPurposeChartData = useMemo(() => {
+        const purposeTotals = new Map<string, number>();
+
+        (monthlyData?.purposeWeeklyBreakdown ?? []).forEach((item) => {
+            const purpose = item.purpose?.trim();
+            if (!purpose) return;
+
+            const total = toAmount(item.total);
+            purposeTotals.set(purpose, (purposeTotals.get(purpose) ?? 0) + total);
+        });
+
+        return Array.from(purposeTotals.entries())
+            .map(([purpose, total]) => ({ purpose, total }))
+            .filter((item) => item.total > 0)
+            .sort((a, b) => b.total - a.total);
+    }, [monthlyData]);
 
     const categoryFilteredItems = useMemo(() => {
         return filteredItems.filter((item) => {
@@ -251,8 +262,35 @@ export function ExpensesPage() {
     const { page, setPage, size, setSize, paginated } = usePagination(sortedExpenses, 10, pageKey);
 
     const [open, setOpen] = useState(false);
+    const [createPrefill, setCreatePrefill] = useState<{
+        purpose?: string;
+        orderCategory?: string;
+        weekRange?: { start: string; end: string };
+    } | undefined>(undefined);
     const [toUpdate, setUpdate] = useState<Expense | undefined>();
     const [toDelete, setDelete] = useState<Expense | undefined>(); 
+    
+    function getWeekRange(monthValue: string, weekNumber: 1 | 2 | 3 | 4) {
+        const monthStart = parseDateOnly(`${monthValue}-01`);
+        const startDay = weekNumber === 1 ? 1 : weekNumber === 2 ? 8 : weekNumber === 3 ? 15 : 22;
+        const start = new Date(monthStart.getFullYear(), monthStart.getMonth(), startDay);
+        const monthEnd = endOfMonth(monthStart);
+        const endDay = weekNumber === 1 ? 7 : weekNumber === 2 ? 14 : weekNumber === 3 ? 21 : monthEnd.getDate();
+        const end = new Date(monthStart.getFullYear(), monthStart.getMonth(), endDay);
+        return {
+            start: format(start, "yyyy-MM-dd"),
+            end: format(end, "yyyy-MM-dd"),
+        };
+    }
+
+    function openCreateFromWeeklyRow(purpose: string, orderCategory: string, weekNumber: 1 | 2 | 3 | 4) {
+        setCreatePrefill({
+            purpose,
+            orderCategory,
+            weekRange: getWeekRange(selectedMonth, weekNumber),
+        });
+        setOpen(true);
+    }
 
     if (loading || authLoading) return <PapiverseLoading />
     return(
@@ -296,273 +334,335 @@ export function ExpensesPage() {
                 )}
             </div>
 
-            <div className="animate-fade-in-up" key={selectedLayout}>
-                {(selectedLayout === expenseLayoutTabs[0] || selectedLayout === expenseLayoutTabs[2]) && (
-                    <div className="space-y-2 mb-4">
-                        <div className="mb-2 grid gap-4 animate-fade-in-up md:grid-cols-2 xl:grid-cols-3">
-                            {[
-                                {
-                                    label: "Overall Expenses",
-                                    value: formatToPeso(combinedWeekTotals.total),
-                                    helper: "Total expenditure for selected month",
-                                },
-                                {
-                                    label: "MEAT Expenses",
-                                    value: formatToPeso(meatTotals.total),
-                                    helper: "Total MEAT category expenditure",
-                                },
-                                {
-                                    label: "SNOWFROST Expenses",
-                                    value: formatToPeso(snowTotals.total),
-                                    helper: "Total SNOWFROST category expenditure",
-                                },
-                            ].map((item) => (
-                                <div key={item.label} className="rounded-md border border-slate-300 bg-white p-5 shadow-sm">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-darkbrown">
-                                        {item.label}
-                                    </p>
-                                    <p className="mt-3 text-2xl font-semibold text-slate-900">
-                                        {item.value}
-                                    </p>
-                                    <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
-                                </div>
-                            ))}
-                        </div>
-
-                        <Card className="w-full bg-light p-4">
-                            <div>
-                                <div className="text-darkbrown font-bold text-xl">Weekly Expenses Chart</div>
-                                <div className="text-sm text-gray">
-                                    Weekly total expenses for the selected month, shown in Philippine peso (₱).
-                                </div>
-                            </div> 
-
-                            <div className="h-52 w-full">
-                                {expensesData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={weeklyChartData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="label" />
-                                            <YAxis tick={{ fontSize: 11 }} tickFormatter={(value: number) => `₱${Number(value).toLocaleString()}`} />
-                                            <Tooltip formatter={(value: number) => formatToPeso(Number(value))} />
-                                            <Bar dataKey="amount" fill="#5c4033" radius={[6, 6, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="flex h-full w-full items-center justify-center text-sm text-gray">
-                                        There are no expenses yet.
-                                    </div>
-                                )}
+            {selectedLayout === expenseLayoutTabs[0] && (
+                <div className="animate-fade-in-up" key={selectedLayout}>
+                    <div className="mb-2 grid gap-4 animate-fade-in-up md:grid-cols-2 xl:grid-cols-3">
+                        {[
+                            {
+                                label: "Overall Expenses",
+                                value: formatToPeso(combinedWeekTotals.total),
+                                helper: "Total expenditure for selected month",
+                            },
+                            {
+                                label: "MEAT Expenses",
+                                value: formatToPeso(meatTotals.total),
+                                helper: "Total MEAT category expenditure",
+                            },
+                            {
+                                label: "SNOWFROST Expenses",
+                                value: formatToPeso(snowTotals.total),
+                                helper: "Total SNOWFROST category expenditure",
+                            },
+                        ].map((item) => (
+                            <div key={item.label} className="rounded-md border border-slate-300 bg-white p-5 shadow-sm">
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-darkbrown">
+                                    {item.label}
+                                </p>
+                                <p className="mt-3 text-2xl font-semibold text-slate-900">
+                                    {item.value}
+                                </p>
+                                <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
                             </div>
-                        </Card> 
-
-                        <div className="table-wrapper" >
-                            <div className="thead grid grid-cols-6 bg-darkbrown/10!">
-                                {weeklyBreakdownColumns.map((item, index) => (
-                                    <div className="th" key={`meat-${item.title}`}>
-                                        {index === 0 ? "MEAT Expenses" : item.title}
-                                    </div>
-                                ))}
-                            </div>
-
-                            {meatBreakdown.map((item, idx) => (
-                                <div className="tdata grid grid-cols-6" key={idx}>
-                                    <div className="td font-semibold">{item.purpose}</div>
-                                    <div className="td justify-between">
-                                        <span>₱</span>
-                                        {item.week1 === "N/A" ? "N/A" : item.week1}
-                                    </div>
-                                    <div className="td justify-between">
-                                        <span>₱</span>
-                                        {item.week2 === "N/A" ? "N/A" : item.week2}
-                                    </div>
-                                    <div className="td justify-between">
-                                        <span>₱</span>
-                                        {item.week3 === "N/A" ? "N/A" : item.week3}
-                                    </div>
-                                    <div className="td justify-between">
-                                        <span>₱</span>
-                                        {item.week4 === "N/A" ? "N/A" : item.week4}
-                                    </div>
-                                    <div className="td justify-between font-semibold">
-                                        <span>₱</span>
-                                        <span>{formatToPeso(item.total).slice(1,)}</span>
-                                    </div>
-                                </div>
-                            ))}
-                            {meatBreakdown.length === 0 && (
-                                <div className="tdata grid grid-cols-6">
-                                    <div className="td font-semibold">No MEAT expenses yet.</div>
-                                    <div className="td">-</div>
-                                    <div className="td">-</div>
-                                    <div className="td">-</div>
-                                    <div className="td">-</div>
-                                    <div className="td">-</div>
-                                </div>
-                            )}
-                            <div className="tdata grid grid-cols-6 bg-darkbrown/5!">
-                                <div className="td font-bold">MEAT Total</div>
-                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week1).slice(1,)}</span></div>
-                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week2).slice(1,)}</span></div>
-                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week3).slice(1,)}</span></div>
-                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week4).slice(1,)}</span></div>
-                                <div className="td justify-between font-bold"><span>₱</span><span>{formatToPeso(meatTotals.total).slice(1,)}</span></div>
-                            </div>
-
-                            <div className="thead grid grid-cols-6 bg-blue/10!">
-                                {weeklyBreakdownColumns.map((item, index) => (
-                                    <div className="th" key={`snow-${item.title}`}>
-                                        {index === 0 ? "SNOWFROST Expenses" : item.title}
-                                    </div>
-                                ))}
-                            </div>
-
-                            {snowfrostBreakdown.map((item, idx) => (
-                                <div className="tdata grid grid-cols-6" key={`snow-${idx}`}>
-                                    <div className="td font-semibold">{item.purpose}</div>
-                                    <div className="td justify-between">
-                                        <span>₱</span>
-                                        {item.week1 === "N/A" ? "N/A" : item.week1}
-                                    </div>
-                                    <div className="td justify-between">
-                                        <span>₱</span>
-                                        {item.week2 === "N/A" ? "N/A" : item.week2}
-                                    </div>
-                                    <div className="td justify-between">
-                                        <span>₱</span>
-                                        {item.week3 === "N/A" ? "N/A" : item.week3}
-                                    </div>
-                                    <div className="td justify-between">
-                                        <span>₱</span>
-                                        {item.week4 === "N/A" ? "N/A" : item.week4}
-                                    </div>
-                                    <div className="td justify-between font-semibold">
-                                        <span>₱</span>
-                                        <span>{formatToPeso(item.total).slice(1,)}</span>
-                                    </div>
-                                </div>
-                            ))}
-                            {snowfrostBreakdown.length === 0 && (
-                                <div className="tdata grid grid-cols-6">
-                                    <div className="td font-semibold">No SNOWFROST expenses yet.</div>
-                                    <div className="td">-</div>
-                                    <div className="td">-</div>
-                                    <div className="td">-</div>
-                                    <div className="td">-</div>
-                                    <div className="td">-</div>
-                                </div>
-                            )}
-                            <div className="tdata grid grid-cols-6 bg-blue/5!">
-                                <div className="td font-bold">SNOWFROST Total</div>
-                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week1).slice(1,)}</span></div>
-                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week2).slice(1,)}</span></div>
-                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week3).slice(1,)}</span></div>
-                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week4).slice(1,)}</span></div>
-                                <div className="td justify-between font-bold"><span>₱</span><span>{formatToPeso(snowTotals.total).slice(1,)}</span></div>
-                            </div>
-                            <div className="tdata grid grid-cols-6 bg-green-50!">
-                                <div className="td font-bold">Combined Weekly Total</div>
-                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week1).slice(1,)}</span></div>
-                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week2).slice(1,)}</span></div>
-                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week3).slice(1,)}</span></div>
-                                <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week4).slice(1,)}</span></div>
-                                <div className="td justify-between font-bold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.total).slice(1,)}</span></div>
-                            </div>
-                            
-                        </div>
+                        ))}
                     </div>
-                )}
+                    <Card className="w-full bg-light p-4">
+                        <div>
+                            <div className="text-darkbrown font-bold text-xl">Weekly Expenses Chart</div>
+                            <div className="text-sm text-gray">
+                                Weekly total expenses for the selected month, shown in Philippine peso (₱).
+                            </div>
+                        </div> 
 
-                {(selectedLayout === expenseLayoutTabs[0] || selectedLayout === expenseLayoutTabs[1]) && (
-                    <div className="space-y-2">
-                        <TableFilter
-                            setSearch={ setSearch }
-                            searchPlaceholder="Search for an expense"
-                            setSize={ setSize }
-                            size={ size }
-                            buttonLabel="Add expenses"
-                            setOpen={ setOpen }
-                            filters={expenseCategoryFilters}
-                            filter={filter}
-                            setFilter={setFilter}
-                        />
+                        <div className="h-52 w-full">
+                            {allocatedWeeklyChartData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={allocatedWeeklyChartData}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="label" />
+                                        <YAxis tick={{ fontSize: 11 }} tickFormatter={(value: number) => `₱${Number(value).toLocaleString()}`} />
+                                        <Tooltip formatter={(value: number) => formatToPeso(Number(value))} />
+                                        <Bar dataKey="combined" name="COMBINED" fill="#653818" radius={[6, 6, 0, 0]} />
+                                        <Bar dataKey="meat" name="MEAT" fill="#bf3612" radius={[6, 6, 0, 0]} />
+                                        <Bar dataKey="snowfrost" name="SNOW FROST" fill="#007aa5" radius={[6, 6, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex h-full w-full items-center justify-center text-sm text-gray">
+                                    There are no expenses yet.
+                                </div>
+                            )}
+                        </div>
+                    </Card> 
 
-                        <section className="w-full">
-                            <div className="table-wrapper">
-                                <div className="thead grid grid-cols-7">
-                                    {columns.map((item, index) => (
-                                        <div key={index} className={`th ${item.style}`}>
-                                            {item.title}
+                    <Card className="mt-4 w-full bg-light p-4">
+                        <div>
+                            <div className="text-darkbrown font-bold text-xl">Expenses Allocated Per Purpose</div>
+                            <div className="text-sm text-gray">
+                                Purpose allocation for the selected month. Only purposes with allocated expenses are shown.
+                            </div>
+                        </div>
+
+                        <div className="h-72 w-full">
+                            {allocatedPurposeChartData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={allocatedPurposeChartData} margin={{ top: 12, right: 12, left: 8, bottom: 56 }}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis
+                                            dataKey="purpose"
+                                            angle={-20}
+                                            textAnchor="end"
+                                            interval={0}
+                                            height={72}
+                                            tick={{ fontSize: 11 }}
+                                        />
+                                        <YAxis tick={{ fontSize: 11 }} tickFormatter={(value: number) => `₱${Number(value).toLocaleString()}`} />
+                                        <Tooltip
+                                            formatter={(value: number) => formatToPeso(Number(value))}
+                                            labelFormatter={(label) => `Purpose: ${label}`}
+                                        />
+                                        <Bar dataKey="total" name="Allocated Expenses" fill="#2f855a" radius={[6, 6, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex h-full w-full items-center justify-center text-sm text-gray">
+                                    There are no allocated purpose expenses yet.
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+                </div>  
+            )}
+
+            {selectedLayout === expenseLayoutTabs[1] && (
+                <div className="space-y-2 mb-4 animate-fade-in-up">
+                    
+                    <div className="table-wrapper" >
+                        <div className="thead grid grid-cols-6 bg-darkbrown/10!">
+                            {weeklyBreakdownColumns.map((item, index) => (
+                                <div className="th" key={`meat-${item.title}`}>
+                                    {index === 0 ? "MEAT Expenses" : item.title}
+                                </div>
+                            ))}
+                        </div>
+
+                        {meatBreakdown.map((item, idx) => (
+                            <div className="tdata grid grid-cols-6" key={idx}>
+                                <div className="td font-semibold">{item.purpose}</div>
+                                <div className="td">
+                                    <div className="flex-center-y justify-between gap-3 w-full">
+                                        <div className="flex-center-y gap-1 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-medium text-slate-700">
+                                            <span className="text-xs text-slate-500">₱</span>
+                                            <span>{item.week1 === "N/A" ? "N/A" : item.week1}</span>
                                         </div>
-                                    ))}
+                                        <button
+                                            type="button"
+                                            className="flex-center-y rounded-md border border-darkgreen/30 bg-darkgreen/10 p-1 text-darkgreen hover:bg-darkgreen/15"
+                                            aria-label={`Add week 1 expense for ${item.purpose}`}
+                                            onClick={() => openCreateFromWeeklyRow(item.purpose, "MEAT", 1)}
+                                        >
+                                            <CirclePlus className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                                {[{ key: "week2", week: 2 }, { key: "week3", week: 3 }, { key: "week4", week: 4 }].map((weekItem) => (
+                                    <div className="td" key={`${item.purpose}-${weekItem.key}`}>
+                                        <div className="flex-center-y justify-between gap-3 w-full">
+                                            <div className="flex-center-y gap-1 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-medium text-slate-700">
+                                                <span className="text-xs text-slate-500">₱</span>
+                                                <span>{item[weekItem.key as keyof typeof item] === "N/A" ? "N/A" : item[weekItem.key as keyof typeof item]}</span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className="flex-center-y rounded-md border border-darkgreen/30 bg-darkgreen/10 p-1 text-darkgreen hover:bg-darkgreen/15"
+                                                aria-label={`Add week ${weekItem.week} expense for ${item.purpose}`}
+                                                onClick={() => openCreateFromWeeklyRow(item.purpose, "MEAT", weekItem.week as 2 | 3 | 4)}
+                                            >
+                                                <CirclePlus className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="td justify-between font-semibold">
+                                    <span>₱</span>
+                                    <span>{formatToPeso(item.total).slice(1,)}</span>
                                 </div>
                             </div>
-
-                            <div className="animate-fade-in-up" key={`${filter}-${page}`}>
-                                {paginated.length > 0 ? (
-                                    paginated.map((expense) => (
-                                        <div className="tdata grid grid-cols-7 max-md:w-300!" key={expense.id}>
-                                            <div className="td col-span-2 gap-3">
-                                                {getCategoryIcon(expense.orderCategory!)}
-                                                <div className="min-w-0">
-                                                    <div className="truncate font-semibold">{expense.addedByName}</div>
-                                                    <div className="truncate text-xs text-gray">@{expense.addedByUsername}</div>
-                                                </div>
-                                            </div>
-
-                                            <div className="td">
-                                                {expense.purpose}
-                                            </div>
-
-                                            <div className="td">
-                                                {capitalizeWords(expense.modeOfPayment.replace(/_/g, " "))}
-                                            </div>
-
-                                            <div className="td">
-                                                {formatDateTime(expense.spentAt)}
-                                            </div>
-
-                                            <div className="td justify-between">
-                                                <div>₱</div>
-                                                <div>{formatToPeso(expense.total).slice(1,)}</div>
-                                            </div>
-
-                                            <div className="td justify-center gap-2">
-                                                <button onClick={() => setUpdate(expense)}>
-                                                    <SquarePen className="h-4 w-4 text-darkgreen" />
-                                                </button>
-                                                <button onClick={() => setDelete(expense)}>
-                                                    <Trash2 className="h-4 w-4 text-darkred" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="my-2 text-center text-sm">There are no expenses yet.</div>
-                                )}
+                        ))}
+                        {meatBreakdown.length === 0 && (
+                            <div className="tdata grid grid-cols-6">
+                                <div className="td font-semibold">No MEAT expenses yet.</div>
+                                <div className="td">-</div>
+                                <div className="td">-</div>
+                                <div className="td">-</div>
+                                <div className="td">-</div>
+                                <div className="td">-</div>
                             </div>
-                        </section>
-
-                        {sortedExpenses.length > 0 && (
-                            <TablePagination
-                                data={ sortedExpenses }
-                                paginated={ paginated }
-                                page={ page }
-                                size={ size }
-                                setPage={ setPage }
-                                search={ search }
-                                filter={ filter }
-                                pageKey={ pageKey }
-                            />
                         )}
+                        <div className="tdata grid grid-cols-6 bg-darkbrown/5!">
+                            <div className="td font-bold">MEAT Total</div>
+                            <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week1).slice(1,)}</span></div>
+                            <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week2).slice(1,)}</span></div>
+                            <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week3).slice(1,)}</span></div>
+                            <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(meatTotals.week4).slice(1,)}</span></div>
+                            <div className="td justify-between font-bold"><span>₱</span><span>{formatToPeso(meatTotals.total).slice(1,)}</span></div>
+                        </div>
+
+                        <div className="thead grid grid-cols-6 bg-blue/10!">
+                            {weeklyBreakdownColumns.map((item, index) => (
+                                <div className="th" key={`snow-${item.title}`}>
+                                    {index === 0 ? "SNOWFROST Expenses" : item.title}
+                                </div>
+                            ))}
+                        </div>
+
+                        {snowfrostBreakdown.map((item, idx) => (
+                            <div className="tdata grid grid-cols-6" key={`snow-${idx}`}>
+                                <div className="td font-semibold">{item.purpose}</div>
+                                {[{ key: "week1", week: 1 }, { key: "week2", week: 2 }, { key: "week3", week: 3 }, { key: "week4", week: 4 }].map((weekItem) => (
+                                    <div className="td" key={`snow-${item.purpose}-${weekItem.key}`}>
+                                        <div className="flex-center-y justify-between gap-3 w-full">
+                                            <div className="flex-center-y gap-1 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-medium text-slate-700">
+                                                <span className="text-xs text-slate-500">₱</span>
+                                                <span>{item[weekItem.key as keyof typeof item] === "N/A" ? "N/A" : item[weekItem.key as keyof typeof item]}</span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className="flex-center-y rounded-md border border-darkgreen/30 bg-darkgreen/10 p-1 text-darkgreen hover:bg-darkgreen/15"
+                                                aria-label={`Add week ${weekItem.week} expense for ${item.purpose}`}
+                                                onClick={() => openCreateFromWeeklyRow(item.purpose, "SNOW", weekItem.week as 1 | 2 | 3 | 4)}
+                                            >
+                                                <CirclePlus className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="td justify-between font-semibold">
+                                    <span>₱</span>
+                                    <span>{formatToPeso(item.total).slice(1,)}</span>
+                                </div>
+                            </div>
+                        ))}
+                        {snowfrostBreakdown.length === 0 && (
+                            <div className="tdata grid grid-cols-6">
+                                <div className="td font-semibold">No SNOWFROST expenses yet.</div>
+                                <div className="td">-</div>
+                                <div className="td">-</div>
+                                <div className="td">-</div>
+                                <div className="td">-</div>
+                                <div className="td">-</div>
+                            </div>
+                        )}
+                        <div className="tdata grid grid-cols-6 bg-blue/5!">
+                            <div className="td font-bold">SNOWFROST Total</div>
+                            <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week1).slice(1,)}</span></div>
+                            <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week2).slice(1,)}</span></div>
+                            <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week3).slice(1,)}</span></div>
+                            <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(snowTotals.week4).slice(1,)}</span></div>
+                            <div className="td justify-between font-bold"><span>₱</span><span>{formatToPeso(snowTotals.total).slice(1,)}</span></div>
+                        </div>
+                        <div className="tdata grid grid-cols-6 bg-green-50!">
+                            <div className="td font-bold">Combined Weekly Total</div>
+                            <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week1).slice(1,)}</span></div>
+                            <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week2).slice(1,)}</span></div>
+                            <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week3).slice(1,)}</span></div>
+                            <div className="td justify-between font-semibold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.week4).slice(1,)}</span></div>
+                            <div className="td justify-between font-bold"><span>₱</span><span>{formatToPeso(combinedWeekTotals.total).slice(1,)}</span></div>
+                        </div>
+                        
                     </div>
-                )}
-            </div>
+                </div>
+            )}
+
+            {selectedLayout === expenseLayoutTabs[2] && (
+                <div className="space-y-2">
+                    <TableFilter
+                        setSearch={ setSearch }
+                        searchPlaceholder="Search for an expense"
+                        setSize={ setSize }
+                        size={ size }
+                        buttonLabel="Add expenses"
+                        setOpen={ setOpen }
+                        filters={expenseCategoryFilters}
+                        filter={filter}
+                        setFilter={setFilter}
+                    />
+
+                    <section className="w-full">
+                        <div className="table-wrapper">
+                            <div className="thead grid grid-cols-7">
+                                {columns.map((item, index) => (
+                                    <div key={index} className={`th ${item.style}`}>
+                                        {item.title}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="animate-fade-in-up" key={`${filter}-${page}`}>
+                            {paginated.length > 0 ? (
+                                paginated.map((expense) => (
+                                    <div className="tdata grid grid-cols-7 max-md:w-300!" key={expense.id}>
+                                        <div className="td col-span-2 gap-3">
+                                            {getCategoryIcon(expense.orderCategory!)}
+                                            <div className="min-w-0">
+                                                <div className="truncate font-semibold">{expense.addedByName}</div>
+                                                <div className="truncate text-xs text-gray">@{expense.addedByUsername}</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="td">
+                                            {expense.purpose}
+                                        </div>
+
+                                        <div className="td">
+                                            {capitalizeWords(expense.modeOfPayment.replace(/_/g, " "))}
+                                        </div>
+
+                                        <div className="td">
+                                            {formatDateTime(expense.spentAt)}
+                                        </div>
+
+                                        <div className="td justify-between">
+                                            <div>₱</div>
+                                            <div>{formatToPeso(expense.total).slice(1,)}</div>
+                                        </div>
+
+                                        <div className="td justify-center gap-2">
+                                            <button onClick={() => setUpdate(expense)}>
+                                                <SquarePen className="h-4 w-4 text-darkgreen" />
+                                            </button>
+                                            <button onClick={() => setDelete(expense)}>
+                                                <Trash2 className="h-4 w-4 text-darkred" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="my-2 text-center text-sm">There are no expenses yet.</div>
+                            )}
+                        </div>
+                    </section>
+
+                    {sortedExpenses.length > 0 && (
+                        <TablePagination
+                            data={ sortedExpenses }
+                            paginated={ paginated }
+                            page={ page }
+                            size={ size }
+                            setPage={ setPage }
+                            search={ search }
+                            filter={ filter }
+                            pageKey={ pageKey }
+                        />
+                    )}
+                </div>
+            )}
 
             {open && (
                 <CreateExpense
                     setOpen={ setOpen }
                     setReload={setReload}
+                    prefill={createPrefill}
                 /> 
             )}
 
