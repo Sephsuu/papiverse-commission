@@ -2,7 +2,7 @@
 
 import { AppHeader } from "@/components/shared/AppHeader";
 import { useToday } from "@/hooks/use-today";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatDateToWords, formatNumber, formatToPeso } from "@/lib/formatter";
 import { useFetchOne } from "@/hooks/use-fetch-one";
 import { PapiverseLoading } from "@/components/ui/loader";
@@ -12,8 +12,26 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { CalendarDays, Ham, PackageX, Snowflake } from "lucide-react";
 import Link from "next/link";
 import { DatePickerModal, InventoryReportPeriodMode } from "./components/DatePickerModal";
-import { format } from "date-fns";
+import {
+    endOfMonth,
+    endOfQuarter,
+    endOfWeek,
+    format,
+    isAfter,
+    isSameDay,
+    parseISO,
+    startOfMonth,
+    startOfQuarter,
+    startOfWeek
+} from "date-fns";
 import { FinanceService } from "@/services/finance.service";
+import { useSessionStorage } from "@/hooks/use-session-storage";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+const SS_SD = 'supplyReportStartDate'
+const SS_ED = 'supplyReportEndDate'
+const YMD_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const REQUIRED_CATEGORIES = ["MEAT", "SNOWFROST"];
 
 const columns = [
     {title: 'Product', style: ''},
@@ -23,13 +41,79 @@ const columns = [
     {title: 'Profit', style: ''},
 ]
 
+const isYmdDate = (value: unknown): value is string => (
+    typeof value === "string" && YMD_DATE_PATTERN.test(value)
+);
+
+const clampFutureDate = (date: Date, todayDate: Date) => (
+    isAfter(date, todayDate) ? todayDate : date
+);
+
+const inferPeriodModeFromDateRange = (
+    startDate: string,
+    endDate: string,
+    today: string
+): InventoryReportPeriodMode => {
+    if (!isYmdDate(startDate) || !isYmdDate(endDate) || !isYmdDate(today)) {
+        return "DAY";
+    }
+
+    const start = parseISO(startDate);
+    const end = parseISO(endDate);
+    const todayDate = parseISO(today);
+
+    if (isSameDay(start, end)) {
+        return "DAY";
+    }
+
+    const weekStart = startOfWeek(start, { weekStartsOn: 0 });
+    const weekEnd = clampFutureDate(endOfWeek(start, { weekStartsOn: 0 }), todayDate);
+    if (isSameDay(start, weekStart) && isSameDay(end, weekEnd)) {
+        return "WEEK";
+    }
+
+    const monthStart = startOfMonth(start);
+    const monthEnd = clampFutureDate(endOfMonth(start), todayDate);
+    if (isSameDay(start, monthStart) && isSameDay(end, monthEnd)) {
+        return "MONTH";
+    }
+
+    const quarterStart = startOfQuarter(start);
+    const quarterEnd = clampFutureDate(endOfQuarter(start), todayDate);
+    if (isSameDay(start, quarterStart) && isSameDay(end, quarterEnd)) {
+        return "QUARTER";
+    }
+
+    return "DAY";
+};
+
 export function SupplyReportPage() {
     const { today } = useToday();
-    const [date, setDate] = useState(today);
-    const [endDate, setEndDate] = useState(today);
+    const { getSessionStorage, setSessionStorage } = useSessionStorage<string>();
+    const [date, setDate] = useState(() => {
+        const storedStartDate = getSessionStorage(SS_SD);
+        return isYmdDate(storedStartDate) ? storedStartDate : today;
+    });
+    const [endDate, setEndDate] = useState(() => {
+        const storedEndDate = getSessionStorage(SS_ED);
+        return isYmdDate(storedEndDate) ? storedEndDate : today;
+    });
     const [toggleDate, setToggleDate] = useState(false);
-    const [periodMode, setPeriodMode] = useState<InventoryReportPeriodMode>("DAY");
-    const requiredCategories = ["MEAT", "SNOWFROST"];
+    const [periodMode, setPeriodMode] = useState<InventoryReportPeriodMode>(() => (
+        inferPeriodModeFromDateRange(date, endDate, today)
+    ));
+
+    useEffect(() => {
+        setSessionStorage(SS_SD, date);
+    }, [date, setSessionStorage]);
+
+    useEffect(() => {
+        setSessionStorage(SS_ED, endDate);
+    }, [endDate, setSessionStorage]);
+
+    useEffect(() => {
+        setPeriodMode(inferPeriodModeFromDateRange(date, endDate, today));
+    }, [date, endDate, today]);
 
     const startDate = date;
     const parsedDate = date ? new Date(date) : null;
@@ -64,7 +148,7 @@ export function SupplyReportPage() {
             existingCategories.map((category: any) => [category.category, category])
         );
 
-        requiredCategories.forEach((category) => {
+        REQUIRED_CATEGORIES.forEach((category) => {
             if (!normalizedCategories.has(category)) {
                 normalizedCategories.set(category, {
                     category,
@@ -140,8 +224,7 @@ export function SupplyReportPage() {
                     },
                     {
                         label: "Profit",
-                        value: formatToPeso(report.overall.profit),
-                        helper: "Net return",
+                        value: formatToPeso(report.overall.sales - report.totalExpenses),
                     },
                     {
                         label: "Total Expenses",
@@ -167,6 +250,13 @@ export function SupplyReportPage() {
                             {item.value}
                         </p>
                         <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
+                        {item.label === 'Profit' && (
+                            <div className="text-sm text-slate-500">
+                                REN Profit: 
+                                <span className="mt-1 text-lg text-darkgreen font-semibold ml-1.5">{formatToPeso(report.renProfit)}</span>
+                            </div>
+                        )}
+                        
                     </div>
                 ))}
             </div>
@@ -176,6 +266,8 @@ export function SupplyReportPage() {
                     const sellThrough = category.producedQuantity > 0
                         ? Math.round((category.soldQuantity / category.producedQuantity) * 100)
                         : 0;
+
+                    const isMeat = String(category.category).toUpperCase() === "MEAT";
 
                     return (
                         <div
@@ -227,13 +319,32 @@ export function SupplyReportPage() {
                                 </div>
                                 <div className="rounded-xl bg-white p-3">
                                     <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                                        Profit
+                                        {isMeat ? 'Jerry Profit' : 'Snowfrost Profit'} 
                                     </p>
                                     <p className={`mt-2 text-lg font-bold scale-x-110 origin-left ${category.profit < 0 ? "text-darkred" : "text-green-700"}`}>
-                                        {formatToPeso(category.profit)}
+                                        {isMeat ?  formatToPeso(report.jerryProfit) : formatToPeso(category.profit)}
                                     </p>
                                 </div>
-                            </div>
+                                {isMeat ? (
+                                    <div className="rounded-xl bg-white p-3">
+                                        <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                                            MEAT Expenses
+                                        </p>
+                                        <p className="mt-2 font-semibold text-slate-900">
+                                            {formatToPeso(report.expenses[0].totalExpenses)}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="col-span-2 rounded-xl bg-white p-3">
+                                        <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                                            Snowfrost Expenses
+                                        </p>
+                                        <p className="mt-2 font-semibold text-slate-900">
+                                            {formatToPeso(report.expenses[1].totalExpenses)}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>      
                         </div>
                     );
                 })}

@@ -5,34 +5,33 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/use-auth";
 import { parseOptionalDecimal, sanitizeDecimalInput } from "@/lib/decimal-input";
 import { parseExpenseCalendarDate, toExpenseDateTimeString } from "@/lib/expense-date";
-import { handleChange } from "@/lib/form-handle";
 import { cn } from "@/lib/utils";
 import { ExpenseService } from "@/services/expense.service";
-import { Expense, expenseFields, expenseInit } from "@/types/expense";
-import { useAuth } from "@/hooks/use-auth";
+import { Expense, ExpenseCategory, expenseFields, expenseInit } from "@/types/expense";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import Image from "next/image";
-import React, { Dispatch, SetStateAction, useState } from "react";
+import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const paymentModes = [
     { label: "Cash", value: "CASH" },
-    { label: "Bank Transfer", value: "BANK_TRANSFER" },
-    { label: "Online Payment", value: "ONLINE_PAYMENT" },
-    { label: "Credit Card", value: "CREDIT_CARD" },
-    { label: "Debit Card", value: "DEBIT_CARD" },
+    { label: "BDO", value: "BDO" },
+    { label: "EastWest", value: "EASTWEST" },
+    { label: "GCash", value: "GCASH" },
+    { label: "BPI", value: "BPI" },
+    { label: "GoTyme", value: "GO_TYME" },
+    { label: "Union Bank", value: "UNION_BANK" },
+    { label: "Internal", value: "INTERNAL" },
 ];
-const categoryOptions = [
+
+const orderCategoryOptions = [
     { label: "Meat", value: "MEAT" },
-    { label: "Snowfrost", value: "SNOW" },
+    { label: "Snowfrost", value: "SNOWFROST" },
 ];
-const purposeOptionsByCategory: Record<string, string[]> = {
-    MEAT: ["CFS", "ATKINS", "BASILIA", "EASYTRIP/RFID", "JFQ", "JEN", "OTHERS"],
-    SNOW: ["JERRY", "REN", "JEN", "PAYROLL", "OTHERS"],
-};
 
 interface Props {
     setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -40,6 +39,7 @@ interface Props {
     prefill?: {
         purpose?: string;
         orderCategory?: string;
+        expenseCategoryId?: number;
         weekRange?: {
             start: string;
             end: string;
@@ -51,6 +51,12 @@ function parseDateOnly(value: string) {
     return new Date(`${value}T00:00:00`);
 }
 
+function normalizeOrderCategory(value?: string) {
+    const normalized = (value ?? "").trim().toUpperCase();
+    if (normalized === "SNOW") return "SNOWFROST";
+    return normalized;
+}
+
 export function CreateExpense({ setOpen, setReload, prefill }: Props) {
     const { claims } = useAuth();
     const weekStartDate = prefill?.weekRange?.start ? parseDateOnly(prefill.weekRange.start) : undefined;
@@ -60,14 +66,18 @@ export function CreateExpense({ setOpen, setReload, prefill }: Props) {
         weekStartDate && weekEndDate
             ? (now < weekStartDate ? weekStartDate : now > weekEndDate ? weekEndDate : now)
             : now;
+    const initialOrderCategory = normalizeOrderCategory(prefill?.orderCategory ?? expenseInit.orderCategory) || "MEAT";
+    const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+    const [categoriesLoading, setCategoriesLoading] = useState(true);
     const [onProcess, setProcess] = useState(false);
     const [expense, setExpense] = useState<Partial<Expense>>(() => {
         const spentAt = toExpenseDateTimeString(initialSpentDate);
 
         return {
             ...expenseInit,
-            orderCategory: prefill?.orderCategory ?? expenseInit.orderCategory,
+            orderCategory: initialOrderCategory,
             purpose: prefill?.purpose ?? expenseInit.purpose,
+            expenseCategoryId: prefill?.expenseCategoryId,
             spentAt,
         };
     });
@@ -78,7 +88,73 @@ export function CreateExpense({ setOpen, setReload, prefill }: Props) {
         parseExpenseCalendarDate(toExpenseDateTimeString(initialSpentDate))
     );
     const [dateOpen, setDateOpen] = useState(false);
-    const isOthersPurpose = (expense.purpose ?? "") === "OTHERS";
+    const filteredCategories = useMemo(
+        () => categories.filter((item) => normalizeOrderCategory(item.orderCategory) === normalizeOrderCategory(expense.orderCategory) && item.active !== false),
+        [categories, expense.orderCategory]
+    );
+
+    useEffect(() => {
+        let mounted = true;
+
+        async function loadCategories() {
+            try {
+                setCategoriesLoading(true);
+                const response = await ExpenseService.getExpenseCategories("ALL", true);
+                if (!mounted) return;
+
+                const sorted = [...(response ?? [])].sort((a, b) => (a.sortOrder ?? Number.MAX_SAFE_INTEGER) - (b.sortOrder ?? Number.MAX_SAFE_INTEGER));
+                setCategories(sorted);
+            } catch (error: any) {
+                const message = error?.message || error?.error || "Failed to load expense categories";
+                toast.error(message);
+            } finally {
+                if (mounted) setCategoriesLoading(false);
+            }
+        }
+
+        loadCategories();
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (categories.length === 0) return;
+
+        setExpense((prev) => {
+            const resolvedOrderCategory = normalizeOrderCategory(prev.orderCategory) || "MEAT";
+            const resolvedFromId = prev.expenseCategoryId
+                ? categories.find((item) => item.id === prev.expenseCategoryId)
+                : undefined;
+
+            if (resolvedFromId) {
+                const categoryOrder = normalizeOrderCategory(resolvedFromId.orderCategory) || resolvedOrderCategory;
+                if (categoryOrder === prev.orderCategory && prev.expenseCategoryId === resolvedFromId.id) return prev;
+                return {
+                    ...prev,
+                    orderCategory: categoryOrder,
+                    expenseCategoryId: resolvedFromId.id,
+                };
+            }
+
+            const fromPrefillPurpose = prefill?.purpose?.trim()
+                ? categories.find((item) => (
+                    normalizeOrderCategory(item.orderCategory) === resolvedOrderCategory
+                    && item.name.trim().toUpperCase() === prefill.purpose?.trim().toUpperCase()
+                ))
+                : undefined;
+            const fallback = fromPrefillPurpose ?? categories.find((item) => normalizeOrderCategory(item.orderCategory) === resolvedOrderCategory);
+
+            if (!fallback) return prev;
+            if (prev.expenseCategoryId === fallback.id && prev.orderCategory === resolvedOrderCategory) return prev;
+
+            return {
+                ...prev,
+                orderCategory: resolvedOrderCategory,
+                expenseCategoryId: fallback.id,
+            };
+        });
+    }, [categories, prefill?.purpose]);
 
     function handleTotalChange(value: string) {
         const sanitizedValue = sanitizeDecimalInput(value);
@@ -101,10 +177,22 @@ export function CreateExpense({ setOpen, setReload, prefill }: Props) {
         setDateOpen(false);
     }
 
+    function handleCategoryChange(id: string) {
+        const parsedId = Number(id);
+        const selected = categories.find((item) => item.id === parsedId);
+
+        setExpense((prev) => ({
+            ...prev,
+            expenseCategoryId: parsedId,
+            orderCategory: normalizeOrderCategory(selected?.orderCategory) || prev.orderCategory || "MEAT",
+        }));
+    }
+
     async function handleSubmit() {
         try {
             setProcess(true);
-            let invalid = !expense.spentAt;
+
+            let invalid = !expense.spentAt || !expense.expenseCategoryId;
             for (const field of expenseFields) {
                 const value = expense[field];
 
@@ -117,47 +205,57 @@ export function CreateExpense({ setOpen, setReload, prefill }: Props) {
                     invalid = true;
                 }
             }
-            if (isOthersPurpose && !(expense.customPurpose ?? "").trim()) {
-                invalid = true;
-            }
+
             if (invalid) {
                 toast.info("Please fill up all fields!");
-                setProcess(false);
-                return
+                return;
             }
 
+            const selectedCategory = categories.find((item) => item.id === expense.expenseCategoryId);
             const payload: Partial<Expense> = {
                 ...expense,
                 branchId: claims.branch.branchId,
-                purpose: isOthersPurpose ? expense.customPurpose : expense.purpose,
+                orderCategory: normalizeOrderCategory(selectedCategory?.orderCategory ?? expense.orderCategory),
+                purpose: expense.purpose?.trim(),
             };
+
             const data = await ExpenseService.createExpense(payload, claims.userId);
             if (data) {
                 toast.success(`Expenditure for ${payload.purpose} added successfully.`);
                 setReload(prev => !prev);
                 setOpen(false);
+
+                const resetOrderCategory = payload.orderCategory || initialOrderCategory;
+                const fallbackCategory = categories.find((item) => normalizeOrderCategory(item.orderCategory) === resetOrderCategory);
                 const nextSpentAt = toExpenseDateTimeString(new Date());
+
                 setExpense({
                     ...expenseInit,
                     spentAt: nextSpentAt,
+                    orderCategory: resetOrderCategory,
+                    expenseCategoryId: fallbackCategory?.id,
                 });
                 setSpentAtDate(parseExpenseCalendarDate(nextSpentAt));
                 setTotalInput("");
             }
-        } catch (error) { toast.error(`${error}`) }
-        finally { setProcess(false) }
+        } catch (error) {
+            toast.error(`${error}`);
+        } finally {
+            setProcess(false);
+        }
     }
+
     return(
         <Dialog open onOpenChange={ setOpen }>
             <DialogContent>
-                <DialogTitle className="flex items-center gap-2">  
+                <DialogTitle className="flex items-center gap-2">
                     <Image
                         src="/images/kp_logo.png"
                         alt="KP Logo"
                         width={40}
                         height={40}
                     />
-                    <div className="font-semibold text-xl">Add an Expenditure</div>      
+                    <div className="font-semibold text-xl">Add an Expenditure</div>
                 </DialogTitle>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -165,7 +263,7 @@ export function CreateExpense({ setOpen, setReload, prefill }: Props) {
                         <div>Expense</div>
                         <div className="relative border border-gray rounded-md">
                             <div className="absolute top-1/2 -translate-y-1/2 mx-3">₱</div>
-                            <Input 
+                            <Input
                                 className="pl-8 border-0"
                                 type="text"
                                 inputMode="decimal"
@@ -223,8 +321,8 @@ export function CreateExpense({ setOpen, setReload, prefill }: Props) {
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectLabel>Payment Methods</SelectLabel>
-                                    {paymentModes.map((item, index) => (
-                                        <SelectItem key={ index } value={ item.value }>{ item.label }</SelectItem>
+                                    {paymentModes.map((item) => (
+                                        <SelectItem key={ item.value } value={ item.value }>{ item.label }</SelectItem>
                                     ))}
                                 </SelectGroup>
                             </SelectContent>
@@ -233,13 +331,17 @@ export function CreateExpense({ setOpen, setReload, prefill }: Props) {
                     <div className="flex flex-col gap-1 col-span-2">
                         <div>Order Category</div>
                         <Select
-                            value={ expense.orderCategory ?? "MEAT" }
-                            onValueChange={ (value) => setExpense((prev) => ({
-                                ...prev,
-                                orderCategory: value,
-                                purpose: "",
-                                customPurpose: "",
-                            }))}
+                            value={ normalizeOrderCategory(expense.orderCategory) || "MEAT" }
+                            onValueChange={ (value) => {
+                                const normalized = normalizeOrderCategory(value) || "MEAT";
+                                const fallbackCategory = categories.find((item) => normalizeOrderCategory(item.orderCategory) === normalized);
+
+                                setExpense((prev) => ({
+                                    ...prev,
+                                    orderCategory: normalized,
+                                    expenseCategoryId: fallbackCategory?.id,
+                                }));
+                            }}
                         >
                             <SelectTrigger className="w-full border border-gray">
                                 <SelectValue placeholder="Select Category" />
@@ -247,7 +349,7 @@ export function CreateExpense({ setOpen, setReload, prefill }: Props) {
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectLabel>Categories</SelectLabel>
-                                    {categoryOptions.map((item) => (
+                                    {orderCategoryOptions.map((item) => (
                                         <SelectItem key={ item.value } value={ item.value }>{ item.label }</SelectItem>
                                     ))}
                                 </SelectGroup>
@@ -255,42 +357,39 @@ export function CreateExpense({ setOpen, setReload, prefill }: Props) {
                         </Select>
                     </div>
                     <div className="flex flex-col gap-1 col-span-2">
-                        <div>Expenditure Purpose</div>
+                        <div>Expense Category</div>
                         <Select
-                            value={ expense.purpose ?? "" }
-                            onValueChange={ (value) => setExpense((prev) => ({
-                                ...prev,
-                                purpose: value,
-                                customPurpose: value === "OTHERS" ? prev.customPurpose : "",
-                            }))}
+                            value={ expense.expenseCategoryId ? String(expense.expenseCategoryId) : "" }
+                            onValueChange={ handleCategoryChange }
+                            disabled={categoriesLoading || filteredCategories.length === 0}
                         >
                             <SelectTrigger className="w-full border border-gray">
-                                <SelectValue placeholder="Select Purpose" />
+                                <SelectValue placeholder={categoriesLoading ? "Loading categories..." : "Select Expense Category"} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    <SelectLabel>Purpose</SelectLabel>
-                                    {(purposeOptionsByCategory[expense.orderCategory ?? "MEAT"] ?? []).map((item) => (
-                                        <SelectItem key={ item } value={ item }>{ item }</SelectItem>
+                                    <SelectLabel>Expense Categories</SelectLabel>
+                                    {filteredCategories.map((item) => (
+                                        <SelectItem key={ item.id } value={ String(item.id) }>{ item.name }</SelectItem>
                                     ))}
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
                     </div>
-                    {isOthersPurpose && (
-                        <div className="flex flex-col gap-1 col-span-2">
-                            <div>Specify Purpose</div>
-                            <Textarea 
-                                className="border border-gray"
-                                name="customPurpose"
-                                value={ expense.customPurpose ?? "" }
-                                onChange={ e => handleChange(e, setExpense) }
-                                placeholder="Type your purpose here"
-                            />
-                        </div>
-                    )}
+                    <div className="flex flex-col gap-1 col-span-2">
+                        <div>Expenditure Purpose</div>
+                        <Textarea
+                            className="border border-gray"
+                            value={ expense.purpose ?? "" }
+                            onChange={ (e) => setExpense((prev) => ({
+                                ...prev,
+                                purpose: e.target.value,
+                            }))}
+                            placeholder="Enter the actual purpose/detail (e.g., Supplier Payment)"
+                        />
+                    </div>
                 </div>
-                <form 
+                <form
                     className="flex justify-end gap-4"
                     onSubmit={ e => {
                         e.preventDefault();
@@ -298,7 +397,7 @@ export function CreateExpense({ setOpen, setReload, prefill }: Props) {
                     }}
                 >
                     <DialogClose className="text-sm">Close</DialogClose>
-                    <AddButton 
+                    <AddButton
                         type="submit"
                         onProcess={ onProcess }
                         label="Add Expenditure"

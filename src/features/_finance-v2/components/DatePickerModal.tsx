@@ -43,13 +43,19 @@ export function DatePickerModal({
 	const disableFutureDates = (d: Date) => isAfter(d, today);
 	const selectedDate = useMemo(() => (date ? new Date(date) : undefined), [date]);
 	const baseDate = selectedDate ?? today;
-	const [periodMode, setPeriodMode] = useState<InventoryReportPeriodMode>(mode);
+	const [periodMode, setPeriodMode] = useState(mode);
 	const [periodAnchor, setPeriodAnchor] = useState<Date | undefined>(selectedDate);
 	const [monthYearCursor, setMonthYearCursor] = useState(new Date(baseDate.getFullYear(), 0, 1));
 	const [quarterYear, setQuarterYear] = useState(baseDate.getFullYear());
 	const [quarterNumber, setQuarterNumber] = useState(
 		Math.floor(baseDate.getMonth() / 3) + 1
 	);
+	const modeOptions: { label: string; value: InventoryReportPeriodMode }[] = [
+		{ label: "Daily", value: "DAY" },
+		{ label: "Weekly", value: "WEEK" },
+		{ label: "Monthly", value: "MONTH" },
+		{ label: "Quarterly", value: "QUARTER" },
+	];
 	const selectedDay = useMemo(() => (date ? new Date(date) : undefined), [date]);
 
 	useEffect(() => {
@@ -169,17 +175,12 @@ export function DatePickerModal({
 				</DialogTitle>
 				<div className="space-y-3">
 					<div className="grid grid-cols-2 gap-2 rounded-md bg-slate-100 p-1">
-						{[
-							{ label: "Daily", value: "DAY" },
-							{ label: "Weekly", value: "WEEK" },
-							{ label: "Monthly", value: "MONTH" },
-							{ label: "Quarterly", value: "QUARTER" },
-						].map((item) => (
+						{modeOptions.map((item) => (
 							<button
 								key={item.value}
 								type="button"
 								onClick={() => {
-									setPeriodMode(item.value as InventoryReportPeriodMode);
+									setPeriodMode(item.value);
 									if (item.value === "WEEK" && !periodAnchor && selectedDay) {
 										setPeriodAnchor(selectedDay);
 									}
