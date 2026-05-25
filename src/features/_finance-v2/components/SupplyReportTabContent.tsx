@@ -24,17 +24,63 @@ type SupplyReportTabContentProps = {
   endDate: string;
 };
 
+type SupplyReportCategory = {
+  category: string;
+  producedQuantity: number;
+  soldQuantity: number;
+  capital: number;
+  sales: number;
+  profit: number;
+};
+
+type SupplyReportProduct = {
+  rawMaterialId: number;
+  sku: string;
+  name: string;
+  category: string;
+  unitMeasurement: string;
+  producedQuantity: number;
+  soldQuantity: number;
+  capital: number;
+  sales: number;
+  profit: number;
+};
+
+type SupplyReportResponse = {
+  branchId: number;
+  branchName: string;
+  startDate: string;
+  endDate: string;
+  meatExpenses: number;
+  snowExpenses: number;
+  totalExpenses: number;
+  totalDelivery: number;
+  totalOthers: number;
+  renProfit: number;
+  jerryProfit: number;
+  overall: {
+    producedQuantity: number;
+    soldQuantity: number;
+    capital: number;
+    sales: number;
+    profit: number;
+  };
+  categories: SupplyReportCategory[];
+  products: SupplyReportProduct[];
+  expenses?: { category: string; totalExpenses: number }[];
+};
+
 export function SupplyReportTabContent({ startDate, endDate }: SupplyReportTabContentProps) {
-  const { data: report, loading: loadingReport } = useFetchOne(
+  const { data: report, loading: loadingReport } = useFetchOne<SupplyReportResponse>(
     FinanceService.getSupplyFinanceReport,
     [startDate, endDate],
     [1, startDate, endDate]
   );
 
-  const categories = useMemo(() => {
+  const categories = useMemo<SupplyReportCategory[]>(() => {
     const existingCategories = report?.categories ?? [];
-    const normalizedCategories = new Map(
-      existingCategories.map((category: any) => [category.category, category])
+    const normalizedCategories = new Map<string, SupplyReportCategory>(
+      existingCategories.map((category) => [category.category, category])
     );
 
     REQUIRED_CATEGORIES.forEach((category) => {
@@ -52,10 +98,24 @@ export function SupplyReportTabContent({ startDate, endDate }: SupplyReportTabCo
 
     return Array.from(normalizedCategories.values());
   }, [report?.categories]);
-  const snowfrostCategory = useMemo(
-    () => categories.find((category: any) => String(category.category).toUpperCase() === "SNOWFROST"),
+
+  const snowfrostCategory = useMemo<SupplyReportCategory | undefined>(
+    () => categories.find((category) => String(category.category).toUpperCase() === "SNOWFROST"),
     [categories]
   );
+
+  const expensesByCategory = useMemo(() => {
+    const map = new Map<string, number>();
+    (report?.expenses ?? []).forEach((expense) => {
+      map.set(String(expense.category).toUpperCase(), Number(expense.totalExpenses ?? 0));
+    });
+
+    return {
+      meat: map.get("MEAT") ?? Number(report?.meatExpenses ?? 0),
+      snowfrost: map.get("SNOWFROST") ?? Number(report?.snowExpenses ?? 0),
+    };
+  }, [report?.expenses, report?.meatExpenses, report?.snowExpenses]);
+
   const snowfrostProfit = Number(snowfrostCategory?.profit ?? 0);
   const renProfit = Number(report?.renProfit ?? 0);
 
@@ -122,7 +182,7 @@ export function SupplyReportTabContent({ startDate, endDate }: SupplyReportTabCo
       </div>
 
       <div className="mt-2 flex gap-4">
-        {categories.map((category: any) => {
+        {categories.map((category) => {
           const sellThrough = category.producedQuantity > 0
             ? Math.round((category.soldQuantity / category.producedQuantity) * 100)
             : 0;
@@ -170,12 +230,12 @@ export function SupplyReportTabContent({ startDate, endDate }: SupplyReportTabCo
                 {isMeat ? (
                   <div className="rounded-xl bg-white p-3">
                     <p className="text-xs uppercase tracking-[0.16em] text-slate-500">MEAT Expenses</p>
-                    <p className="mt-2 font-bold text-darkred text-xl">{formatToPeso(report.expenses[0].totalExpenses)}</p>
+                    <p className="mt-2 font-bold text-darkred text-xl">{formatToPeso(expensesByCategory.meat)}</p>
                   </div>
                 ) : (
                   <div className="col-span-2 rounded-xl bg-white p-3">
                     <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Snowfrost Expenses</p>
-                    <p className="mt-2 font-bold text-darkred text-xl">{formatToPeso(report.expenses[1].totalExpenses)}</p>
+                    <p className="mt-2 font-bold text-darkred text-xl">{formatToPeso(expensesByCategory.snowfrost)}</p>
                   </div>
                 )}
               </div>
