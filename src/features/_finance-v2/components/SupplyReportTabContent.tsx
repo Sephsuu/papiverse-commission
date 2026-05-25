@@ -52,6 +52,12 @@ export function SupplyReportTabContent({ startDate, endDate }: SupplyReportTabCo
 
     return Array.from(normalizedCategories.values());
   }, [report?.categories]);
+  const snowfrostCategory = useMemo(
+    () => categories.find((category: any) => String(category.category).toUpperCase() === "SNOWFROST"),
+    [categories]
+  );
+  const snowfrostProfit = Number(snowfrostCategory?.profit ?? 0);
+  const renProfit = Number(report?.renProfit ?? 0);
 
   if (loadingReport || !report) return <SectionLoading />;
 
@@ -103,11 +109,11 @@ export function SupplyReportTabContent({ startDate, endDate }: SupplyReportTabCo
                 </div>
                 <div className="flex justify-between">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] mt-auto">Snowfrost profit:</p>
-                  <span className="mt-1 text-xl text-darkbrown font-semibold">{formatToPeso(report.categories[1].profit)}</span>
+                  <span className="mt-1 text-xl text-darkbrown font-semibold">{formatToPeso(snowfrostProfit)}</span>
                 </div>
                 <div className="flex justify-between">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] mt-auto">meat profit:</p>
-                  <span className="mt-1 text-xl text-darkbrown font-semibold ml-1.5">{formatToPeso(report.renProfit - report.categories[1].profit)}</span>
+                  <span className="mt-1 text-xl text-darkbrown font-semibold ml-1.5">{formatToPeso(renProfit - snowfrostProfit)}</span>
                 </div>
               </div>
             )}
