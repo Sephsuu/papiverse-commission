@@ -283,7 +283,7 @@ export function BranchPOReportPage() {
                         <div className="table-wrapper">
                             <div className="thead grid grid-cols-6">
                                 {columns.map((item, index) => (
-                                    <div className="th" key={index}>{item.title}</div>
+                                    <div className={`th ${item.title === 'Overall Profit' ? "bg-darkgreen/15! text-darkgreen font-bold" : ""}`} key={index}>{item.title}</div>
                                 ))}
                             </div>
 
@@ -382,7 +382,7 @@ export function BranchPOReportPage() {
                                                     <div>{formatToPeso(order.overallSales).slice(1)}</div>
                                                 </div>
 
-                                                <div className={`td justify-between font-semibold ${order.overallProfit < 0 ? "text-darkred" : "text-darkgreen"}`}>
+                                                <div className={`td justify-between font-semibold bg-darkgreen/8! ${order.overallProfit < 0 ? "text-darkred" : "text-darkgreen"}`}>
                                                     <div>₱</div>
                                                     <div>{formatToPeso(order.overallProfit).slice(1)}</div>
                                                 </div>

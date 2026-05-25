@@ -13,6 +13,8 @@ import { useMemo, useState } from "react"
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { WeeklySalesFilterModal, WeeklySalesScope } from "./components/WeeklySalesFilterModal"
 
+const TABS = ['KP Branches', 'Meat and Powders']
+
 type WeekMap = {
     week_1: number
     week_2: number

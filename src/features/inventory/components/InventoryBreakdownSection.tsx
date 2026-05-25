@@ -128,7 +128,7 @@ export function InventoryBreakdownSection({ claims, rawMaterialType = "PRODUCT" 
             <div className="table-wrapper">
                 <div className="thead grid grid-cols-8 max-md:w-7xl!">
                     {columns.map((item) => (
-                        <div key={item.title} className={`th ${item.style}`}>
+                        <div key={item.title} className={`th ${item.style} ${item.title === "Net Profit" ? "bg-darkgreen/15! text-darkgreen font-bold" : ""}`}>
                             {item.title}
                         </div>
                     ))}
@@ -188,7 +188,7 @@ export function InventoryBreakdownSection({ claims, rawMaterialType = "PRODUCT" 
                                     <div>{formatToPeso(item.itemCost).slice(1,)}</div>
                                 </div>
 
-                                <div className={`td justify-between font-semibold ${item.itemNetProfit < 0 ? "text-darkred" : "text-darkgreen"}`}>
+                                <div className={`td justify-between font-semibold bg-darkgreen/8! ${item.itemNetProfit < 0 ? "text-darkred" : "text-darkgreen"}`}>
                                     <div>₱</div>
                                     {formatProfit(item.itemNetProfit).slice(1,)}
                                 </div>

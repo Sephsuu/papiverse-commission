@@ -28,6 +28,13 @@ export class ExpenseService {
         ) as ExpenseCategory[];
     }
 
+    static async getWeeklyExpenses(month: string, week: number) {
+        return await requestData(
+            `${expensesUrl}/weekly?month=${month}&week=${week}`,
+            "GET",
+        )
+    }
+
     static async getPaymentModeSummary(branchId: number, month: string, category = "ALL") {
         return await requestData(
             `${expensesUrl}/payment-mode-summary?branchId=${branchId}&month=${month}&category=${category}`,

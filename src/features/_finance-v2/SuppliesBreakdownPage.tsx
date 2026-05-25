@@ -245,7 +245,7 @@ export function SupplytBreakdownPage() {
             <div className="table-wrapper">
                 <div className="thead grid grid-cols-6">
                     {columns.map((item) => (
-                        <div key={item.title} className="th">
+                        <div key={item.title} className={`th ${item.title === "Profit" ? "bg-darkgreen/15! text-darkgreen font-bold" : ""}`}>
                             {item.title}
                         </div>
                     ))}
@@ -311,7 +311,7 @@ export function SupplytBreakdownPage() {
                                 }
                             </div>
 
-                            <div className={`td justify-between font-semibold ${item.profit < 0 ? "text-darkred" : "text-darkgreen"}`}>
+                            <div className={`td justify-between font-semibold bg-darkgreen/8! ${item.profit < 0 ? "text-darkred" : "text-darkgreen"}`}>
                                 {item.profit !== null && item.profit !== undefined
                                     ? <>
                                         <div>{item.profit < 0 ? "-₱" : "₱"}</div>

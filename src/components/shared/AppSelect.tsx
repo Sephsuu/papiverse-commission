@@ -15,6 +15,7 @@ interface GenericSelectProps {
   groupLabel?: string
   placeholder?: string
   items: string[] | { label: string; value: string }[]
+  groupedItems?: { groupLabel: string; items: { label: string; value: string }[] }[]
   value: string
   onChange: (value: string) => void
   className?: string
@@ -28,6 +29,7 @@ export function AppSelect({
     groupLabel,
     placeholder = "Select an option",
     items,
+    groupedItems,
     value,
     onChange,
     className,
@@ -35,6 +37,7 @@ export function AppSelect({
     triggerClassName,
     labelClassName,
 }: GenericSelectProps) {
+  const hasGroupedItems = Array.isArray(groupedItems) && groupedItems.length > 0
   return (
         <div className={`flex flex-col gap-1 ${className ?? ""}`}>
             {label && <span className={`text-sm font-medium text-gray-700 ${labelClassName}`}>{label}</span>}
@@ -48,20 +51,32 @@ export function AppSelect({
                 </SelectTrigger>
 
                 <SelectContent>
-                <SelectGroup>
-                    <SelectLabel>{ groupLabel }</SelectLabel>
-                    {items.map((item, idx) => {
-                        // Handle both string and object items
-                        const label = typeof item === "string" ? item : item.label
-                        const val = typeof item === "string" ? item : item.value
+                    {hasGroupedItems ? (
+                        groupedItems.map((group, groupIndex) => (
+                            <SelectGroup key={`${group.groupLabel}-${groupIndex}`}>
+                                <SelectLabel>{group.groupLabel}</SelectLabel>
+                                {group.items.map((item, itemIndex) => (
+                                    <SelectItem key={`${group.groupLabel}-${item.value}-${itemIndex}`} value={item.value}>
+                                        {item.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
+                        ))
+                    ) : (
+                        <SelectGroup>
+                            <SelectLabel>{ groupLabel }</SelectLabel>
+                            {items.map((item, idx) => {
+                                const label = typeof item === "string" ? item : item.label
+                                const val = typeof item === "string" ? item : item.value
 
-                        return (
-                            <SelectItem key={idx} value={val}>
-                                {label}
-                            </SelectItem>
-                        )
-                    })}
-                </SelectGroup>
+                                return (
+                                    <SelectItem key={idx} value={val}>
+                                        {label}
+                                    </SelectItem>
+                                )
+                            })}
+                        </SelectGroup>
+                    )}
                 </SelectContent>
             </Select>
         </div>

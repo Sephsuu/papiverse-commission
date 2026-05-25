@@ -264,45 +264,17 @@ export function ExpensesPage() {
         () => weeklyChartData.filter((item) => toAmount(item.combined) > 0),
         [weeklyChartData]
     );
-    const allocatedPurposeChartData = useMemo(() => {
-        const purposeTotals = new Map<string, { purpose: string; expenseCategoryName?: string; total: number }>();
-        const rows = monthlyData?.actualPurposeWeeklyBreakdown?.length
-            ? monthlyData.actualPurposeWeeklyBreakdown
-            : (monthlyData?.purposeWeeklyBreakdown ?? []).map((item) => ({
-                purpose: item.purpose,
-                expenseCategoryName: item.purpose,
-                orderCategory: item.orderCategory,
-                week1: item.week1,
-                week2: item.week2,
-                week3: item.week3,
-                week4: item.week4,
-                total: item.total,
-            }));
-
-        rows.forEach((item) => {
-            const purpose = item.purpose?.trim();
-            if (!purpose) return;
-
-            const expenseCategoryName = item.expenseCategoryName?.trim() || undefined;
-            const key = `${purpose}::${expenseCategoryName ?? "NO_CATEGORY"}`;
-            const total = toAmount(item.total);
-            const current = purposeTotals.get(key);
-
-            purposeTotals.set(key, {
-                purpose,
-                expenseCategoryName,
-                total: (current?.total ?? 0) + total,
-            });
-        });
-
-        return Array.from(purposeTotals.values())
+    const allocatedCategoryChartData = useMemo(
+        () => [...categoryBreakdown]
             .map((item) => ({
-                ...item,
-                label: item.expenseCategoryName ? `${item.purpose} (${item.expenseCategoryName})` : item.purpose,
+                label: item.expenseCategoryName,
+                total: toAmount(item.total),
+                orderCategory: item.orderCategory,
             }))
             .filter((item) => item.total > 0)
-            .sort((a, b) => b.total - a.total);
-    }, [monthlyData]);
+            .sort((a, b) => b.total - a.total),
+        [categoryBreakdown]
+    );
     const paymentModeChartData = useMemo(
         () => (paymentModeSummary?.paymentModeSummary ?? [])
             .map((item) => ({
@@ -346,12 +318,14 @@ export function ExpensesPage() {
                 </div>
             </div>
 
-            <div className="mb-2">
-                <div className="font-bold text-xl">{selectedLayout === expenseLayoutTabs[0] ? 'Expenses Overview' : selectedLayout === expenseLayoutTabs[1] ? 'Expenditure Summary' : 'Detailed Expenditures'} for <span className="text-darkbrown">{format(parsedStartDate!, "MMMM yyyy")}</span></div>
-                <div className="text-sm text-gray">
-                    Expense entries and weekly spending breakdown for the selected month.
+            {selectedLayout !== expenseLayoutTabs[2] && (
+                <div className="mb-2">
+                    <div className="font-bold text-xl">{selectedLayout === expenseLayoutTabs[0] ? 'Expenses Overview' : 'Expenditure Summary'} for <span className="text-darkbrown">{format(parsedStartDate!, "MMMM yyyy")}</span></div>
+                    <div className="text-sm text-gray">
+                        Expense entries and weekly spending breakdown for the selected month.
+                    </div>
                 </div>
-            </div> 
+            )}
 
             {selectedLayout === expenseLayoutTabs[0] && (
                 <ExpensesOverview
@@ -359,7 +333,7 @@ export function ExpensesPage() {
                     meatTotals={meatTotals}
                     snowTotals={snowTotals}
                     allocatedWeeklyChartData={allocatedWeeklyChartData}
-                    allocatedPurposeChartData={allocatedPurposeChartData}
+                    allocatedCategoryChartData={allocatedCategoryChartData}
                     paymentModeChartData={paymentModeChartData}
                 />
             )}
@@ -390,6 +364,7 @@ export function ExpensesPage() {
                     setDelete={setDelete}
                     pageKey={pageKey}
                     selectedMonth={selectedMonth}
+                    selectedMonthLabel={format(parsedStartDate!, "MMMM yyyy")}
                     setReload={setReload}
                 />
             )}

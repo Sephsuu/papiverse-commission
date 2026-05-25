@@ -38,4 +38,11 @@ export class FinanceService {
             "GET",
         );
     }	
+
+    static async getMeatAndPowders(month: string) {
+        return await requestData(
+            `${url}/meat-and-powders-net-income?month=${month}`,
+            "GET",
+        );
+    }	
 }

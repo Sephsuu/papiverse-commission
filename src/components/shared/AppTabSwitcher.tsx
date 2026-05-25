@@ -7,11 +7,12 @@ interface TabSwitcherProps {
   selectedTab: string
   setSelectedTab: (tab: string) => void
   buttonClassName?: string
+  className?: string
 }
 
-export function AppTabSwitcher({ tabs, selectedTab, setSelectedTab, buttonClassName }: TabSwitcherProps) {
+export function AppTabSwitcher({ tabs, selectedTab, setSelectedTab, buttonClassName, className }: TabSwitcherProps) {
   return (
-    <div className="w-fit flex items-center justify-center bg-slate-50 shadow-sm rounded-full">
+    <div className={`w-fit flex items-center justify-center bg-slate-50 shadow-sm rounded-full ${className}`}>
       {tabs.map((item, i) => (
         <Button
           key={i}
