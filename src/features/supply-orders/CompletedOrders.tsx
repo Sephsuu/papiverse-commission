@@ -1,7 +1,7 @@
 "use client"
 
 import { SupplyOrder } from "@/types/supplyOrder"
-import { CalendarArrowUp, CircleEllipsis, FolderOpen, List, MessageSquare, NotebookTabs, SquareMinus, TableOfContents, Truck } from "lucide-react";
+import { CalendarArrowUp, CircleCheckBig, CircleEllipsis, FolderOpen, List, MessageSquare, NotebookTabs, SquareMinus, TableOfContents, Truck } from "lucide-react";
 import { TableDataTooltip } from "../users/components/TableDataTooltip";
 import { formatDateTime, formatToPeso } from "@/lib/formatter";
 import { OrderStatusBadge } from "@/components/ui/badge";
@@ -120,10 +120,15 @@ export function CompletedOrders({ claims, paginated, setReload }: {
                                 <CalendarArrowUp className="w-4 h-4" /> 
                                 <span className="ml-1.5">{ formatDateTime(item.orderDate) }</span>
                             </div>
-                            <div className="flex-center-y">
-                                <Truck className="w-3.5 h-3.5 text-slate-500" /> 
-                                <span className="ml-1.5 text-xs text-slate-500">{ formatDateTime(item.expectedDelivery) }</span>
-                            </div>
+                            <AppTooltip 
+                                trigger={
+                                    <div className="flex-center-y">
+                                        <CircleCheckBig className="w-3.5 h-3.5 text-slate-500" /> 
+                                        <span className="ml-1.5 text-xs text-slate-500">{ formatDateTime(item.approvedDate) }</span>
+                                    </div>
+                                }
+                                content="Approved Date"
+                            />
                         </div>
                         <div className="td"><OrderStatusBadge className="text-xs!" status={ item.paymentStatus } /></div>
                         <div className="td flex-col items-start! justify-center! gap-2">

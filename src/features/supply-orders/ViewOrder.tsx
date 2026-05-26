@@ -443,9 +443,9 @@ export function ViewOrderPage({ id }: { id: number }) {
                         ) : (
                         snowOrderRows.length > 0 ? (
                             <OrdersCard
-                            orders={snowOrderRows}
-                            inventories={inventories?.inventories ?? []}
-                            isFranchisor={isFranchisor}
+                                orders={snowOrderRows}
+                                inventories={inventories?.inventories ?? []}
+                                isFranchisor={isFranchisor}
                             />
                         ) : (
                             <EmptyState message="No snowfrost items in this order" />

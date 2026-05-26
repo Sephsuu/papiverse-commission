@@ -38,6 +38,7 @@ export interface SupplyOrder {
     completeOrderTotalAmount: number;
     internalShipment: boolean;
     expectedDelivery: string;
+    approvedDate: string;
     remainingBalance: number
     paymentStatus: string
     isPaid: boolean
