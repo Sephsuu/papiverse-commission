@@ -58,6 +58,7 @@ type SupplyReportResponse = {
   totalOthers: number;
   renProfit: number;
   jerryProfit: number;
+  excludedMeatProfit: number
   overall: {
     producedQuantity: number;
     soldQuantity: number;
@@ -137,7 +138,7 @@ export function SupplyReportTabContent({ startDate, endDate }: SupplyReportTabCo
           },
           {
             label: "Profit",
-            value: formatToPeso(report.overall.sales - report.totalExpenses),
+            value: formatToPeso(report.overall.profit),
           },
           {
             label: "Total Expenses",
@@ -164,16 +165,12 @@ export function SupplyReportTabContent({ startDate, endDate }: SupplyReportTabCo
             {item.label === "Profit" && (
               <div className="mt-4 space-y-4">
                 <div className="flex justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] mt-auto">REN Profit:</p>
-                  <span className="mt-1 text-xl text-darkbrown font-semibold">{formatToPeso(report.renProfit)}</span>
-                </div>
-                <div className="flex justify-between">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] mt-auto">Snowfrost profit:</p>
                   <span className="mt-1 text-xl text-darkbrown font-semibold">{formatToPeso(snowfrostProfit)}</span>
                 </div>
                 <div className="flex justify-between">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] mt-auto">meat profit:</p>
-                  <span className="mt-1 text-xl text-darkbrown font-semibold ml-1.5">{formatToPeso(renProfit - snowfrostProfit)}</span>
+                  <span className="mt-1 text-xl text-darkbrown font-semibold ml-1.5">{formatToPeso(report.excludedMeatProfit)}</span>
                 </div>
               </div>
             )}

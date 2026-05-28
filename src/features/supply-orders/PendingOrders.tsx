@@ -161,7 +161,7 @@ export function PendingOrders({ claims, paginated, setReload, orderShortages }: 
                                 </div>
                                 <div className="flex-center-y">
                                     <Truck className="w-3.5 h-3.5 text-slate-500" /> 
-                                    <span className="ml-1.5 text-xs text-slate-500">{ formatDateTime(item.approvedDate) }</span>
+                                    <span className="ml-1.5 text-xs text-slate-500">{ formatDateTime(item.expectedDelivery) }</span>
                                 </div>
                             </div>
                             <div className="td flex gap-2">

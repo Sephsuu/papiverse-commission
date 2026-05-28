@@ -139,7 +139,7 @@ export function UpdateBranch({setReload, toUpdate, setUpdate }: Props) {
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="false" className="border border-dark" id="r2" />
-                                    <Label htmlFor="r2">External False</Label>
+                                    <Label htmlFor="r2">External Branch</Label>
                                 </div>
                             </RadioGroup>
                         </div>

@@ -294,12 +294,17 @@ export function ExpensesDetailed({
                 ? getWeekFilterFromDate(createRows[0].spentAtDate)
                 : null;
 
+            const resolvedOrderCategory =
+                normalizeOrderCategory(selectedCategory?.orderCategory)
+                || normalizeOrderCategory(categories.find((item) => item.id === selectedCategoryId)?.orderCategory)
+                || (tab === "ALL" ? "MEAT" : tab);
+
             const payload: Partial<Expense>[] = createRows.map((row) => ({
                 branchId: claims.branch.branchId,
                 total: Number(row.amount),
                 spentAt: toExpenseDateTimeString(row.spentAtDate ?? new Date()),
                 expenseCategoryId: selectedCategoryId,
-                orderCategory: tab,
+                orderCategory: resolvedOrderCategory,
                 modeOfPayment: row.modeOfPayment,
                 purpose: row.description.trim(),
             }));
