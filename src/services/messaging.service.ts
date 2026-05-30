@@ -1,4 +1,4 @@
-import { BASE_URL } from "@/lib/urls";
+import { BASE_URL, WEBSOCKET_URL } from "@/lib/urls";
 import { requestData } from "./_config";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
@@ -68,7 +68,7 @@ export class MessagingService {
     🔵 WEBSOCKET CONFIG
 ============================ */
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_WEBSOCKET;
+const SOCKET_URL = WEBSOCKET_URL;
 
 let stompClient: Client;
 

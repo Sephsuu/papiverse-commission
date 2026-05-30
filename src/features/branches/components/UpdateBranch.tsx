@@ -1,3 +1,4 @@
+import { AppSelect } from "@/components/shared/AppSelect";
 import { AddButton, Button, UpdateButton } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,11 @@ import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const status = ['UNDER RENOVATION/CONSTRUCTION', 'ACTIVE', 'INACTIVE']; 
+const BRANCH_PRICING = [
+    { label: 'Internal Pricing', value: 'INTERNAL_PRICE' },
+    { label: 'External Pricing', value: 'EXTERNAL_PRICE' },
+    { label: 'Unit Cost Pricing', value: 'UNIT_COST' },
+]
 
 interface Props {
     setReload: React.Dispatch<React.SetStateAction<boolean>>;
@@ -101,6 +107,19 @@ export function UpdateBranch({setReload, toUpdate, setUpdate }: Props) {
                                 </SelectContent>
                             </Select>
                         </div>
+                        <AppSelect
+                            items={BRANCH_PRICING}
+                            label="Pricing Type"
+                            value={branch.pricingType}
+                            onChange={ (value) => setBranch(prev => ({
+                                ...prev,
+                                pricingType: value
+                            }))}
+                            placeholder="Select Pricing Type"
+                            labelClassName="text-md"
+                            triggerClassName="h-9.5!"
+                            className="mt-0.5 col-span-2"
+                        />
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>Branch Status</div>
                             <RadioGroup
@@ -120,7 +139,7 @@ export function UpdateBranch({setReload, toUpdate, setUpdate }: Props) {
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="false" className="border border-dark" id="r2" />
-                                    <Label htmlFor="r2">External False</Label>
+                                    <Label htmlFor="r2">External Branch</Label>
                                 </div>
                             </RadioGroup>
                         </div>

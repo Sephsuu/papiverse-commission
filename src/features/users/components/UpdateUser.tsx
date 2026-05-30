@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFetchData } from "@/hooks/use-fetch-data";
 import { useSearchFilter } from "@/hooks/use-search-filter";
+import { handleChange } from "@/lib/form-handle";
 import { BranchService } from "@/services/branch.service";
 import { UserService } from "@/services/user.service";
 import { Branch } from "@/types/branch";
@@ -52,6 +53,13 @@ export function UpdateUser({ toUpdate, setUpdate, setReload }: Props) {
             setProcess(true);
             const finalUser =  {
                 id : user.id,
+                firstName: user.firstName,
+                middleName: user.middleName,
+                lastName: user.lastName,
+                contactNumber: user.contactNumber,
+                gender: user.gender,
+                position: user.position,
+                dateOfBirth: user.dateOfBirth,
                 branchId: Number(user.branchId),
                 role: user.role
             }
@@ -77,6 +85,87 @@ export function UpdateUser({ toUpdate, setUpdate, setReload }: Props) {
                     }}
                 >
                     <div className="grid grid-cols-2 gap-2">
+                        <div className="col-span-2 font-semibold">Personal Information</div>
+                        <div className="flex flex-col gap-1">
+                            <div>First Name</div>
+                            <Input
+                                className="w-full border border-dark"
+                                name="firstName"
+                                value={user.firstName ?? ""}
+                                onChange={(e) => handleChange(e, setUser)}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <div>Middle Name</div>
+                            <Input
+                                className="w-full border border-dark"
+                                name="middleName"
+                                value={user.middleName ?? ""}
+                                onChange={(e) => handleChange(e, setUser)}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <div>Last Name</div>
+                            <Input
+                                className="w-full border border-dark"
+                                name="lastName"
+                                value={user.lastName ?? ""}
+                                onChange={(e) => handleChange(e, setUser)}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <div>Contact Number</div>
+                            <Input
+                                className="w-full border border-dark"
+                                name="contactNumber"
+                                value={user.contactNumber ?? ""}
+                                onChange={(e) => handleChange(e, setUser)}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <div>Gender</div>
+                            <Select
+                                value={user.gender ?? ""}
+                                onValueChange={(value) =>
+                                    setUser((prev) => ({
+                                        ...prev,
+                                        gender: value,
+                                    }))
+                                }
+                            >
+                                <SelectTrigger className="w-full border border-dark">
+                                    <SelectValue placeholder="Select Gender" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {genders.map((item, index) => (
+                                        <SelectItem value={item} key={index}>
+                                            {item}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <div>Position</div>
+                            <Input
+                                className="w-full border border-dark"
+                                name="position"
+                                value={user.position ?? ""}
+                                onChange={(e) => handleChange(e, setUser)}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1 col-span-2">
+                            <div>Date of Birth</div>
+                            <Input
+                                className="w-full border border-dark"
+                                type="date"
+                                name="dateOfBirth"
+                                value={user.dateOfBirth ?? ""}
+                                onChange={(e) => handleChange(e, setUser)}
+                            />
+                        </div>
+
+                        <div className="col-span-2 font-semibold mt-2">Account Assignment</div>
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>Branch</div>
                             <Select 

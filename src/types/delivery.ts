@@ -3,4 +3,5 @@ export interface Delivery {
     branchId: number;
     branchName: string;
     deliveryFee: number;
+    pricingType: string
 }

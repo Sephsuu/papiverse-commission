@@ -112,12 +112,12 @@ export function POReportPage() {
                 helper: "Combined category profitability",
             },
             {
-                label: poProfit.meatCategory?.meatOrderId,
+                label: poProfit.meatCategory?.meatOrderId ?? 'N/A',
                 value: formatToPeso(poProfit.meatCategory?.categoryProfit ?? 0),
                 helper: "MEAT category total profit",
             },
             {
-                label: poProfit.snowCategory?.snowOrderId,
+                label: poProfit.snowCategory?.snowOrderId ?? 'N/A',
                 value: formatToPeso(poProfit.snowCategory?.categoryProfit ?? 0),
                 helper: "SNOWFROST category total profit",
             },
@@ -183,7 +183,7 @@ export function POReportPage() {
                         <div className="table-wrapper">
                             <div className="thead grid grid-cols-5">
                                 {columns.map((item, index) => (
-                                    <div className="th" key={index}>{item.title}</div>
+                                    <div className={`th ${item.title === "Profit" ? "bg-darkgreen/15! text-darkgreen font-bold" : ""}`} key={index}>{item.title}</div>
                                 ))}
                             </div>
 
@@ -210,7 +210,7 @@ export function POReportPage() {
                                                 <span>₱</span>
                                                 <span>{formatToPeso(item.revenue).slice(1)}</span>
                                             </div>
-                                            <div className="td justify-between font-semibold text-slate-900">
+                                            <div className="td justify-between font-semibold text-slate-900 bg-darkgreen/8!">
                                                 <span>₱</span>
                                                 <span>{formatToPeso(item.profit).slice(1)}</span>
                                             </div>

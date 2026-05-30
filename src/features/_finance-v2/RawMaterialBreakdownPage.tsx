@@ -4,11 +4,9 @@ import { AppSelect } from "@/components/shared/AppSelect";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { Badge } from "@/components/ui/badge";
 import { PapiverseLoading } from "@/components/ui/loader";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useFetchOne } from "@/hooks/use-fetch-one";
 import { useToday } from "@/hooks/use-today";
 import { formatDateToWords, formatToPeso } from "@/lib/formatter";
-import { InventoryService } from "@/services/inventory.service";
 import { format } from "date-fns";
 import { CalendarDays, Ham, PackageX, Snowflake } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -18,6 +16,7 @@ import { TableFilter } from "@/components/shared/TableFilter";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { BreakdownDatePickerModal, BreakdownPeriodMode } from "./components/BreakdownDatePickerModal";
 import { AppTooltip } from "@/components/shared/AppTooltip";
+import { FinanceService } from "@/services/finance.service";
 
 type RawMaterialBreakdownReport = {
     branchId: number;
@@ -126,7 +125,7 @@ export function RawMaterialBreakdownPage() {
     }, [parsedStartDate, periodMode]);
 
     const { data: report, loading: loadingReport } = useFetchOne<RawMaterialBreakdownReport>(
-        InventoryService.getRawMaterialFinanceBreakdown,
+        FinanceService.getRawMaterialFinanceBreakdown,
         [startDate, endDate],
         [1, startDate, endDate]
     );

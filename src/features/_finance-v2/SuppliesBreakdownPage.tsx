@@ -8,7 +8,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useFetchOne } from "@/hooks/use-fetch-one";
 import { useToday } from "@/hooks/use-today";
 import { formatDateToWords, formatNumber, formatToPeso } from "@/lib/formatter";
-import { InventoryService } from "@/services/inventory.service";
 import { InventoryReportBreakdown } from "@/types/inventory";
 import { format } from "date-fns";
 import { CalendarDays } from "lucide-react";
@@ -19,6 +18,7 @@ import { TableFilter } from "@/components/shared/TableFilter";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { BreakdownDatePickerModal, BreakdownPeriodMode } from "./components/BreakdownDatePickerModal";
 import { getCategoryIcon } from "@/hooks/use-helper";
+import { FinanceService } from "@/services/finance.service";
 
 const columns = [
     { title: "Supply" },
@@ -101,7 +101,7 @@ export function SupplytBreakdownPage() {
     }, [parsedStartDate, periodMode]);
 
     const { data: report, loading: loadingReport } = useFetchOne<InventoryReportBreakdown>(
-        InventoryService.getSupplyFinanceBreakdown,
+        FinanceService.getSupplyFinanceBreakdown,
         [startDate, endDate, filter],
         [1, startDate, endDate, filter.replace(' ', '')]
     )
@@ -245,7 +245,7 @@ export function SupplytBreakdownPage() {
             <div className="table-wrapper">
                 <div className="thead grid grid-cols-6">
                     {columns.map((item) => (
-                        <div key={item.title} className="th">
+                        <div key={item.title} className={`th ${item.title === "Profit" ? "bg-darkgreen/15! text-darkgreen font-bold" : ""}`}>
                             {item.title}
                         </div>
                     ))}
@@ -311,7 +311,7 @@ export function SupplytBreakdownPage() {
                                 }
                             </div>
 
-                            <div className={`td justify-between font-semibold ${item.profit < 0 ? "text-darkred" : "text-darkgreen"}`}>
+                            <div className={`td justify-between font-semibold bg-darkgreen/8! ${item.profit < 0 ? "text-darkred" : "text-darkgreen"}`}>
                                 {item.profit !== null && item.profit !== undefined
                                     ? <>
                                         <div>{item.profit < 0 ? "-₱" : "₱"}</div>

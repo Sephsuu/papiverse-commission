@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { formatDateToWords, getWeekday } from "@/lib/formatter";
 import { InventoryLog } from "@/types/inventory-log";
 import dayjs from "dayjs"
-import { ArrowBigDown, ArrowBigUp, CalendarArrowUp, CalendarClock, Package, Truck } from "lucide-react";
+import { ArrowBigDown, ArrowBigUp, CalendarArrowUp, CalendarClock, Ham, Package, Truck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { getCategoryIcon } from "@/hooks/use-helper";
 
 interface Props {
     logs: {
@@ -55,7 +56,7 @@ export function OrderLogs({ logs }: Props) {
                         <Accordion type="multiple" className="bg-slate-50/40 px-4 py-4">
                             {groupedOrders.map((group) => {
                                 const firstLog = group.logs[0];
-                                const orderLabel = firstLog.order?.meatOrderId || firstLog.order?.snowOrderId || `Order #${firstLog.order?.id ?? "N/A"}`;
+                                // const orderLabel = firstLog.order?.meatOrderId || firstLog.order?.snowOrderId || `Order #${firstLog.order?.id ?? "N/A"}`;
 
                                 return (
                                     <AccordionItem
@@ -67,9 +68,21 @@ export function OrderLogs({ logs }: Props) {
                                             <div className="grid w-full gap-3 lg:grid-cols-[1.3fr_1fr_1fr]">
                                                 <div className="min-w-0">
                                                     <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="truncate text-sm font-semibold text-slate-900">
-                                                            {orderLabel}
-                                                        </span>
+                                                        <div className="flex-center-y gap-4">
+                                                            <div className="flex-center-y gap-1">
+                                                                {getCategoryIcon('MEAT')}
+                                                                <span className="truncate text-sm font-semibold text-slate-900">
+                                                                    {firstLog.order?.meatOrderId}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex-center-y gap-1">
+                                                                {getCategoryIcon('SNOWFROST')}
+                                                                <span className="truncate text-sm font-semibold text-slate-900">
+                                                                    {firstLog.order?.snowOrderId ?? 'N/A'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        
                                                         <Badge className="bg-light text-darkbrown">
                                                             {group.logs.length} item{group.logs.length > 1 ? "s" : ""}
                                                         </Badge>

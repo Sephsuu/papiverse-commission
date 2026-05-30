@@ -3,22 +3,26 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 export function AppTooltip({
 	trigger,
 	content,
-	tooltipClassName,
-	contentClassName
+	triggerClassName,
+	contentClassName,
+	onClick
 }: {
 	trigger: React.ReactNode
-	content: string
-	tooltipClassName?: string
+	content: React.ReactNode | string
+	triggerClassName?: string
 	contentClassName?: string
+	onClick?: React.MouseEventHandler<HTMLSpanElement>
 }) {
 	return (
 		<TooltipProvider>
 			<Tooltip>
 				<TooltipTrigger 
-					className={tooltipClassName} 
+					className={triggerClassName} 
 					asChild
 				>
-					{trigger}
+					<span onClick={onClick}>
+						{trigger}
+					</span>
 				</TooltipTrigger>
 				<TooltipContent className={contentClassName}>
 					{content}

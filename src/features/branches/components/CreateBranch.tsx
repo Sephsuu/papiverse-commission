@@ -1,3 +1,4 @@
+import { AppSelect } from "@/components/shared/AppSelect";
 import { AddButton, Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -19,6 +20,11 @@ import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const status = ['UNDER RENOVATION/CONSTRUCTION', 'ACTIVE', 'INACTIVE']; 
+const BRANCH_PRICING = [
+    { label: 'Internal Pricing', value: 'INTERNAL_PRICE' },
+    { label: 'External Pricing', value: 'EXTERNAL_PRICE' },
+    { label: 'Unit Cost Pricing', value: 'UNIT_COST' },
+]
 
 interface Props {
     setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -26,12 +32,8 @@ interface Props {
 }
 
 export function CreateBranch({ setOpen, setReload }: Props) {
-    const [loading, setLoading] = useState(true);
     const [onProcess, setProcess] = useState(false);
-
     const [branch, setBranch] = useState<Branch>(branchInit);
-    const [date, setDate] = useState<Date | undefined>();
-    const [dateOpen, setDateOpen] = useState(false);
 
     async function handleSubmit() {
         try{         
@@ -140,7 +142,7 @@ export function CreateBranch({ setOpen, setReload }: Props) {
                                 </div>
                             </RadioGroup>
                         </div>
-                        <div className="flex flex-col gap-1 col-span-2">
+                        <div className="flex flex-col gap-1">
                             <div>Delivery Fee</div>
                             <div className="flex border border-gray rounded-md">
                                 <input disabled value="₱" className="w-10 text-center" /> 
@@ -153,6 +155,19 @@ export function CreateBranch({ setOpen, setReload }: Props) {
                                 />
                             </div>
                         </div>
+                        <AppSelect
+                            items={BRANCH_PRICING}
+                            label="Pricing Type"
+                            value={branch.pricingType}
+                            onChange={ (value) => setBranch(prev => ({
+                                ...prev,
+                                pricingType: value
+                            }))}
+                            placeholder="Select Pricing Type"
+                            labelClassName="text-md"
+                            triggerClassName="h-9.5!"
+                            className="mt-0.5"
+                        />
                         <div className="col-span-2 font-semibold mt-2">Location of the Branch</div>
                         <div className="flex flex-col gap-1 col-span-2">
                             <div>Street Address</div>

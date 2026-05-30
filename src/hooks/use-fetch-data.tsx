@@ -17,7 +17,10 @@ export function useFetchData<T>(
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!enabled) return;
+        if (!enabled) {
+            setLoading(false);
+            return;
+        }
         let isMounted = true;
 
         async function fetchData() {

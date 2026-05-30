@@ -1,57 +1,130 @@
 "use client"
 
-import { TablePagination } from "@/components/shared/TablePagination";
+import { AppTabSwitcher } from "@/components/shared/AppTabSwitcher"
 import {  PapiverseLoading } from "@/components/ui/loader";
 import { useAuth } from "@/hooks/use-auth";
-import { Expense } from "@/types/expense";
-import { useEffect, useMemo, useState } from "react";
+import { Expense, ExpenseMonthlyResponse, ExpensePaymentModeSummaryResponse } from "@/types/expense";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ExpenseService } from "@/services/expense.service";
 import { AppHeader } from "@/components/shared/AppHeader";
-import { useFetchData } from "@/hooks/use-fetch-data";
 import { useSearchFilter } from "@/hooks/use-search-filter";
 import { usePagination } from "@/hooks/use-pagination";
-import { TableFilter } from "@/components/shared/TableFilter";
 import { CreateExpense } from "./components/CreateExpense";
 import { UpdateExpense } from "./components/UpdateExpense";
 import { DeleteExpense } from "./components/DeleteExpense";
 import { useToday } from "@/hooks/use-today";
-import { endOfMonth, endOfWeek, format, isAfter, startOfMonth, startOfWeek } from "date-fns";
-import { CalendarDays, SquarePen, Trash2 } from "lucide-react";
+import { endOfMonth, format, isAfter, startOfMonth } from "date-fns";
+import { CalendarDays, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { capitalizeWords, formatDateTime, formatDateToWords, formatToPeso } from "@/lib/formatter";
-import { ExpenseDateDialog, ExpensePeriodMode } from "./components/ExpenseDateDialog";
+import { ExpenseDateDialog } from "./components/ExpenseDateDialog";
+import { toast } from "sonner";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ExpensesOverview } from "./components/ExpensesOverview";
+import { ExpensesSummary } from "./components/ExpensesSummary";
+import { ExpensesDetailed } from "./components/ExpensesDetailed";
 
 const pageKey = "expensesPage";
+const expenseLayoutKey = "expensesPageLayout";
+const expenseLayoutTabs = ["Overview", "Summary", "Detailed"];
 const columns = [
     { title: "Added By", style: "col-span-2" },
-    { title: "Purpose", style: "" },
+    { title: "Category / Purpose", style: "" },
     { title: "Mode of Payment", style: "" },
     { title: "Spent At", style: "" },
     { title: "Total", style: "" },
     { title: "Actions", style: "" },
 ];
+const weeklyBreakdownColumns = [
+    { title: "Expense Category", style: "" },
+    { title: "Week 1", style: "" },
+    { title: "Week 2", style: "" },
+    { title: "Week 3", style: "" },
+    { title: "Week 4", style: "" },
+    { title: "Total Expenses", style: "" },
+]
 
 function parseDateOnly(value: string) {
     return new Date(`${value}T00:00:00`);
 }
 
-function getInitials(name: string) {
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    return parts
-        .slice(0, 2)
-        .map((part) => part[0]?.toUpperCase() ?? "")
-        .join("");
+function toAmount(value: unknown) {
+    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+    if (typeof value === "string") {
+        if (value.trim().toUpperCase() === "N/A") return 0;
+        const sanitized = value.replace(/[^\d.-]/g, "");
+        const parsed = Number(sanitized);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
 }
+
+function normalizeOrderCategory(value?: string) {
+    const normalized = (value ?? "").trim().toUpperCase();
+    if (normalized === "SNOW") return "SNOWFROST";
+    return normalized;
+}
+
+type NormalizedCategoryBreakdown = {
+    expenseCategoryId?: number | null;
+    expenseCategoryName: string;
+    orderCategory: string;
+    week1: string | number;
+    week2: string | number;
+    week3: string | number;
+    week4: string | number;
+    total: string | number;
+};
 
 export function ExpensesPage() {
     const [reload, setReload] = useState(false);
-    const { loading: authLoading } = useAuth();
+    const { claims, loading: authLoading } = useAuth();
     const { today } = useToday();
-    const [date, setDate] = useState(today);
-    const [mode, setMode] = useState<ExpensePeriodMode>("MONTH");
+    const pathname = usePathname();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const currentMonth = format(parseDateOnly(today), "yyyy-MM");
+    const monthParam = searchParams.get("month");
+    const selectedMonth = monthParam && /^\d{4}-\d{2}$/.test(monthParam) ? monthParam : currentMonth;
+    const [date, setDate] = useState(`${selectedMonth}-01`);
     const [startDate, setStartDate] = useState(format(startOfMonth(parseDateOnly(today)), "yyyy-MM-dd"));
-    const [endDate, setEndDate] = useState(today);
+    const [, setEndDate] = useState(today);
     const [toggleDate, setToggleDate] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [monthlyData, setMonthlyData] = useState<ExpenseMonthlyResponse | null>(null);
+    const [paymentModeSummary, setPaymentModeSummary] = useState<ExpensePaymentModeSummaryResponse | null>(null);
+    const [selectedLayout, setSelectedLayout] = useState(expenseLayoutTabs[0]);
+    const lastReplacedMonthRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        sessionStorage.setItem(expenseLayoutKey, selectedLayout);
+    }, [selectedLayout]);
+
+    function replaceMonthParam(nextMonth: string) {
+        if (!nextMonth) return;
+        if (monthParam === nextMonth) return;
+        if (lastReplacedMonthRef.current === nextMonth) return;
+
+        const currentQuery = searchParams.toString();
+        const nextParams = new URLSearchParams(currentQuery);
+        nextParams.set("month", nextMonth);
+        const nextQuery = nextParams.toString();
+        if (nextQuery === currentQuery) return;
+
+        lastReplacedMonthRef.current = nextMonth;
+        router.replace(`${pathname}?${nextQuery}`, { scroll: false });
+    }
+
+    useEffect(() => {
+        const isValidMonthParam = Boolean(monthParam && /^\d{4}-\d{2}$/.test(monthParam));
+        const safeMonth = isValidMonthParam ? monthParam! : currentMonth;
+        const safeDate = `${safeMonth}-01`;
+
+        if (!isValidMonthParam) {
+            replaceMonthParam(safeMonth);
+        }
+
+        setDate((prev) => (prev === safeDate ? prev : safeDate));
+    }, [currentMonth, monthParam, pathname, router, searchParams]);
 
     useEffect(() => {
         if (!date) return;
@@ -59,64 +132,162 @@ export function ExpensesPage() {
         const selectedDate = parseDateOnly(date);
         const todayDate = parseDateOnly(today);
 
-        if (mode === "DAY") {
-            setStartDate(date);
-            setEndDate(date);
-            return;
+        const monthEndDate = endOfMonth(selectedDate);
+        setStartDate(format(startOfMonth(selectedDate), "yyyy-MM-dd"));
+        setEndDate(format(isAfter(monthEndDate, todayDate) ? todayDate : monthEndDate, "yyyy-MM-dd"));
+    }, [date, today]);
+
+    useEffect(() => {
+        if (monthParam === lastReplacedMonthRef.current) {
+            lastReplacedMonthRef.current = null;
+        }
+    }, [monthParam]);
+
+    useEffect(() => {
+        if (!claims?.branch?.branchId || !selectedMonth) return;
+
+        let isMounted = true;
+
+        async function loadExpenses() {
+            try {
+                setLoading(true);
+                const [response, paymentResponse] = await Promise.all([
+                    ExpenseService.getExpensesByDate(claims.branch.branchId, selectedMonth, 0, 1000) as Promise<ExpenseMonthlyResponse>,
+                    ExpenseService.getPaymentModeSummary(claims.branch.branchId, selectedMonth, "ALL"),
+                ]);
+                if (!isMounted) return;
+                setMonthlyData(response);
+                setPaymentModeSummary(paymentResponse);
+            } catch (err: any) {
+                const message = err?.message || err?.error || "Failed to fetch expenses";
+                toast.error(message);
+            } finally {
+                if (isMounted) setLoading(false);
+            }
         }
 
-        if (mode === "WEEK") {
-            const weekEndDate = endOfWeek(selectedDate, { weekStartsOn: 0 });
-            setStartDate(format(startOfWeek(selectedDate, { weekStartsOn: 0 }), "yyyy-MM-dd"));
-            setEndDate(format(isAfter(weekEndDate, todayDate) ? todayDate : weekEndDate, "yyyy-MM-dd"));
-            return;
-        }
+        loadExpenses();
+        return () => {
+            isMounted = false;
+        };
+    }, [claims?.branch?.branchId, reload, selectedMonth]);
 
-        if (mode === "MONTH") {
-            const monthEndDate = endOfMonth(selectedDate);
-            setStartDate(format(startOfMonth(selectedDate), "yyyy-MM-dd"));
-            setEndDate(format(isAfter(monthEndDate, todayDate) ? todayDate : monthEndDate, "yyyy-MM-dd"));
-            return;
-        }
-    }, [date, mode, today]);
+    const expensesData = monthlyData?.expenses?.content ?? [];
 
-    const { data, loading } = useFetchData<Expense>(
-        ExpenseService.getExpensesByDate, 
-        [reload, startDate, endDate],
-        [startDate, endDate],
-    );
-    const { search, setSearch, filteredItems } = useSearchFilter(data, [
+    const { search, setSearch, filteredItems } = useSearchFilter(expensesData, [
         "purpose",
+        "expenseCategoryName",
         "addedByName",
         "addedByUsername",
         "modeOfPayment",
         "spentAt",
     ]);
     const parsedStartDate = startDate ? parseDateOnly(startDate) : null;
-    const parsedEndDate = endDate ? parseDateOnly(endDate) : null;
     const displayDate = parsedStartDate
-        ? mode === "WEEK" && parsedEndDate
-            ? `${format(parsedStartDate, "MMM d, yyyy")} - ${format(parsedEndDate, "MMM d, yyyy")}`
-            : mode === "MONTH"
-                ? format(parsedStartDate, "MMMM yyyy")
-            : format(parsedStartDate, "MMMM dd, yyyy")
+        ? format(parsedStartDate, "MMMM yyyy")
         : "Select date";
     const displayBadge = parsedStartDate
-        ? mode === "WEEK"
-            ? "SUN-SAT"
-            : mode === "MONTH"
-                ? "MONTHLY"
-            : format(parsedStartDate, "EEEE").toUpperCase()
+        ? "MONTHLY"
         : "PERIOD";
+    const categoryBreakdown = useMemo<NormalizedCategoryBreakdown[]>(() => {
+        if (monthlyData?.categoryWeeklyBreakdown?.length) {
+            return monthlyData.categoryWeeklyBreakdown.map((item) => ({
+                ...item,
+                expenseCategoryName: item.expenseCategoryName?.trim() || "UNCATEGORIZED",
+                orderCategory: normalizeOrderCategory(item.orderCategory),
+            }));
+        }
 
-    const sortedExpenses = useMemo(
-        () =>
-            [...filteredItems].sort(
-                (a, b) => new Date(b.spentAt).getTime() - new Date(a.spentAt).getTime()
-            ),
-        [filteredItems]
+        return (monthlyData?.purposeWeeklyBreakdown ?? []).map((item) => ({
+            expenseCategoryName: item.purpose?.trim() || "UNCATEGORIZED",
+            orderCategory: normalizeOrderCategory(item.orderCategory),
+            week1: item.week1,
+            week2: item.week2,
+            week3: item.week3,
+            week4: item.week4,
+            total: item.total,
+        }));
+    }, [monthlyData]);
+
+    const meatBreakdown = useMemo(
+        () => categoryBreakdown.filter((item) => item.orderCategory === "MEAT"),
+        [categoryBreakdown]
     );
-    const { page, setPage, size, setSize, paginated } = usePagination(sortedExpenses, 20, pageKey);
+    const snowfrostBreakdown = useMemo(
+        () => categoryBreakdown.filter((item) => item.orderCategory === "SNOWFROST"),
+        [categoryBreakdown]
+    );
+    const meatTotals = useMemo(() => {
+        return meatBreakdown.reduce(
+            (acc, item) => ({
+                week1: acc.week1 + toAmount(item.week1),
+                week2: acc.week2 + toAmount(item.week2),
+                week3: acc.week3 + toAmount(item.week3),
+                week4: acc.week4 + toAmount(item.week4),
+                total: acc.total + toAmount(item.total),
+            }),
+            { week1: 0, week2: 0, week3: 0, week4: 0, total: 0 }
+        );
+    }, [meatBreakdown]);
+    const snowTotals = useMemo(() => {
+        return snowfrostBreakdown.reduce(
+            (acc, item) => ({
+                week1: acc.week1 + toAmount(item.week1),
+                week2: acc.week2 + toAmount(item.week2),
+                week3: acc.week3 + toAmount(item.week3),
+                week4: acc.week4 + toAmount(item.week4),
+                total: acc.total + toAmount(item.total),
+            }),
+            { week1: 0, week2: 0, week3: 0, week4: 0, total: 0 }
+        );
+    }, [snowfrostBreakdown]);
+    const combinedWeekTotals = useMemo(
+        () => ({
+            week1: meatTotals.week1 + snowTotals.week1,
+            week2: meatTotals.week2 + snowTotals.week2,
+            week3: meatTotals.week3 + snowTotals.week3,
+            week4: meatTotals.week4 + snowTotals.week4,
+            total: meatTotals.total + snowTotals.total,
+        }),
+        [meatTotals, snowTotals]
+    );
+    const weeklyChartData = useMemo(
+        () => [
+            { label: "Week 1", meat: meatTotals.week1, snowfrost: snowTotals.week1, combined: combinedWeekTotals.week1 },
+            { label: "Week 2", meat: meatTotals.week2, snowfrost: snowTotals.week2, combined: combinedWeekTotals.week2 },
+            { label: "Week 3", meat: meatTotals.week3, snowfrost: snowTotals.week3, combined: combinedWeekTotals.week3 },
+            { label: "Week 4", meat: meatTotals.week4, snowfrost: snowTotals.week4, combined: combinedWeekTotals.week4 },
+        ],
+        [meatTotals, snowTotals, combinedWeekTotals]
+    );
+    const allocatedWeeklyChartData = useMemo(
+        () => weeklyChartData.filter((item) => toAmount(item.combined) > 0),
+        [weeklyChartData]
+    );
+    const allocatedCategoryChartData = useMemo(
+        () => [...categoryBreakdown]
+            .map((item) => ({
+                label: item.expenseCategoryName,
+                total: toAmount(item.total),
+                orderCategory: item.orderCategory,
+            }))
+            .filter((item) => item.total > 0)
+            .sort((a, b) => b.total - a.total),
+        [categoryBreakdown]
+    );
+    const paymentModeChartData = useMemo(
+        () => (paymentModeSummary?.paymentModeSummary ?? [])
+            .map((item) => ({
+                modeOfPayment: item.modeOfPayment,
+                total: Number(item.total ?? 0),
+                percentage: Number(item.percentage ?? 0),
+                count: Number(item.count ?? 0),
+            }))
+            .filter((item) => item.total > 0),
+        [paymentModeSummary]
+    );
+
+    const { page, setPage, size, setSize, paginated } = usePagination(filteredItems, 10, pageKey);
 
     const [open, setOpen] = useState(false);
     const [toUpdate, setUpdate] = useState<Expense | undefined>();
@@ -124,23 +295,18 @@ export function ExpensesPage() {
 
     if (loading || authLoading) return <PapiverseLoading />
     return(
-        <section className="stack-md animate-fade-in-up overflow-hidden max-md:mt-12">
-            <AppHeader label="All Expenses" />
+        <section className="stack-md pb-12 animate-fade-in-up overflow-hidden max-md:mt-12">
+            <AppHeader label="Krispy Papi Expenditures" />
 
             <div className="flex-center-y justify-between">
-                <div className="text-xl font-semibold">
-                    Expenditures for 
-                    <span className="text-darkbrown ml-1.5">
-                        {mode === "WEEK"
-                            ? `${formatDateToWords(startDate)} - ${formatDateToWords(endDate)}`
-                            : mode === "MONTH"
-                                ? format(parsedStartDate!, "MMMM yyyy")
-                            : formatDateToWords(startDate)}
-                    </span>
-                </div>
+                <AppTabSwitcher
+                    tabs={[...expenseLayoutTabs]}
+                    selectedTab={selectedLayout}
+                    setSelectedTab={(tab) => setSelectedLayout(tab as (typeof expenseLayoutTabs)[number])}
+                />
                 <div
                     onClick={() => setToggleDate(true)}
-                    className="flex-center-y gap-3 rounded-md border border-slate-300 bg-light px-4 py-2 text-lg font-bold shadow-sm w-fit cursor-pointer max-md:m-1"
+                    className="flex-center-y gap-3 rounded-md border border-slate-300 bg-light px-4 py-2 text-lg font-bold shadow-sm w-fit cursor-pointer"
                 >
                     <CalendarDays />
 
@@ -152,83 +318,54 @@ export function ExpensesPage() {
                 </div>
             </div>
 
-            
-            <TableFilter
-                setSearch={ setSearch }
-                searchPlaceholder="Search for an expense"
-                setSize={ setSize }
-                size={ size }
-                buttonLabel="Add an expense"
-                setOpen={ setOpen }
-            />
-
-            <section className="w-full">
-                <div className="table-wrapper">
-                    <div className="thead grid grid-cols-7 max-md:w-300!">
-                        {columns.map((item, index) => (
-                            <div key={index} className={`th ${item.style}`}>
-                                {item.title}
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="animate-fade-in-up">
-                        {paginated.length > 0 ? (
-                            paginated.map((expense) => (
-                                <div className="tdata grid grid-cols-7 max-md:w-300!" key={expense.id}>
-                                    <div className="td col-span-2 gap-3">
-                                        <div className="flex size-9 items-center justify-center rounded-full bg-brown font-semibold text-light">
-                                            {getInitials(expense.addedByName)}
-                                        </div>
-                                        <div className="min-w-0">
-                                            <div className="truncate font-semibold">{expense.addedByName}</div>
-                                            <div className="truncate text-xs text-gray">@{expense.addedByUsername}</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="td">
-                                        {expense.purpose}
-                                    </div>
-
-                                    <div className="td">
-                                        {capitalizeWords(expense.modeOfPayment.replace(/_/g, " "))}
-                                    </div>
-
-                                    <div className="td">
-                                        {formatDateTime(expense.spentAt)}
-                                    </div>
-
-                                    <div className="td justify-between">
-                                        <div>₱</div>
-                                        <div>{formatToPeso(expense.total).slice(1,)}</div>
-                                    </div>
-
-                                    <div className="td justify-center gap-2">
-                                        <button onClick={() => setUpdate(expense)}>
-                                            <SquarePen className="h-4 w-4 text-darkgreen" />
-                                        </button>
-                                        <button onClick={() => setDelete(expense)}>
-                                            <Trash2 className="h-4 w-4 text-darkred" />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="my-2 text-center text-sm">There are no expenses yet.</div>
-                        )}
+            {selectedLayout !== expenseLayoutTabs[2] && (
+                <div className="mb-2">
+                    <div className="font-bold text-xl">{selectedLayout === expenseLayoutTabs[0] ? 'Expenses Overview' : 'Expenditure Summary'} for <span className="text-darkbrown">{format(parsedStartDate!, "MMMM yyyy")}</span></div>
+                    <div className="text-sm text-gray">
+                        Expense entries and weekly spending breakdown for the selected month.
                     </div>
                 </div>
-            </section>
+            )}
 
-            {sortedExpenses.length > 0 && (
-                <TablePagination
-                    data={ sortedExpenses }
-                    paginated={ paginated }
-                    page={ page }
-                    size={ size }
-                    setPage={ setPage }
-                    search={ search }
-                    pageKey={ pageKey }
+            {selectedLayout === expenseLayoutTabs[0] && (
+                <ExpensesOverview
+                    combinedWeekTotals={combinedWeekTotals}
+                    meatTotals={meatTotals}
+                    snowTotals={snowTotals}
+                    allocatedWeeklyChartData={allocatedWeeklyChartData}
+                    allocatedCategoryChartData={allocatedCategoryChartData}
+                    paymentModeChartData={paymentModeChartData}
+                />
+            )}
+
+            {selectedLayout === expenseLayoutTabs[1] && (
+                <ExpensesSummary
+                    weeklyBreakdownColumns={weeklyBreakdownColumns}
+                    meatBreakdown={meatBreakdown}
+                    snowfrostBreakdown={snowfrostBreakdown}
+                    meatTotals={meatTotals}
+                    snowTotals={snowTotals}
+                    combinedWeekTotals={combinedWeekTotals}
+                />
+            )}
+
+            {selectedLayout === expenseLayoutTabs[2] && (
+                <ExpensesDetailed
+                    columns={columns}
+                    setSearch={setSearch}
+                    setSize={setSize}
+                    size={size}
+                    page={page}
+                    search={search}
+                    expensesData={expensesData}
+                    filteredExpenses={filteredItems}
+                    setPage={setPage}
+                    setUpdate={setUpdate}
+                    setDelete={setDelete}
+                    pageKey={pageKey}
+                    selectedMonth={selectedMonth}
+                    selectedMonthLabel={format(parsedStartDate!, "MMMM yyyy")}
+                    setReload={setReload}
                 />
             )}
 
@@ -257,10 +394,9 @@ export function ExpensesPage() {
 
             <ExpenseDateDialog
                 date={date}
-                mode={mode}
                 open={toggleDate}
-                setDate={setDate}
-                setMode={setMode}
+                selectedMonth={selectedMonth}
+                onApplyMonth={replaceMonthParam}
                 setOpen={setToggleDate}
             />
 

@@ -12,6 +12,7 @@ import { AddRemarks } from "./AddRemarks";
 import Link from "next/link";
 import { Claim } from "@/types/claims";
 import { getCategoryIcon } from "@/hooks/use-helper";
+import { AppTooltip } from "@/components/shared/AppTooltip";
 
 const columns = [
     { title: 'Branch Name' , style: '' },
@@ -94,10 +95,15 @@ export function PendingOrders({ claims, paginated, setReload, orderShortages }: 
                                     <CalendarArrowUp className="w-4 h-4" /> 
                                     <span className="ml-1.5">{ formatDateTime(item.orderDate) }</span>
                                 </div>
-                                <div className="flex-center-y">
-                                    <Truck className="w-3.5 h-3.5 text-slate-500" /> 
-                                    <span className="ml-1.5 text-xs text-slate-500">{ formatDateTime(item.expectedDelivery) }</span>
-                                </div>
+                                <AppTooltip
+                                    trigger={
+                                        <div className="flex-center-y">
+                                            <Truck className="w-3.5 h-3.5 text-slate-500" /> 
+                                            <span className="ml-1.5 text-xs text-slate-500">{ formatDateTime(item.expectedDelivery) }</span>
+                                        </div>
+                                    }
+                                    content="Expected Delivery"
+                                />
                             </div>
                             <div className="td flex gap-2">
                                 <OrderStatusBadge className="text-xs!" status={ item.status } />
@@ -130,7 +136,7 @@ export function PendingOrders({ claims, paginated, setReload, orderShortages }: 
                     </div>
                 ) : (
                     <div
-                        className="flex-center-y tdata max-md:w-250!"
+                        className="flex-center-y tdata bg-white! max-md:w-250!"
                         key={i}
                     >
                         <Link href={`/inventory/supply-orders/${item.orderId}`}>
