@@ -5,7 +5,7 @@ import { redirect, usePathname } from "next/navigation";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarTrigger, useSidebar } from "../ui/sidebar";
 import Link from "next/link";
 import Image from "next/image";
-import { adminRoute, franchiseeRoute, PapiverseRoute } from "@/lib/routes";
+import { PapiverseRoute, populateRouteMap } from "@/lib/routes";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { ChevronDown, ChevronsUpDown, CircleUserRound, LogOut, Menu } from "lucide-react";
 import { AppAvatar } from "./AppAvatar";
@@ -67,11 +67,10 @@ export function AppSidebar() {
     
         
     const role = claims.roles[0];
-    let route: PapiverseRoute[];
 
-    if (role === "FRANCHISOR") route = adminRoute;
-    else if (role === "FRANCHISEE") route = franchiseeRoute;
-    else redirect("/unauthorized");
+    let route: PapiverseRoute[] = populateRouteMap(claims);    
+
+    if (route.length === 0) return redirect('/unauthorized')
 
     const normalizePath = (path: string) => {
         if (path === "/") return path;
