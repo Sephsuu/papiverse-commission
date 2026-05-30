@@ -168,7 +168,7 @@ export class SupplyOrderService {
             // },
 
             headers: {
-            Accept: "application/pdf",
+                Accept: "application/pdf",
             },
         }
         );

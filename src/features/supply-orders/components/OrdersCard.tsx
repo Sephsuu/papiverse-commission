@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 
 const CURRENT_STOCK_VISIBILITY_KEY = "orders-card-current-stock-visible";
 
-export function OrdersCard({ orders, inventories, isFranchisor }: {
+export function OrdersCard({ orders, inventories, isFranchisor, showMeatCategoryCost }: {
     orders: {
         rawMaterialCode?: string;
         rawMaterialName?: string;
@@ -19,6 +19,7 @@ export function OrdersCard({ orders, inventories, isFranchisor }: {
     } [];
     inventories: Inventory[];
     isFranchisor: boolean;
+    showMeatCategoryCost?: boolean;
 })  {
     const [showCurrentStock, setShowCurrentStock] = useState(() => {
         if (typeof window === "undefined") return false;
@@ -43,11 +44,22 @@ export function OrdersCard({ orders, inventories, isFranchisor }: {
                 </button>
             )}
             {orders.map((item, i) => {
-                const currentStock = item.rawMaterialCode && item.rawMaterialCode !== "OTHER"
-                    ? inventories.find(i => i.sku === item.rawMaterialCode)?.quantity
+                const inventoryItem = item.rawMaterialCode && item.rawMaterialCode !== "OTHER"
+                    ? inventories.find((inventory) => inventory.sku === item.rawMaterialCode)
                     : undefined;
+                const currentStock = inventoryItem?.quantity;
+                const unitCost = inventoryItem?.unitCost;
+                const hasUnitCost = typeof unitCost === "number";
+                const basePrice = hasUnitCost ? unitCost : item.price;
+                const meatCategoryCost = typeof basePrice === "number"
+                    ? basePrice * item.quantity
+                    : null;
+
                 return (
-                    <div className="tdata grid grid-cols-[60px_1fr_1fr_100px_1fr_1fr]" key={i}>
+                    <div
+                        className={`tdata grid ${showMeatCategoryCost ? "grid-cols-[60px_1fr_1fr_100px_1fr_1fr_1fr]" : "grid-cols-[60px_1fr_1fr_100px_1fr_1fr]"}`}
+                        key={i}
+                    >
                         <div className="td text-center">{ i + 1 }</div>
                         <div className="td">{ item.rawMaterialCode ?? "-" }</div>
                         <div className="td">{ item.rawMaterialName ?? "-" }</div>
@@ -72,6 +84,16 @@ export function OrdersCard({ orders, inventories, isFranchisor }: {
                         
                         <div className="td">{ formatToPeso(item.price) }</div>
                         <div className="td">{ formatToPeso(item.price * item.quantity) }</div>
+                        {showMeatCategoryCost && (
+                            <div className="td bg-darkorange-2/10">
+                                {meatCategoryCost === null ? "-" : formatToPeso(meatCategoryCost)}
+                                {hasUnitCost && (
+                                    <Badge className="ml-2 rounded-full border border-emerald-300 bg-emerald-100 text-emerald-800">
+                                        Unit Cost
+                                    </Badge>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )
             })}

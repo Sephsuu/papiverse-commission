@@ -42,6 +42,11 @@ const columns = [
     { title: 'Total Amount', style: '' },
 ]
 
+const meatColumns = [
+    ...columns,
+    { title: 'Meat Category', style: 'bg-darkorange/10' },
+];
+
 const mapOtherCategory = (sourceCategory: string) =>
     sourceCategory === "MEAT" ? "MEAT" : "SNOWFROST";
 
@@ -177,6 +182,18 @@ export function ViewOrderPage({ id }: { id: number }) {
             isOther: true,
         })),
     ];
+    const inventoryList = inventories?.inventories ?? [];
+    const meatCategoryColumnTotal = meatOrderRows.reduce((sum, item) => {
+        const inventoryItem = item.rawMaterialCode && item.rawMaterialCode !== "OTHER"
+            ? inventoryList.find((inventory) => inventory.sku === item.rawMaterialCode)
+            : undefined;
+        const basePrice = typeof inventoryItem?.unitCost === "number"
+            ? inventoryItem.unitCost
+            : item.price;
+
+        if (typeof basePrice !== "number") return sum;
+        return sum + (basePrice * item.quantity);
+    }, 0);
 
     const hasMissingCategory = !hasSnowfrost || !hasMeat;
 
@@ -425,8 +442,8 @@ export function ViewOrderPage({ id }: { id: number }) {
                 </div>
 
                 <div className="mt-4 table-wrapper">
-                    <div className="thead grid grid-cols-[60px_1fr_1fr_100px_1fr_1fr]">
-                        {columns.map((item, _) => (
+                    <div className={`thead grid ${tab === tabs[0] ? "grid-cols-[60px_1fr_1fr_100px_1fr_1fr_1fr]" : "grid-cols-[60px_1fr_1fr_100px_1fr_1fr]"}`}>
+                        {(tab === tabs[0] ? meatColumns : columns).map((item, _) => (
                             <div key={_} className={`th ${item.style}`}>{ item.title }</div>
                         ))}
                     </div>
@@ -436,6 +453,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                                 orders={meatOrderRows}
                                 inventories={inventories?.inventories ?? []}
                                 isFranchisor={isFranchisor}
+                                showMeatCategoryCost
                             />
                         ) : (
                             <EmptyState message="No meat items in this order" />
@@ -446,6 +464,7 @@ export function ViewOrderPage({ id }: { id: number }) {
                                 orders={snowOrderRows}
                                 inventories={inventories?.inventories ?? []}
                                 isFranchisor={isFranchisor}
+                                showMeatCategoryCost={false}
                             />
                         ) : (
                             <EmptyState message="No snowfrost items in this order" />
@@ -455,6 +474,11 @@ export function ViewOrderPage({ id }: { id: number }) {
                 <div className="text-gray text-sm text-end mx-4 mt-2">
                     Meat Order <span className="font-semibold text-dark">+ { data?.meatCategory ?  formatToPeso(data!.meatCategory!.categoryTotal) : formatToPeso(0) }</span>
                 </div>
+                {tab === tabs[0] && (
+                    <div className="text-sm text-end mx-4 mt-2 text-darkorange">
+                        Meat Category Unit Cost Total <span className="font-semibold text-dark">+ { formatToPeso(meatCategoryColumnTotal) }</span>
+                    </div>
+                )}
                 <div className="text-gray text-sm text-end mx-4 mt-2">
                     Snowfrost Order <span className="font-semibold text-dark">+ { data?.snowfrostCategory ?formatToPeso(data!.snowfrostCategory!.categoryTotal) : formatToPeso(0) }</span>
                 </div>
