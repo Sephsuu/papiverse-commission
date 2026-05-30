@@ -58,6 +58,8 @@ export function populateRouteMap(me: Claim | null) {
                 icon: HandCoins,
                 children: [
                     { title: 'Expenses', href: '/finance/expenses' },
+                    { title: 'Commission Report', href: '/finance/commission-report' },
+                    { title: 'Weekly Sales Report', href: '/finance/weekly-sales-report' },
                     { title: 'Payment Settlement', href: '/finance/payment-settlement' },
                     { title: 'Supply Reports', href: '/finance/supply-reports' },
                     { title: 'Supply Breakdown', href: '/finance/supply-breakdown' },
@@ -65,6 +67,7 @@ export function populateRouteMap(me: Claim | null) {
                     { title: 'Raw Material Breakdown', href: '/finance/raw-material-breakdown' },
                     { title: 'Branch Profit Ranking', href: '/finance/branch-profit-ranking' },
                     { title: 'Branch PO Report', href: '/finance/branch-po-report' },
+                    { title: 'Branch Payment Report', href: '/finance/branch-payment-report' },
                 ]
             })
         }
