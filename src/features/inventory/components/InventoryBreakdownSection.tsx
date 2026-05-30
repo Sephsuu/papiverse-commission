@@ -83,36 +83,38 @@ export function InventoryBreakdownSection({ claims, rawMaterialType = "PRODUCT" 
 
     return (
         <>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {[
-                    {
-                        label: "Current Inventory Value",
-                        value: formatToPeso(breakdown.total.inventoryValue ?? 0),
-                        helper: "Summation of inventory prices",
-                    },
-                    {
-                        label: "Current Inventory Cost",
-                        value: formatToPeso(breakdown.total.inventoryCost ?? 0),
-                        helper: "Summation of inventory cost",
-                    },
-                    {
-                        label: "Net Profit",
-                        value: formatProfit(breakdown.total.netProfit ?? 0),
-                        helper: "Profit summation of each inventory",
-                        isNegative: (breakdown.total.netProfit ?? 0) < 0,
-                    },
-                ].map((item) => (
-                    <div key={item.label} className="gap-3 rounded-md border border-slate-300 bg-white p-5 shadow-sm">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-darkbrown">
-                            {item.label}
-                        </p>
-                        <p className={`mt-3 text-2xl font-semibold ${item.isNegative ? "text-darkred" : "text-slate-900"}`}>
-                            {item.value}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
-                    </div>
-                ))}
-            </div>
+            {[1, 2, 51, 31, 30, 49].includes(claims.userId) && (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {[
+                        {
+                            label: "Current Inventory Value",
+                            value: formatToPeso(breakdown.total.inventoryValue ?? 0),
+                            helper: "Summation of inventory prices",
+                        },
+                        {
+                            label: "Current Inventory Cost",
+                            value: formatToPeso(breakdown.total.inventoryCost ?? 0),
+                            helper: "Summation of inventory cost",
+                        },
+                        {
+                            label: "Net Profit",
+                            value: formatProfit(breakdown.total.netProfit ?? 0),
+                            helper: "Profit summation of each inventory",
+                            isNegative: (breakdown.total.netProfit ?? 0) < 0,
+                        },
+                    ].map((item) => (
+                        <div key={item.label} className="gap-3 rounded-md border border-slate-300 bg-white p-5 shadow-sm">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-darkbrown">
+                                {item.label}
+                            </p>
+                            <p className={`mt-3 text-2xl font-semibold ${item.isNegative ? "text-darkred" : "text-slate-900"}`}>
+                                {item.value}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             <TableFilter
                 setSearch={setSearch}

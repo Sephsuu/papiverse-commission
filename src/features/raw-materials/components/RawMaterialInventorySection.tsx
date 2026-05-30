@@ -52,25 +52,27 @@ export function RawMaterialInventorySection({ claims }: {
     if (loading) return <SectionLoading />
     return (
         <section className="stack-md">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {[
-                    {
-                        label: "Current Inventory Cost",
-                        value: formatToPeso(inventories?.total.inventoryCost ?? 0),
-                        helper: "Summation of inventory cost",
-                    },
-                ].map((item) => (
-                    <div key={item.label} className="gap-3 p-5 bg-white shadow-sm rounded-md border border-slate-300">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-darkbrown">
-                            {item.label}
-                        </p>
-                        <p className="mt-3 text-2xl font-semibold text-slate-900">
-                            {item.value}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
-                    </div>
-                ))}
-            </div>
+            {[1, 2, 51, 31, 30, 49].includes(claims.userId) && (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {[
+                        {
+                            label: "Current Inventory Cost",
+                            value: formatToPeso(inventories?.total.inventoryCost ?? 0),
+                            helper: "Summation of inventory cost",
+                        },
+                    ].map((item) => (
+                        <div key={item.label} className="gap-3 p-5 bg-white shadow-sm rounded-md border border-slate-300">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-darkbrown">
+                                {item.label}
+                            </p>
+                            <p className="mt-3 text-2xl font-semibold text-slate-900">
+                                {item.value}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
             
             <TableFilter
                 search={search}

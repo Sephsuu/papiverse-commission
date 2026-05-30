@@ -52,7 +52,7 @@ export function populateRouteMap(me: Claim | null) {
             },
         ])
 
-        if ([1, 28, 2].includes(me.userId)) {
+        if ([1, 2, 51, 31, 30, 49].includes(me.userId)) {
             routeMap.push({ 
                 title: 'Finance', 
                 icon: HandCoins,
