@@ -86,12 +86,19 @@ export function OrdersCard({ orders, inventories, isFranchisor, showMeatCategory
                         <div className="td">{ formatToPeso(item.price * item.quantity) }</div>
                         {showMeatCategoryCost && (
                             <div className="td bg-darkorange-2/10">
-                                {meatCategoryCost === null ? "-" : formatToPeso(meatCategoryCost)}
-                                {hasUnitCost && (
-                                    <Badge className="ml-2 rounded-full border border-emerald-300 bg-emerald-100 text-emerald-800">
-                                        Unit Cost
-                                    </Badge>
-                                )}
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span>{meatCategoryCost === null ? "-" : formatToPeso(meatCategoryCost)}</span>
+                                    {hasUnitCost && (
+                                        <Badge className="rounded-full border border-emerald-300 bg-emerald-100 text-emerald-800">
+                                            Unit Cost
+                                        </Badge>
+                                    )}
+                                </div>
+                                <div className="mt-1 text-xs text-slate-600">
+                                    {hasUnitCost
+                                        ? `UC: ${formatToPeso(unitCost)}`
+                                        : `FLB: ${formatToPeso(item.price)}`}
+                                </div>
                             </div>
                         )}
                     </div>
