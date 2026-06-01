@@ -22,7 +22,7 @@ import { useCrudState } from "@/hooks/use-crud-state";
 import { NotificationSheet } from "@/components/shared/NotificationSheet";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays } from "lucide-react";
-import { endOfMonth, format, startOfMonth } from "date-fns";
+import { format } from "date-fns";
 import { SupplyOrdersDatePicker, SupplyOrdersPeriodMode } from "./components/SupplyOrdersDatePicker";
 
 const tabs = ['Pending', 'Completed']
@@ -47,12 +47,10 @@ export function SupplyOrdersPage() {
 
     const { claims, loading: authLoading, isFranchisor } = useAuth();
     const { open, setOpen, showNotif, setShowNotif } = useCrudState();
-    const now = new Date();
-    const defaultStartDate = format(startOfMonth(now), "yyyy-MM-dd");
-    const defaultEndDate = format(endOfMonth(now), "yyyy-MM-dd");
-    const [date, setDate] = useState(defaultStartDate);
-    const [endDate, setEndDate] = useState(defaultEndDate);
-    const [periodMode, setPeriodMode] = useState<SupplyOrdersPeriodMode>("MONTH"); 
+    const defaultDate = format(new Date(new Date().getFullYear(), 4, 5), "yyyy-MM-dd");
+    const [date, setDate] = useState(defaultDate);
+    const [endDate, setEndDate] = useState(defaultDate);
+    const [periodMode, setPeriodMode] = useState<SupplyOrdersPeriodMode>("DAY"); 
     const isCommisary = claims.branch.branchId === 1;
     const fetchAll = useFetchData<SupplyOrder>(
         SupplyOrderService.getAllSupply, 
