@@ -67,7 +67,7 @@ const getEmptyBranchProfit = async () => null;
 
 const columns = [
     { title: "PO ID", style: "" },
-    { title: "Items", style: "" },
+    { title: "Order date", style: "" },
     { title: "Category Profit", style: "" },
     { title: "Overall Capital", style: "" },
     { title: "Overall Sales", style: "" },

@@ -48,6 +48,7 @@ export class ExpenseService {
             ...expense,
             total: Number(expense.total),
             spentAt: expense.spentAt ?? getPhilippineTimeISO(),
+            isChecked: expense.isChecked ?? false,
         }));
 
         return await requestData(
@@ -66,6 +67,7 @@ export class ExpenseService {
             {
                 ...expense,
                 total: Number(expense.total),
+                isChecked: expense.isChecked ?? false,
             }
         );
     }

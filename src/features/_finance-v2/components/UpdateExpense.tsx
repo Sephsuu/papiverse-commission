@@ -62,6 +62,7 @@ export function UpdateExpense({ toUpdate, setUpdate, setReload }: Props) {
         orderCategory: initialOrderCategory,
         expenseCategoryId: toUpdate.expenseCategoryId,
         purpose: toUpdate.purpose,
+        isChecked: toUpdate.isChecked ?? false,
     });
     const [totalInput, setTotalInput] = useState(String(toUpdate.total ?? ""));
     const [spentAtDate, setSpentAtDate] = useState<Date | undefined>(() =>
@@ -202,6 +203,7 @@ export function UpdateExpense({ toUpdate, setUpdate, setReload }: Props) {
                 branchId: claims.branch.branchId,
                 addedById: claims.userId,
                 purpose: expense.purpose?.trim(),
+                isChecked: expense.isChecked ?? false,
             });
 
             if (data) {

@@ -64,6 +64,13 @@ function normalizeOrderCategory(value?: string) {
     return normalized;
 }
 
+function normalizeExpense(expense: Expense): Expense {
+    return {
+        ...expense,
+        isChecked: expense.isChecked ?? false,
+    };
+}
+
 type NormalizedCategoryBreakdown = {
     expenseCategoryId?: number | null;
     expenseCategoryName: string;
@@ -92,7 +99,11 @@ export function ExpensesPage() {
     const [loading, setLoading] = useState(true);
     const [monthlyData, setMonthlyData] = useState<ExpenseMonthlyResponse | null>(null);
     const [paymentModeSummary, setPaymentModeSummary] = useState<ExpensePaymentModeSummaryResponse | null>(null);
-    const [selectedLayout, setSelectedLayout] = useState(expenseLayoutTabs[0]);
+    const [selectedLayout, setSelectedLayout] = useState(() => {
+        if (typeof window === "undefined") return expenseLayoutTabs[0];
+        const saved = sessionStorage.getItem(expenseLayoutKey);
+        return saved && expenseLayoutTabs.includes(saved) ? saved : expenseLayoutTabs[0];
+    });
     const lastReplacedMonthRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -156,7 +167,15 @@ export function ExpensesPage() {
                     ExpenseService.getPaymentModeSummary(claims.branch.branchId, selectedMonth, "ALL"),
                 ]);
                 if (!isMounted) return;
-                setMonthlyData(response);
+                setMonthlyData({
+                    ...response,
+                    expenses: response?.expenses
+                        ? {
+                            ...response.expenses,
+                            content: (response.expenses.content ?? []).map(normalizeExpense),
+                        }
+                        : response?.expenses,
+                });
                 setPaymentModeSummary(paymentResponse);
             } catch (err: any) {
                 const message = err?.message || err?.error || "Failed to fetch expenses";

@@ -1,18 +1,18 @@
 export interface Expense {
     id: number;
     total: number;
-    addedById: number;
-    addedByUsername: string;
+    addedById: number | null;
+    addedByUsername: string | null;
     addedByName: string;
     spentAt: string;
     modeOfPayment: string;
-    expenseCategoryId?: number;
-    expenseCategoryName?: string;
+    expenseCategoryId?: number | null;
+    expenseCategoryName?: string | null;
     orderCategory?: string;
-    branchId?: number;
-    purpose: string;
+    branchId?: number | null;
+    purpose: string | null;
     customPurpose?: string;
-
+    isChecked: boolean;
 }
 
 export interface ExpenseCategory {
@@ -126,7 +126,8 @@ export const expenseInit: Partial<Expense> = {
     total: 0,
     modeOfPayment: 'CASH',
     orderCategory: 'MEAT',
-    purpose: ''
+    purpose: '',
+    isChecked: false,
 };
 
 export const expenseFields: (keyof Expense)[] = [

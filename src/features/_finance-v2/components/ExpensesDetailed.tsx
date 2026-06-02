@@ -22,6 +22,17 @@ import { parseExpenseCalendarDate, toExpenseDateTimeString } from "@/lib/expense
 import { useCrudState } from "@/hooks/use-crud-state";
 import { AppSelect } from "@/components/shared/AppSelect";
 import { SectionLoading } from "@/components/ui/loader";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const TABS = ['ALL', 'MEAT', 'SNOWFROST']
 const FILTERS = ['WEEK 1', 'WEEK 2', 'WEEK 3', 'WEEK 4']
@@ -88,7 +99,8 @@ type WeeklyExpenseResponse = {
             amount: number;
             modeOfPayment: string;
             purpose: string;
-            addedByUsername: string
+            addedByUsername: string;
+            isChecked?: boolean;
         }>;
     }>;
 };
@@ -135,6 +147,8 @@ export function ExpensesDetailed({
     const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null);
     const [editRow, setEditRow] = useState<InlineEditRow | null>(null);
     const [weeklyDetail, setWeeklyDetail] = useState<WeeklyExpenseResponse | null>(null);
+    const [pendingCheckExpense, setPendingCheckExpense] = useState<Expense | null>(null);
+    const [pendingCheckedValue, setPendingCheckedValue] = useState<boolean | null>(null);
     const [createRows, setCreateRows] = useState<CreateExpenseRow[]>([
         { id: crypto.randomUUID(), description: "", amount: 0, modeOfPayment: DEFAULT_PAYMENT_MODE, spentAtDate: new Date() },
     ]);
@@ -227,6 +241,7 @@ export function ExpensesDetailed({
                 expenseCategoryName: category.expenseCategoryName,
                 addedByName: item.addedByUsername,
                 purpose: item.purpose,
+                isChecked: item.isChecked ?? false,
             }))
         ) as Expense[];
 
@@ -307,6 +322,7 @@ export function ExpensesDetailed({
                 orderCategory: resolvedOrderCategory,
                 modeOfPayment: row.modeOfPayment,
                 purpose: row.description.trim(),
+                isChecked: false,
             }));
 
             await ExpenseService.createExpense(payload, claims.userId);
@@ -353,6 +369,7 @@ export function ExpensesDetailed({
                 branchId: claims.branch.branchId,
                 addedById: claims.userId,
                 purpose: expense.purpose?.trim(),
+                isChecked: expense.isChecked ?? false,
             });
             toast.success("Expense updated successfully.");
             if (FILTERS.includes(nextActiveWeek)) {
@@ -365,6 +382,73 @@ export function ExpensesDetailed({
         } finally {
             setIsSavingEdit(false);
         }
+    }
+
+    async function handleExpenseCheckedChange(expenseId: number, checked: boolean) {
+        const currentExpense = categoryFilteredExpenses.find((expense) => expense.id === expenseId);
+        if (!currentExpense || !claims?.branch?.branchId || !claims?.userId) return;
+
+        setWeeklyDetail((prev) => {
+            if (!prev) return prev;
+
+            return {
+                ...prev,
+                categories: prev.categories.map((category) => ({
+                    ...category,
+                    items: (category.items ?? []).map((item) => (
+                        item.expenseId === expenseId
+                            ? { ...item, isChecked: checked }
+                            : item
+                    )),
+                })),
+            };
+        });
+
+        try {
+            await ExpenseService.updateExpense(expenseId, {
+                total: Number(currentExpense.total),
+                spentAt: currentExpense.spentAt,
+                modeOfPayment: currentExpense.modeOfPayment,
+                orderCategory: currentExpense.orderCategory,
+                branchId: claims.branch.branchId,
+                expenseCategoryId: currentExpense.expenseCategoryId,
+                purpose: currentExpense.purpose?.trim(),
+                addedById: claims.userId,
+                isChecked: checked,
+            });
+        } catch (error) {
+            setWeeklyDetail((prev) => {
+                if (!prev) return prev;
+
+                return {
+                    ...prev,
+                    categories: prev.categories.map((category) => ({
+                        ...category,
+                        items: (category.items ?? []).map((item) => (
+                            item.expenseId === expenseId
+                                ? { ...item, isChecked: !checked }
+                                : item
+                        )),
+                    })),
+                };
+            });
+            toast.error(`${error}`);
+        }
+    }
+
+    function openCheckConfirmation(expense: Expense) {
+        if (editingExpenseId === expense.id) return;
+
+        setPendingCheckExpense(expense);
+        setPendingCheckedValue(!(expense.isChecked ?? false));
+    }
+
+    async function confirmExpenseCheckedChange() {
+        if (!pendingCheckExpense || pendingCheckedValue === null) return;
+
+        await handleExpenseCheckedChange(pendingCheckExpense.id, pendingCheckedValue);
+        setPendingCheckExpense(null);
+        setPendingCheckedValue(null);
     }
 
     useEffect(() => {
@@ -684,8 +768,8 @@ export function ExpensesDetailed({
 
                 <div className="animate-fade-in-up" key={`${selectedMonth}-${filter}-${tab}-${page}`}>
                     {paginatedExpenses.length > 0 ? (
-                        paginatedExpenses.map((expense) => (
-                            <div className="tdata grid grid-cols-7 max-md:w-300!" key={expense.id}>
+                        paginatedExpenses.map((expense) => ( 
+                            <div className={`tdata grid grid-cols-7 max-md:w-300! ${expense.isChecked ? 'bg-darkgreen/8!' : '' }`} key={expense.id}>
                                 <div className="td col-span-2 gap-3">
                                     {getCategoryIcon(normalizeOrderCategory(expense.orderCategory))}
                                     <div className="truncate font-semibold">{expense.addedByName}</div>
@@ -775,10 +859,20 @@ export function ExpensesDetailed({
                                             </Button>
                                         </>
                                     ) : (
-                                        <>
+                                        <div className="flex-center-y gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => openCheckConfirmation(expense)}
+                                                aria-label={expense.isChecked ? "Uncheck expense" : "Check expense"}
+                                            >
+                                                <Checkbox
+                                                    checked={expense.isChecked ?? false}
+                                                    className="bg-white border-slate-400 pointer-events-none mt-1.5"
+                                                />
+                                            </button>
                                             <button onClick={() => startInlineEdit(expense)}><SquarePen className="h-4 w-4 text-darkgreen" /></button>
                                             <button onClick={() => setDelete(expense)}><Trash2 className="h-4 w-4 text-darkred" /></button>
-                                        </>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -807,6 +901,46 @@ export function ExpensesDetailed({
                     pageKey={pageKey}
                 />
             )}
+
+            <AlertDialog
+                open={Boolean(pendingCheckExpense)}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setPendingCheckExpense(null);
+                        setPendingCheckedValue(null);
+                    }
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            {pendingCheckedValue ? "Check expense?" : "Uncheck expense?"}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {pendingCheckedValue
+                            ? `This will mark ${pendingCheckExpense?.expenseCategoryName ?? "this expense"}${
+                                pendingCheckExpense?.purpose
+                                    ? ` for ${pendingCheckExpense.purpose}`
+                                    : ""
+                                } as checked.`
+                            : `This will mark ${pendingCheckExpense?.expenseCategoryName ?? "this expense"}${
+                                pendingCheckExpense?.purpose
+                                    ? ` for ${pendingCheckExpense.purpose}`
+                                    : ""
+                                } as unchecked.`}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-darkgreen! hover:opacity-90"
+                            onClick={confirmExpenseCheckedChange}
+                        >
+                            Confirm
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
