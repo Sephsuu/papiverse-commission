@@ -3,6 +3,8 @@ import { requestData } from "./_config";
 
 const url = `${BASE_URL}/finance`
 
+export type MeatAndPowdersNetIncomeType = "all" | "internal" | "external";
+
 export class FinanceService {
     static async weeklySalesReport(month: string, scope: string) {
         return await requestData(
@@ -39,9 +41,15 @@ export class FinanceService {
         );
     }	
 
-    static async getMeatAndPowders(month: string) {
+    static async getMeatAndPowders(month: string, type?: MeatAndPowdersNetIncomeType) {
+        const params = new URLSearchParams({ month });
+
+        if (type) {
+            params.append("type", type);
+        }
+
         return await requestData(
-            `${url}/meat-and-powders-net-income?month=${month}`,
+            `${url}/meat-and-powders-net-income?${params.toString()}`,
             "GET",
         );
     }	
