@@ -59,6 +59,20 @@ export class ExpenseService {
         );
     }
 
+    static async createExpenseCategory(category: {
+        name: string,
+        orderCategory: string,
+        active: boolean,
+        sortOrder: number
+    }) {
+        return await requestData(
+            `${expensesUrl}/categories`,
+            "POST",
+            undefined,
+            category
+        );
+    }
+
     static async updateExpense(id: number, expense: Partial<Expense>) {
         return await requestData(
             `${expensesUrl}/${id}`,

@@ -33,6 +33,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { CreateExpenseCategory } from "./CreateExpenseCategory";
 
 const TABS = ['ALL', 'MEAT', 'SNOWFROST']
 const FILTERS = ['WEEK 1', 'WEEK 2', 'WEEK 3', 'WEEK 4']
@@ -140,7 +141,9 @@ export function ExpensesDetailed({
         const saved = sessionStorage.getItem(weekStorageKey);
         return saved && FILTERS.includes(saved) ? saved : FILTERS[0];
     })
+    const { open, setOpen } = useCrudState();
     const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+    const [categoryReload, setCategoryReload] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [isSavingEdit, setIsSavingEdit] = useState(false);
     const [isWeeklyLoading, setIsWeeklyLoading] = useState(false);
@@ -530,7 +533,7 @@ export function ExpensesDetailed({
         return () => {
             mounted = false;
         };
-    }, []);
+    }, [categoryReload]);
 
     const [openCreate, setOpenCreate] = useState(true)
     
@@ -560,7 +563,7 @@ export function ExpensesDetailed({
             </div>
 
             {tab !== "ALL" && (
-            <div className="flex mt-4 animate-fade-in-up" key={`purpose-tabs-${tab}-${filter}`}>
+            <div className="grid grid-cols-6 mt-2 animate-fade-in-up" key={`purpose-tabs-${tab}-${filter}`}>
                 {visiblePurposeTabs.map((item) => {
                     const isActive = purpose === item
                     return (
@@ -568,7 +571,7 @@ export function ExpensesDetailed({
                             key={item}
                             type="button"
                             onClick={() => setPurpose(item)}
-                            className={`group relative w-40 pb-4 text-center text-sm font-medium transition-colors
+                            className={`mt-2 group relative w-40 pb-4 text-center text-sm font-medium transition-colors
                                 ${isActive ? "text-darkbrown font-semibold" : "text-slate-500 hover:text-darkbrown"}
                             `}
                         >
@@ -598,7 +601,8 @@ export function ExpensesDetailed({
                     filters={FILTERS}
                     filter={filter}
                     setFilter={setFilter}
-                    removeAdd
+                    setOpen={setOpen}
+                    buttonLabel="Add Category"
                     className="w-full"
                 />
                 <Button
@@ -941,6 +945,15 @@ export function ExpensesDetailed({
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {open && (
+                <CreateExpenseCategory
+                    categories={categories}
+                    setOpen={setOpen}
+                    setReload={setReload}
+                    onCreated={() => setCategoryReload((prev) => !prev)}
+                />
+            )}
         </div>
     );
 }
