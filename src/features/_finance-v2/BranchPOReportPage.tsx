@@ -12,7 +12,7 @@ import { BranchService } from "@/services/branch.service";
 import { SupplyOrderService } from "@/services/supplyOrder.service";
 import { Branch } from "@/types/branch";
 import { format } from "date-fns";
-import { ArrowLeft, CalendarDays, Store } from "lucide-react";
+import { ArrowLeft, CalendarDays, CheckCircle, Store, Truck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { InventoryReportPeriodMode } from "./components/DatePickerModal";
 import { BranchPODatePickerModal } from "./components/BranchPODatePickerModal";
@@ -43,6 +43,7 @@ type OrderProfitBreakdown = {
     branchId: number;
     branchName: string;
     orderDate: string;
+    approvedDate: string;
     meatCategory?: ProfitCategory | null;
     snowCategory?: ProfitCategory | null;
     overallProfit: number;
@@ -344,8 +345,16 @@ export function BranchPOReportPage() {
                                                     </div>
                                                 </div>
 
-                                                <div className="td">
-                                                    {formatDateTime(order.orderDate)}
+                                              <div className="td flex flex-col items-start! justify-center gap-1.5 text-left">
+                                                <div className="flex items-center gap-2 text-sm text-gray-800">
+                                                    <Truck className="h-4 w-4 shrink-0 text-gray-500" />
+                                                    <span>{formatDateTime(order.orderDate)}</span>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                                    <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" />
+                                                    <span>{formatDateToWords(order.approvedDate)}</span>
+                                                </div>
                                                 </div>
 
                                                 <div className="td">
