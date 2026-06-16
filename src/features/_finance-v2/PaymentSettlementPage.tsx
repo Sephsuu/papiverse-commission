@@ -245,6 +245,56 @@ function mapPieChartData(chartData?: SettlementChartData): { rows: SettlementPie
     };
 }
 
+function MonthlyPieChart({ rows }: { rows: SettlementPieRow[] }) {
+    const total = rows.reduce((sum, row) => sum + row.value, 0);
+
+    return (
+        <div className="grid min-h-72 gap-4 md:grid-cols-[minmax(170px,0.9fr)_minmax(0,1.1fr)]">
+            <div className="h-64 min-w-0 md:h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+                        <Pie
+                            data={rows}
+                            dataKey="value"
+                            nameKey="label"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius="42%"
+                            outerRadius="78%"
+                            paddingAngle={rows.length > 1 ? 1 : 0}
+                        >
+                            {rows.map((row, index) => (
+                                <Cell key={`${row.label}-${index}`} fill={CHART_PALETTE[index % CHART_PALETTE.length]} />
+                            ))}
+                        </Pie>
+                        <Tooltip formatter={(value: number) => formatToPeso(Number(value))} />
+                    </PieChart>
+                </ResponsiveContainer>
+            </div>
+
+            <div className="max-h-72 min-w-0 space-y-2 overflow-y-auto pr-1 my-auto">
+                {rows.map((row, index) => {
+                    const percent = total > 0 ? (row.value / total) * 100 : 0;
+
+                    return (
+                        <div
+                            className="grid min-w-0 grid-cols-[12px_minmax(0,1fr)_auto] items-start gap-2 rounded-sm bg-white/60 px-2 py-1.5 text-sm"
+                            key={`${row.label}-monthly-pie-label-${index}`}
+                        >
+                            <span
+                                className="mt-1.5 size-3 shrink-0 rounded-sm"
+                                style={{ backgroundColor: CHART_PALETTE[index % CHART_PALETTE.length] }}
+                            />
+                            <span className="min-w-0 [overflow-wrap:anywhere] text-slate-700">{row.label}</span>
+                            <span className="whitespace-nowrap font-semibold text-slate-900">{percent.toFixed(0)}%</span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
 function readableSettlementText(payer: SettlementSide, receiver: SettlementSide) {
     if (payer === "NONE" || receiver === "NONE") return "No settlement";
     return `${payer} pays ${receiver}`;
@@ -536,28 +586,11 @@ export function PaymentSettlementPage() {
                                 <Card className="w-full bg-light p-4">
                                     <div className="text-darkbrown font-bold text-xl">Branch PO Distribution</div>
                                     <div className="text-sm text-gray">Monthly purchase order split by branch.</div>
-                                    <div className="mt-2 h-72 w-full">
+                                    <div className="mt-2 w-full">
                                         {branchPurchasePie.rows.length > 0 ? (
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <PieChart>
-                                                    <Pie
-                                                        data={branchPurchasePie.rows}
-                                                        dataKey="value"
-                                                        nameKey="label"
-                                                        outerRadius={110}
-                                                        labelLine={false}
-                                                        label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
-                                                    >
-                                                        {branchPurchasePie.rows.map((row, index) => (
-                                                            <Cell key={`${row.label}-${index}`} fill={CHART_PALETTE[index % CHART_PALETTE.length]} />
-                                                        ))}
-                                                    </Pie>
-                                                    <Tooltip formatter={(value: number) => formatToPeso(Number(value))} />
-                                                    <Legend />
-                                                </PieChart>
-                                            </ResponsiveContainer>
+                                            <MonthlyPieChart rows={branchPurchasePie.rows} />
                                         ) : (
-                                            <div className="flex h-full w-full items-center justify-center text-sm text-gray">
+                                            <div className="flex min-h-72 w-full items-center justify-center text-sm text-gray">
                                                 No branch PO pie chart data available.
                                             </div>
                                         )}
@@ -567,28 +600,11 @@ export function PaymentSettlementPage() {
                                 <Card className="w-full bg-light p-4">
                                     <div className="text-darkbrown font-bold text-xl">Expense Distribution</div>
                                     <div className="text-sm text-gray">Monthly expense split between MEAT and SNOW.</div>
-                                    <div className="mt-2 h-72 w-full">
+                                    <div className="mt-2 w-full">
                                         {expensePie.rows.length > 0 ? (
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <PieChart>
-                                                    <Pie
-                                                        data={expensePie.rows}
-                                                        dataKey="value"
-                                                        nameKey="label"
-                                                        outerRadius={110}
-                                                        labelLine={false}
-                                                        label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
-                                                    >
-                                                        {expensePie.rows.map((row, index) => (
-                                                            <Cell key={`${row.label}-${index}`} fill={CHART_PALETTE[index % CHART_PALETTE.length]} />
-                                                        ))}
-                                                    </Pie>
-                                                    <Tooltip formatter={(value: number) => formatToPeso(Number(value))} />
-                                                    <Legend />
-                                                </PieChart>
-                                            </ResponsiveContainer>
+                                            <MonthlyPieChart rows={expensePie.rows} />
                                         ) : (
-                                            <div className="flex h-full w-full items-center justify-center text-sm text-gray">
+                                            <div className="flex min-h-72 w-full items-center justify-center text-sm text-gray">
                                                 No expense pie chart data available.
                                             </div>
                                         )}
