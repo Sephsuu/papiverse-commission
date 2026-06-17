@@ -33,6 +33,8 @@ type BranchProfitRow = {
     overallCapital: number;
     overallSales: number;
     overallProfit: number;
+    meatSales: number;
+    snowSales: number;
     meatProfit: number;
     snowProfit: number;
 };
@@ -91,7 +93,9 @@ const columns = [
     { title: "Branch", style: "" },
     { title: "Capital", style: "" },
     { title: "Sales", style: "" },
+    { title: "Meat Sales", style: "" },
     { title: "Meat Profit", style: "" },
+    { title: "Snow Sales", style: "" },
     { title: "Snow Profit", style: "" },
     { title: "Overall Profit", style: "" },
 ];
@@ -339,7 +343,7 @@ export function BranchProfitRankingPage() {
                             <>
                                 <div className="thead flex">
                                     <div className="th w-15 flex-center">#</div>
-                                    <div className="w-full grid grid-cols-6">
+                                    <div className="w-full grid grid-cols-8">
                                         {columns.map((item, index) => (
                                             <div key={index} className={`th ${item.style}`}>
                                                 {item.title}
@@ -352,7 +356,7 @@ export function BranchProfitRankingPage() {
                                     {paginated.map((row) => (
                                         <div className="flex tdata" key={row.branchId}>
                                             <div className="td w-15 flex-center">{row.overallRank}</div>
-                                            <div className="w-full grid grid-cols-6 border-b border-slate-100 last:border-b-0">
+                                            <div className="w-full grid grid-cols-8 border-b border-slate-100 last:border-b-0">
                                                 <Link 
                                                     href={`/finance/branch-po-report?branch=${row.branchId}&startDate=${date}&endDate=${endDate}&mode=${periodMode}`}
                                                     className={`td font-semibold hover:font-semibold hover:underline ${branchColorById.get(row.branchId) ?? "text-slate-900"}`}
@@ -369,7 +373,15 @@ export function BranchProfitRankingPage() {
                                                 </div>
                                                 <div className="td justify-between">
                                                     <span>₱</span>
+                                                    <span>{formatToPeso(row.meatSales).slice(1)}</span>
+                                                </div>
+                                                <div className="td justify-between">
+                                                    <span>₱</span>
                                                     <span>{formatToPeso(row.meatProfit).slice(1)}</span>
+                                                </div>
+                                                <div className="td justify-between">
+                                                    <span>₱</span>
+                                                    <span>{formatToPeso(row.snowSales).slice(1)}</span>
                                                 </div>
                                                 <div className="td justify-between">
                                                     <span>₱</span>
